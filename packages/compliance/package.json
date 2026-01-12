@@ -58,7 +58,7 @@
     "@curvenote/scms-server": "0.0.1",
     "@heroicons/react": "^2.2.0",
     "@hhmi/pmc": "^0.0.1",
-    "@prisma/client": "^6.15.0",
+    "@prisma/client": "^6.18.0",
     "@react-email/components": "0.5.7",
     "@react-router/dev": "7.9.5",
     "@scienceicons/react": "^0.0.13",

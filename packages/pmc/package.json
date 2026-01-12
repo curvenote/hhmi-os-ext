@@ -57,7 +57,7 @@
     "@curvenote/scms-core": "0.0.1",
     "@curvenote/scms-server": "0.0.1",
     "@google-cloud/pubsub": "^5.2.0",
-    "@prisma/client": "^6.15.0",
+    "@prisma/client": "^6.18.0",
     "@react-email/components": "0.5.7",
     "@react-router/dev": "7.9.5",
     "date-fns": "3.6.0",
