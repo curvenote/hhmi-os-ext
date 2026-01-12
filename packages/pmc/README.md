@@ -23,7 +23,7 @@ The extension integrates with Google Cloud Pub/Sub for asynchronous processing, 
 - **Streamlined Submissions**: Reduces the complexity and time required for PMC submissions through guided workflows
 - **Automated Validation**: Validates metadata and file requirements before submission to reduce errors and rejections
 - **Workflow Automation**: Automates repetitive tasks and provides status tracking throughout the submission process
-- **Integration**: Works seamlessly with the Compliance Extension to provide end-to-end compliance support
+- **Integration**: Works seamlessly with the Compliance Extension to provide an entry point to PMC deposits when recommended by the Compliance Wizard
 - **Email Integration**: Processes PMC notifications and submission requests automatically via email
 
 ## Use Cases

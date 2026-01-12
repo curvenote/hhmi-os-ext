@@ -4,7 +4,7 @@ An extension module for the HHMI Workspace that provides tools and workflows for
 
 ## Purpose
 
-The Compliance Extension addresses the need for researchers and institutions to navigate complex open access policy requirements from funders like HHMI and NIH. It automates compliance tracking, provides policy guidance, and generates compliance reports to help ensure research publications meet open access mandates.
+The Compliance Extension addresses the need for researchers and institutions to navigate complex open access policy requirements from HHMI, but also where applicable, NIH. It provides policy guidance, access to up to date compliance dashboards for individual Investigators and provides tools for HHMI's compliance and support staff to help ensure research publications meet open access mandates.
 
 ## Overview
 
