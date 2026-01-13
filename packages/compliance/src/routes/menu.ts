@@ -52,7 +52,7 @@ export function buildComplianceMenu(
 
   const adminMenus: ServerSideMenuContents[0]['menus'] = [];
   // Admin section - only for compliance officers
-  if (isComplianceAdmin) {
+  if (isComplianceAdmin && role !== undefined) {
     // Add admin section
     adminMenus.push({
       name: 'compliance.dashboard',
