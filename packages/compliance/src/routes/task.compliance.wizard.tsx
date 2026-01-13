@@ -70,7 +70,7 @@ export const action = async (args: ActionFunctionArgs) => {
     await ctx.sendEmail({
       eventType: KnownResendEvents.GENERIC_NOTIFICATION,
       to: supportEmail,
-      subject: 'Compliance Wizard - Help Requested',
+      subject: 'Compliance Questionnaire - Help Requested',
       templateProps: {
         previewText: `Help requested from ${userName}`,
         children: composeHelpRequestEmailBody({
@@ -96,7 +96,7 @@ export default function ComplianceWizardRoute({ loaderData }: { loaderData: Load
 
   const breadcrumbs = [
     { label: 'Home', href: '/app/dashboard' },
-    { label: 'Open Access Policy Compliance Wizard', isCurrentPage: true },
+    { label: 'Open Access Policy Compliance Questionnaire', isCurrentPage: true },
   ];
 
   return (

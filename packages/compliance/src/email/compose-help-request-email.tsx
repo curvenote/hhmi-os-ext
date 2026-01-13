@@ -50,10 +50,10 @@ export function composeHelpRequestEmailBody(params: {
   return (
     <>
       <Heading className="mx-0 my-[30px] p-0 text-[24px] font-normal text-black">
-        Compliance Wizard - Help Requested
+        Compliance Questionnaire - Help Requested
       </Heading>
       <Text className="text-[14px] text-black leading-[24px]">
-        A user has requested help with the Compliance Wizard:
+        A user has requested help with the Compliance Questionnaire:
       </Text>
       <Section className="my-[16px] p-[16px] bg-[#f4f4f4] rounded">
         <Text className="text-[14px] text-black leading-[24px] my-0">
@@ -78,7 +78,7 @@ export function composeHelpRequestEmailBody(params: {
       {formattedResponses && (
         <>
           <Text className="text-[14px] text-black leading-[24px]">
-            <strong>Wizard Responses:</strong>
+            <strong>Questionnaire Responses:</strong>
           </Text>
           <Section className="my-[16px] p-[16px] bg-[#f4f4f4] rounded">
             <Text className="text-[14px] text-black leading-[24px] whitespace-pre-wrap font-mono">

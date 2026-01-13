@@ -304,8 +304,8 @@ export function ComplianceWizard({ config }: ComplianceWizardProps) {
         <ui.SimpleDialog
           open={showFeedbackDialog}
           onOpenChange={handleDialogClose}
-          title="Did the wizard answer all of your questions?"
-          description="Your feedback helps us improve the compliance wizard experience."
+          title="Did the questionnaire answer all of your questions?"
+          description="Your feedback helps us improve the compliance questionnaire experience."
           footerButtons={[
             { label: 'No', onClick: handleFeedbackNo, variant: 'outline' },
             { label: 'Yes', onClick: handleFeedbackYes, variant: 'outline' },
