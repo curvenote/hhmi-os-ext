@@ -70,7 +70,11 @@ function ScientistActions({
       <ui.Button
         variant="outline"
         disabled={!scientist.orcid}
-        title={!scientist.orcid ? 'No ORCID available for this scientist' : undefined}
+        title={
+          !scientist.orcid
+            ? `No ORCID available for ${scientist.fullName ?? 'this scientist'}`
+            : undefined
+        }
       >
         <Link
           to={scientist.orcid ? `${baseUrl}/${scientist.orcid}` : '#'}

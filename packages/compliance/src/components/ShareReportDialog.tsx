@@ -51,7 +51,13 @@ function LoadingSkeleton({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function ScientistNotFoundCard({ compact = false }: { compact?: boolean }) {
+function ScientistNotFoundCard({
+  compact = false,
+  displayName,
+}: {
+  compact?: boolean;
+  displayName?: string;
+}) {
   const paddingClass = compact ? 'p-4' : 'p-6';
   return (
     <primitives.Card
@@ -61,11 +67,12 @@ function ScientistNotFoundCard({ compact = false }: { compact?: boolean }) {
         <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
         <div className="flex-1">
           <h4 className="mb-1 font-medium text-yellow-900 dark:text-yellow-100">
-            Scientist Not Found
+            {displayName ?? 'Scientist'} not found
           </h4>
           <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            This scientist does not have a user account in the HHMI Workspace yet. They must create
-            an account and link their ORCID before their compliance dashboard can be shared.
+            {displayName ?? 'This scientist'} does not have a user account in the HHMI Workspace
+            yet. They must create an account and link their ORCID before their compliance dashboard
+            can be shared.
           </p>
         </div>
       </div>
@@ -232,7 +239,7 @@ export function ShareReportDialog({
   if (scientistExists === null) {
     content = <LoadingSkeleton compact={compact} />;
   } else if (scientistExists === false) {
-    content = <ScientistNotFoundCard compact={compact} />;
+    content = <ScientistNotFoundCard compact={compact} displayName={displayName} />;
   } else {
     content = (
       <div className={`flex flex-col ${gapClass}`}>
