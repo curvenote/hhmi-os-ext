@@ -10,6 +10,13 @@ import { hyphenatedFromDate } from '@curvenote/scms-core';
 import type { WorkContext } from '@curvenote/scms-server';
 import { PMCTrackEvent } from '../../analytics/events.js';
 
+/**
+ * Confirms a PMC deposit by updating metadata, work version, and submission version status.
+ * Sets the work version to non-draft and submission version to PENDING.
+ * @param ctx - Work context
+ * @param workVersionId - The work version ID to confirm
+ * @returns Success response or error response
+ */
 export async function confirmPMC(ctx: WorkContext, workVersionId: string) {
   const prisma = await getPrismaClient();
 

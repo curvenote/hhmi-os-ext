@@ -17,6 +17,12 @@ const journalNameSchema = z
   .string()
   .max(255, { message: 'Journal name must be at most 255 characters' }); // Allow empty for clearing
 
+/**
+ * Resets all publication metadata fields to undefined.
+ * @param formData - Form data (unused, kept for API consistency)
+ * @param workVersionId - The work version ID
+ * @returns Success response or error response
+ */
 export async function resetPublicationMetadata(formData: FormData, workVersionId: string) {
   return safelyPatchPMCMetadata(workVersionId, {
     title: undefined,
@@ -39,6 +45,12 @@ export async function resetPublicationMetadata(formData: FormData, workVersionId
   });
 }
 
+/**
+ * Updates the publication title in PMC metadata.
+ * @param formData - Form data containing the title
+ * @param workVersionId - The work version ID
+ * @returns Success response or error response
+ */
 export async function updatePublicationTitle(formData: FormData, workVersionId: string) {
   return withValidFormData(
     zfd.formData({ title: titleSchema }),
@@ -53,6 +65,13 @@ export async function updatePublicationTitle(formData: FormData, workVersionId: 
   );
 }
 
+/**
+ * Updates the publication journal name and validates it against the NIH Public Access list.
+ * Also sets ISSN information from NIH validation.
+ * @param formData - Form data containing the journal name
+ * @param workVersionId - The work version ID
+ * @returns Success response or error response if journal is not found
+ */
 export async function updatePublicationJournalName(formData: FormData, workVersionId: string) {
   return withValidFormData(
     zfd.formData({ journalName: journalNameSchema }),
@@ -96,6 +115,14 @@ export async function updatePublicationJournalName(formData: FormData, workVersi
   );
 }
 
+/**
+ * Updates publication metadata by looking up a DOI and validating against NIH.
+ * Extracts title, authors, journal, ISSN, and other metadata from Crossref.
+ * @param ctx - Work context
+ * @param formData - Form data containing the DOI
+ * @param workVersionId - The work version ID
+ * @returns Success response or error response
+ */
 export async function updatePublicationMetadataByDoi(
   ctx: WorkContext,
   formData: FormData,

@@ -8,6 +8,12 @@ const CertifySchema = zfd.formData({
     .or(zfd.text().transform((value) => (value === 'false' ? false : undefined))),
 });
 
+/**
+ * Updates the certify manuscript flag in PMC metadata.
+ * @param formData - Form data containing the certify flag
+ * @param workVersionId - The work version ID
+ * @returns Success response or error response
+ */
 export async function updateCertifyManuscript(formData: FormData, workVersionId: string) {
   return withValidFormData(
     CertifySchema,

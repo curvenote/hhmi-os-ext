@@ -28,6 +28,12 @@ const ReviewerEmailSchema = zfd.formData({
   email: zfd.text(emailSchema),
 });
 
+/**
+ * Updates the reviewer's first name in PMC metadata.
+ * @param formData - Form data containing the first name
+ * @param workVersionId - The work version ID
+ * @returns Success response or error response
+ */
 export async function updateReviewerFirstName(formData: FormData, workVersionId: string) {
   return withValidFormData(
     ReviewerNameSchema,
@@ -41,6 +47,12 @@ export async function updateReviewerFirstName(formData: FormData, workVersionId:
   );
 }
 
+/**
+ * Updates the reviewer's last name in PMC metadata.
+ * @param formData - Form data containing the last name
+ * @param workVersionId - The work version ID
+ * @returns Success response or error response
+ */
 export async function updateReviewerLastName(formData: FormData, workVersionId: string) {
   return withValidFormData(
     ReviewerLastNameSchema,
@@ -54,6 +66,12 @@ export async function updateReviewerLastName(formData: FormData, workVersionId: 
   );
 }
 
+/**
+ * Updates the reviewer's email in PMC metadata.
+ * @param formData - Form data containing the email
+ * @param workVersionId - The work version ID
+ * @returns Success response or error response
+ */
 export async function updateReviewerEmail(formData: FormData, workVersionId: string) {
   return withValidFormData(
     ReviewerEmailSchema,
@@ -67,6 +85,12 @@ export async function updateReviewerEmail(formData: FormData, workVersionId: str
   );
 }
 
+/**
+ * Removes all reviewer information from PMC metadata.
+ * @param formData - Form data (unused, kept for API consistency)
+ * @param workVersionId - The work version ID
+ * @returns Success response or error response
+ */
 export async function removeReviewer(formData: FormData, workVersionId: string) {
   return safelyPatchPMCMetadata(workVersionId, {
     reviewerFirstName: undefined,
@@ -76,6 +100,12 @@ export async function removeReviewer(formData: FormData, workVersionId: string) 
   });
 }
 
+/**
+ * Updates the designate reviewer flag in PMC metadata.
+ * @param formData - Form data containing the designateReviewer flag
+ * @param workVersionId - The work version ID
+ * @returns Success response or error response
+ */
 export async function updateDesignateReviewer(formData: FormData, workVersionId: string) {
   const designateReviewer = formData.get('designateReviewer') === 'true';
   return safelyPatchPMCMetadata(workVersionId, {
