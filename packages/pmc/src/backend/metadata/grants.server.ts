@@ -358,7 +358,10 @@ export async function removeFunderAsGrant(formData: FormData, workVersionId: str
 // ==============================
 
 /**
- * Get grants for a specific funder
+ * Gets all grants for a specific funder.
+ * @param grants - Array of grant entries
+ * @param funderKey - Funder key to filter by
+ * @returns Array of grants for the specified funder
  */
 export function getGrantsForFunder(grants: GrantEntry[], funderKey: FunderKey): GrantEntry[] {
   return grants.filter((grant) => grant.funderKey === funderKey);
