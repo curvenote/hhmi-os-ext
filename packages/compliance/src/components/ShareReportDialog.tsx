@@ -273,7 +273,7 @@ export function ShareReportDialog({
           actionUrl={actionUrl}
           compact={compact}
           onSuccess={handleShareSuccess}
-          additionalFields={orcid ? { orcid } : undefined}
+          additionalFields={scientist.orcid ? { orcid: scientist.orcid } : undefined}
           description={
             !compact
               ? 'Search and select a user to share this compliance dashboard with. They will be able to view the compliance data and publications.'
