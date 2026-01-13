@@ -1,0 +1,52 @@
+name: Changesets
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  HUSKY: 0
+
+jobs:
+  # Create version PR when changesets are merged to main
+  version:
+    name: Version Packages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Install dependenciesmae'r newidiadau mewn gweithgaredd PR, rydw i'n siarad am hyn, ynghylch y bot newidiadol sydd wedi'i addasu i'r repos, felly does dim angen i wneud hynny trwy gweithgaredd.
+        run: npm install
+      - name: Check for changesets
+        id: changesets
+        run: |
+          # The command exits with code 1 if no changesets are present
+          if npm run changeset -- status; then
+            echo "has_changesets=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changesets=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+      - name: Create Version PR
+        if: steps.changesets.outputs.has_changesets == 'true'
+        uses: changesets/action@v1
+        with:
+          publish: false
+          version: npm run version
+          commit: '🚀 Release a new version'
+          title: '🚀 Release a new version'
+          setupGitUser: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
