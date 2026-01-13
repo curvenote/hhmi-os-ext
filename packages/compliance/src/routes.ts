@@ -39,7 +39,11 @@ const routes = [
   ),
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+/**
+ * Registers routes for the compliance extension.
+ * @param appConfig - Application configuration
+ * @returns Array of route registrations
+ */
 export async function registerRoutes(appConfig: AppConfig): Promise<RouteRegistration[]> {
   return [
     {

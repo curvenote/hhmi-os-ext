@@ -80,7 +80,9 @@ export function extractIssueStatuses(publications: NormalizedArticleRecord[]): s
 }
 
 /**
- * Generate dynamic filter definitions for issue types
+ * Generates dynamic filter definitions for issue types from publications.
+ * @param publications - Array of normalized article records
+ * @returns Array of filter definitions for issue types
  */
 export function generateIssueTypeFilters(
   publications: NormalizedArticleRecord[],
@@ -107,7 +109,9 @@ export function generateIssueTypeFilters(
 }
 
 /**
- * Generate dynamic filter definitions for issue statuses
+ * Generates dynamic filter definitions for issue statuses from publications.
+ * @param publications - Array of normalized article records
+ * @returns Array of filter definitions for issue statuses
  */
 export function generateIssueStatusFilters(
   publications: NormalizedArticleRecord[],
@@ -154,8 +158,10 @@ export const BASE_COMPLIANCE_FILTERS: ui.FilterDefinition[] = [
 ];
 
 /**
- * Generate filter definitions for covered publications (compliance report)
- * Combines static compliance filters with dynamic issue type/status filters
+ * Generates filter definitions for covered publications (compliance report).
+ * Combines static compliance filters with dynamic issue type/status filters.
+ * @param publications - Array of normalized article records
+ * @returns Array of filter definitions
  */
 export function generateCoveredPublicationFilters(
   publications: NormalizedArticleRecord[],
@@ -167,8 +173,10 @@ export function generateCoveredPublicationFilters(
 }
 
 /**
- * Generate filter definitions for basic publications (without compliance filters)
- * Only includes dynamic issue type/status filters
+ * Generates filter definitions for basic publications (without compliance filters).
+ * Only includes dynamic issue type/status filters.
+ * @param publications - Array of normalized article records
+ * @returns Array of filter definitions
  */
 export function generateBasicPublicationFilters(
   publications: NormalizedArticleRecord[],
@@ -250,7 +258,11 @@ const publicationFilterFunctions: Record<string, PublicationFilterFunction> = {
 };
 
 /**
- * Filter publications based on active filters
+ * Filters publications based on active filter definitions.
+ * @param publications - Array of normalized article records to filter
+ * @param activeFilters - Object containing active filter values
+ * @param filters - Array of filter definitions
+ * @returns Filtered array of publications
  */
 export function filterPublications(
   publications: NormalizedArticleRecord[],
@@ -284,8 +296,10 @@ export function filterPublications(
 }
 
 /**
- * Apply search to publications
- * Searches: title, authors, DOI (journal and preprint), PMID, PMCID, issue status, issue type
+ * Searches publications by title, authors, DOI, PMID, PMCID, issue status, and issue type.
+ * @param publications - Array of normalized article records to search
+ * @param searchTerm - Search term to match against
+ * @returns Filtered array of publications matching the search term
  */
 export function searchPublications(
   publications: NormalizedArticleRecord[],

@@ -5,6 +5,10 @@ import { PMC_DEPOSIT_FTP, pmcDepositHandler } from './backend/jobs/pmc-deposit.j
 import { PMC_WORKFLOW_SYNC, pmcWorkflowSyncHandler } from './backend/jobs/pmc-workflow-sync.js';
 import { HHMI_GRANTS_SYNC, hhmiGrantsSyncHandler } from './backend/jobs/hhmi-grants-sync.js';
 
+/**
+ * Returns job registrations for the PMC extension.
+ * @returns Array of job registrations
+ */
 export function getJobs(): JobRegistration[] {
   return [
     {

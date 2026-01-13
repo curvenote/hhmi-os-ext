@@ -12,6 +12,12 @@ import {
 // Field name helpers for cleaner code
 const PUBLICATION_FIELDS = AIRTABLE_CONFIG.tables.publications.fields;
 
+/**
+ * Normalizes an Airtable publication record to a standardized article record format.
+ * @param publicationData - Raw Airtable DTO record
+ * @param orcid - ORCID identifier for the scientist
+ * @returns Normalized article record
+ */
 export function normalizePublicationRecordsToArticleRecord(
   publicationData: AirtableDTO,
   orcid: string,
@@ -59,6 +65,11 @@ export function normalizePublicationRecordsToArticleRecord(
   } satisfies NormalizedArticleRecord;
 }
 
+/**
+ * Fetches publications that are covered by the compliance policy for a given ORCID.
+ * @param orcid - ORCID identifier
+ * @returns Array of normalized article records for covered publications
+ */
 export async function fetchPublicationsCoveredByPolicy(
   orcid: string,
 ): Promise<NormalizedArticleRecord[]> {
@@ -89,6 +100,11 @@ export async function fetchPublicationsCoveredByPolicy(
   }
 }
 
+/**
+ * Fetches publications that are not covered by the compliance policy for a given ORCID.
+ * @param orcid - ORCID identifier
+ * @returns Array of normalized article records for non-covered publications
+ */
 export async function fetchPublicationsNotCoveredByPolicy(
   orcid: string,
 ): Promise<NormalizedArticleRecord[]> {

@@ -8,6 +8,11 @@ import type {
   WorkVersionMetadataWithFilesAndPMC,
 } from '../../common/metadata.schema.js';
 
+/**
+ * Gets a submission version from the database with related submission and work version data.
+ * @param submissionVersionId - The submission version ID
+ * @returns Submission version with related data or null if not found
+ */
 async function dbGetSubmissionVersion(submissionVersionId: string) {
   const prisma = await getPrismaClient();
   // Get the latest work version and submission version to clone from
@@ -29,7 +34,10 @@ async function dbGetSubmissionVersion(submissionVersionId: string) {
 }
 
 /**
- * Create new work version and submission version with copied metadata
+ * Creates new work version and submission version with copied metadata from a reference version.
+ * @param referenceSubmissionVersion - The submission version to clone from
+ * @param userId - The user ID creating the new version
+ * @returns Object containing the new work version, submission version, and CDN key
  */
 async function createNewVersions(
   referenceSubmissionVersion: NonNullable<Awaited<ReturnType<typeof dbGetSubmissionVersion>>>,

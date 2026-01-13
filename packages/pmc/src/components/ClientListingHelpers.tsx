@@ -148,7 +148,11 @@ export function filterSubmissions(
   });
 }
 
-// Transform items for filter counting - map error statuses to "needs-attention"
+/**
+ * Transforms submission items for filter bar counting by mapping error statuses to "needs-attention".
+ * @param items - Array of resolved listing items
+ * @returns Transformed array with status mapped for filter counting
+ */
 export function transformItemsForFilterBar(items: ResolvedListing): ResolvedListing {
   return items.map((submission) => {
     const latestVersion = submission.latestNonDraftVersion;

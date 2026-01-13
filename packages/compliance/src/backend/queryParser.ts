@@ -11,7 +11,12 @@ export const ComplianceQuerySchema = BaseQuerySchema.extend({
   orcid: z.boolean().optional(),
 });
 
-// Parse query from single 'q' parameter using schema
+/**
+ * Parses a URL-encoded query string from a single 'q' parameter using a Zod schema.
+ * @param qValue - URL-encoded query string
+ * @param schema - Zod schema to validate and parse the query
+ * @returns Parsed and validated query object matching the schema
+ */
 export function parseQueryFromQ<T extends z.ZodType>(qValue: string, schema: T): z.infer<T> {
   try {
     // Decode the URL-encoded query string
@@ -59,7 +64,11 @@ export function parseQueryFromQ<T extends z.ZodType>(qValue: string, schema: T):
   }
 }
 
-// Build query string for 'q' parameter
+/**
+ * Builds a URL-encoded query string from a query object.
+ * @param query - Object with query parameters
+ * @returns URL-encoded query string
+ */
 export function buildQueryString(query: Record<string, any>): string {
   const params = new URLSearchParams();
 

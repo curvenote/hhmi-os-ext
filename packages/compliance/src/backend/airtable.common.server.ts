@@ -37,6 +37,13 @@ export interface AirtableFieldWithTable extends AirtableFieldMetadata {
 
 export type AirtableFieldMappings = Record<string, AirtableFieldWithTable>;
 
+/**
+ * Fetches data from Airtable API with authentication and optional formatting options.
+ * @param url - Airtable API URL
+ * @param options - Optional formatting options (cellFormat, timeZone, userLocale)
+ * @returns JSON response from Airtable API
+ * @throws Error if base ID or API key is missing, or if the request fails
+ */
 export async function airtableFetch(
   url: URL,
   options: { cellFormat?: 'json' | 'string'; timeZone?: string; userLocale?: string } = {},
@@ -77,7 +84,12 @@ export async function airtableFetch(
   return response.json();
 }
 
-// Helper function to fetch all pages from Airtable
+/**
+ * Fetches all pages of records from Airtable, handling pagination automatically.
+ * @param baseUrl - Base Airtable API URL
+ * @param options - Optional formatting options
+ * @returns Array of all records from all pages
+ */
 export async function airtableFetchAllPages(
   baseUrl: URL,
   options: { cellFormat?: 'json' | 'string'; timeZone?: string; userLocale?: string } = {},
@@ -106,6 +118,10 @@ export async function airtableFetchAllPages(
   return allRecords;
 }
 
+/**
+ * Fetches field mappings from Airtable metadata API for tables in use.
+ * @returns Object mapping field IDs to field metadata with table information
+ */
 async function airtableFetchFieldMappings(): Promise<AirtableFieldMappings> {
   const url = new URL(`https://api.airtable.com/v0/meta/bases/${AIRTABLE_CONFIG.baseId}/tables`);
   const data = (await airtableFetch(url)) as AirtableTablesMetadataResponse;
@@ -133,6 +149,10 @@ async function airtableFetchFieldMappings(): Promise<AirtableFieldMappings> {
   return fieldsMap;
 }
 
+/**
+ * Fetches current Airtable field mappings with error handling.
+ * @returns Object containing mappings or error message
+ */
 export async function fetchCurrentFieldMappings(): Promise<{
   mappings: AirtableFieldMappings | undefined;
   error?: string;
@@ -148,6 +168,12 @@ export async function fetchCurrentFieldMappings(): Promise<{
   }
 }
 
+/**
+ * Cleans a string by removing replacement characters and HTML tags.
+ * Handles both string and array inputs.
+ * @param maybeString - String, array of strings, or undefined
+ * @returns Cleaned string or undefined
+ */
 export function cleanString(maybeString: string[] | string | undefined): string | undefined {
   if (!maybeString) return undefined;
 
@@ -162,10 +188,20 @@ export function cleanString(maybeString: string[] | string | undefined): string 
   return stringToClean?.replace(/�/g, '').replace(/<[^>]*>/g, '');
 }
 
+/**
+ * Cleans a license string by removing replacement characters, HTML tags, and replacing underscores with hyphens.
+ * @param maybeString - String, array of strings, or undefined
+ * @returns Cleaned license string or undefined
+ */
 export function cleanLicenseString(maybeString: string[] | string | undefined): string | undefined {
   return cleanString(maybeString)?.replace(/_/g, '-');
 }
 
+/**
+ * Converts a value to a boolean, handling various string representations.
+ * @param value - String or boolean value to convert
+ * @returns Boolean value or undefined if conversion fails
+ */
 export function getBoolean(value: string | boolean): boolean | undefined {
   if (value === null || value === undefined) return undefined;
   if (typeof value === 'boolean') return value;
@@ -175,7 +211,13 @@ export function getBoolean(value: string | boolean): boolean | undefined {
   return undefined;
 }
 
-// Helper function to split semicolon or comma separated strings into arrays
+/**
+ * Splits an authors field into an array, handling multiple formats and separators.
+ * Supports both "Last, First." and "First Last" formats.
+ * @param field - String or array of strings containing authors
+ * @param options - Options object with unique flag to remove duplicates
+ * @returns Array of author strings
+ */
 export function splitAuthorsField(
   field: string[] | string | undefined,
   { unique = false }: { unique?: boolean } = {},
@@ -260,8 +302,11 @@ export function splitAuthorsField(
   }
 }
 
-// Helper function to extract URL from Query OpenAlex object
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+/**
+ * Extracts URL from a Query OpenAlex object.
+ * @param queryOpenAlex - OpenAlex query object
+ * @returns URL string or empty string if not found
+ */
 export function getQueryOpenAlexUrl(queryOpenAlex: any): string {
   if (queryOpenAlex && typeof queryOpenAlex === 'object' && queryOpenAlex.url) {
     return queryOpenAlex.url;
@@ -269,6 +314,15 @@ export function getQueryOpenAlexUrl(queryOpenAlex: any): string {
   return '';
 }
 
+/**
+ * Fetches records from Airtable, filters them, and normalizes them using a provided function.
+ * @param tableId - Airtable table ID
+ * @param orcid - ORCID identifier for filtering
+ * @param filterFormula - Airtable filter formula
+ * @param normalizeFunction - Function to normalize each record
+ * @param options - Optional formatting options
+ * @returns Array of normalized article records
+ */
 export async function fetchFilterAndNormalizeRecords(
   tableId: string,
   orcid: string,

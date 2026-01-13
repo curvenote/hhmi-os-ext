@@ -19,6 +19,10 @@ export const id = 'pmc';
 export const name = 'PMC Submission';
 export const description = 'Submit to PubMed Central';
 
+/**
+ * Returns the list of PMC-related tasks for the extension.
+ * @returns Array of extension tasks
+ */
 export function getTasks(): ExtensionTask[] {
   return [
     {
@@ -30,6 +34,10 @@ export function getTasks(): ExtensionTask[] {
   ];
 }
 
+/**
+ * Returns the list of icons for the PMC extension.
+ * @returns Array of extension icons
+ */
 export function getIcons(): ExtensionIcon[] {
   return [
     {
@@ -40,6 +48,10 @@ export function getIcons(): ExtensionIcon[] {
   ];
 }
 
+/**
+ * Returns analytics events configuration for the PMC extension.
+ * @returns Object containing event mappings and descriptions
+ */
 export function getAnalyticsEvents(): ExtensionAnalyticsEvents {
   return {
     events: PMCTrackEvent,
@@ -47,6 +59,10 @@ export function getAnalyticsEvents(): ExtensionAnalyticsEvents {
   };
 }
 
+/**
+ * Returns workflow registrations for the PMC extension.
+ * @returns Workflow registration object
+ */
 export function getWorkflows(): WorkflowRegistration {
   return { workflows };
 }

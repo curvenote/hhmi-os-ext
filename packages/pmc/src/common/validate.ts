@@ -16,6 +16,11 @@ export type PMCWorkVersionMetadata = WorkVersionMetadata &
 export type PMCSubmissionVersionMetadata = SubmissionVersionMetadata &
   PMCSubmissionVersionMetadataSection;
 
+/**
+ * Validates PMC metadata including files, grants, and conditional requirements.
+ * @param metadata - The PMC work version metadata to validate
+ * @returns Validation result with success status, error, or validation errors
+ */
 export async function validatePMCMetadata(
   metadata: PMCWorkVersionMetadata,
 ): Promise<{ success?: boolean; error?: GeneralError; validationErrors?: ZodIssue[] }> {

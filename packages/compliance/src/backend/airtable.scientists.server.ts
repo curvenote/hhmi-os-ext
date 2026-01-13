@@ -10,6 +10,11 @@ export interface ScientistData {
   fields: Record<string, any>;
 }
 
+/**
+ * Normalizes an Airtable scientist record to a standardized scientist format.
+ * @param scientistData - Raw Airtable scientist data
+ * @returns Normalized scientist record
+ */
 function normalizeScientist(scientistData: ScientistData): NormalizedScientist {
   const fields = scientistData.fields;
 
@@ -80,6 +85,11 @@ export async function checkScientistExistsByOrcid(orcid: string): Promise<boolea
   }
 }
 
+/**
+ * Fetches a scientist by ORCID from Airtable.
+ * @param orcid - ORCID identifier
+ * @returns Object containing the scientist or an error message
+ */
 export async function fetchScientistByOrcid(orcid: string): Promise<{
   scientist: NormalizedScientist | undefined;
   error?: string;
@@ -108,6 +118,10 @@ export async function fetchScientistByOrcid(orcid: string): Promise<{
   }
 }
 
+/**
+ * Fetches all scientists from Airtable.
+ * @returns Array of all normalized scientist records
+ */
 export async function fetchAllScientists(): Promise<NormalizedScientist[]> {
   const scientistsUrl = new URL(
     `https://api.airtable.com/v0/${AIRTABLE_CONFIG.baseId}/${AIRTABLE_CONFIG.tables.scientists.id}`,

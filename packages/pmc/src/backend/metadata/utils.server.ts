@@ -12,7 +12,13 @@ import type { PMCWorkVersionMetadata, DoiAuthor } from '../../common/metadata.sc
 import type { Context, WorkVersionMetadata } from '@curvenote/scms-server';
 import { data } from 'react-router';
 
-// TODO generalise for other metadata "sections"
+/**
+ * Safely patches PMC metadata fields with optimistic concurrency control.
+ * Also updates the WorkVersion title if the title field is being updated.
+ * @param workVersionId - The work version ID
+ * @param metadataPatch - Object containing metadata fields to update
+ * @returns Success response or error response
+ */
 export async function safelyPatchPMCMetadata(
   workVersionId: string,
   metadataPatch: Record<string, any>,
@@ -77,7 +83,13 @@ export async function safelyPatchPMCMetadata(
   }
 }
 
-// TODO generalise for other metadata "sections"
+/**
+ * Safely updates PMC metadata using an update function with optimistic concurrency control.
+ * Also updates the WorkVersion title if the title field changes.
+ * @param workVersionId - The work version ID
+ * @param updateFn - Function that takes current metadata and returns updated metadata
+ * @returns Success response or error response
+ */
 export async function safelyUpdatePMCMetadata(
   workVersionId: string,
   updateFn: (metadata: PMCWorkVersionMetadata) => PMCWorkVersionMetadata,

@@ -12,6 +12,12 @@ import {
 // Field name helpers for cleaner code
 const PREPRINT_FIELDS = AIRTABLE_CONFIG.tables.preprints.fields;
 
+/**
+ * Normalizes an Airtable preprint record to a standardized article record format.
+ * @param responseData - Raw Airtable DTO record
+ * @param orcid - ORCID identifier for the scientist
+ * @returns Normalized article record
+ */
 export function normalizePreprintRecordToArticleRecord(
   responseData: AirtableDTO,
   orcid: string,
@@ -93,6 +99,11 @@ export function normalizePreprintRecordToArticleRecord(
   } satisfies NormalizedArticleRecord;
 }
 
+/**
+ * Fetches preprints that are covered by the compliance policy for a given ORCID.
+ * @param orcid - ORCID identifier
+ * @returns Array of normalized article records for covered preprints
+ */
 export async function fetchPreprintsCoveredByPolicy(
   orcid: string,
 ): Promise<NormalizedArticleRecord[]> {
@@ -119,6 +130,11 @@ export async function fetchPreprintsCoveredByPolicy(
   return records;
 }
 
+/**
+ * Fetches preprints that are not covered by the compliance policy for a given ORCID.
+ * @param orcid - ORCID identifier
+ * @returns Array of normalized article records for non-covered preprints
+ */
 export async function fetchPreprintsNotCoveredByPolicy(
   orcid: string,
 ): Promise<NormalizedArticleRecord[]> {

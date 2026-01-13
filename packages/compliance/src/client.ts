@@ -24,6 +24,10 @@ export const id = 'hhmi-compliance';
 export const name = 'HHMI Compliance';
 export const description = 'Open Science Compliance Management';
 
+/**
+ * Returns the list of compliance-related tasks for the extension.
+ * @returns Array of extension tasks including compliance dashboard and wizard.
+ */
 export function getTasks(): ExtensionTask[] {
   return [
     {
@@ -42,6 +46,10 @@ export function getTasks(): ExtensionTask[] {
   ];
 }
 
+/**
+ * Returns the list of icons for the compliance extension.
+ * @returns Array of extension icons.
+ */
 export function getIcons(): ExtensionIcon[] {
   return [
     {
@@ -52,6 +60,10 @@ export function getIcons(): ExtensionIcon[] {
   ];
 }
 
+/**
+ * Returns analytics events configuration for the compliance extension.
+ * @returns Object containing event mappings and descriptions.
+ */
 export function getAnalyticsEvents(): ExtensionAnalyticsEvents {
   return {
     events: Object.fromEntries(Object.entries(HHMITrackEvent).map(([key, value]) => [key, value])),
@@ -59,6 +71,10 @@ export function getAnalyticsEvents(): ExtensionAnalyticsEvents {
   };
 }
 
+/**
+ * Returns email templates for compliance-related notifications.
+ * @returns Array of email template configurations.
+ */
 export function getEmailTemplates(): ExtensionEmailTemplate[] {
   return [
     {

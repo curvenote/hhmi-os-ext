@@ -4,7 +4,11 @@ import type { Config } from '@/types/app-config.js';
 import { route, index } from '@react-router/dev/routes';
 import { resolveRoutePath } from '@curvenote/scms-server';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+/**
+ * Registers routes for the PMC extension.
+ * @param appConfig - Application configuration
+ * @returns Array of route registrations
+ */
 export async function registerRoutes(appConfig: Config): Promise<RouteRegistration[]> {
   return [
     {

@@ -1,7 +1,11 @@
 import { getPrismaClient } from '@curvenote/scms-server';
 import { ActivityType } from '@prisma/client';
 
-// Helper function to get activities for V2 migration
+/**
+ * Gets all status change activities for a submission version, ordered by creation date.
+ * @param submissionVersionId - The submission version ID
+ * @returns Array of activities with status and date
+ */
 export async function getActivitiesForSubmissionVersion(
   submissionVersionId: string,
 ): Promise<Array<{ status: string; date: string }>> {

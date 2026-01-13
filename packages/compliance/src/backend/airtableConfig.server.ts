@@ -36,6 +36,11 @@ async function getHHMIComplianceAirtableConfig(): Promise<HHMIComplianceAirtable
 // Individual Getters (Maintains API Compatibility)
 // ==============================
 
+/**
+ * Gets the Airtable API key from configuration.
+ * @returns Airtable API key or undefined if not configured
+ * @throws Error if configuration is missing
+ */
 export async function getAirtableApiKey(): Promise<string | undefined> {
   const config = await getHHMIComplianceAirtableConfig();
   return config.apiKey;

@@ -1,5 +1,9 @@
 import type { MenuContents, NavigationRegistration } from '@curvenote/scms-core';
 
+/**
+ * Registers navigation menu items for the compliance extension.
+ * @returns Array of navigation registrations
+ */
 export function registerNavigation(): NavigationRegistration[] {
   return [
     {
