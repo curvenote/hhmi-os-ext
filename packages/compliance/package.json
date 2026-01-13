@@ -1,6 +1,5 @@
 {
   "name": "@hhmi/compliance",
-  "private": true,
   "version": "0.0.1",
   "description": "Compliance extension for the HHMI Workspace - powered by Curvenote.",
   "author": "Curvenote <support@curvenote.com>",
@@ -23,6 +22,9 @@
   },
   "types": "./dist/index.d.ts",
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist",
     "LICENSE"
