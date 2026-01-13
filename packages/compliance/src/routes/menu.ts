@@ -1,13 +1,17 @@
 import type { ServerSideMenuContents } from '@curvenote/scms-core';
 import type { ComplianceReportSharedWith } from '../backend/access.server.js';
 
+export type ComplianceReportSharedWithScientistName = ComplianceReportSharedWith & {
+  scientistName?: string;
+};
+
 export function buildComplianceMenu(
   baseUrl: string,
   isComplianceAdmin: boolean,
   hasOrcid: boolean,
   currentUserExistsInAirtable: boolean,
   role: 'scientist' | 'lab-manager' | undefined,
-  sharedReports: ComplianceReportSharedWith[] = [],
+  sharedReports: ComplianceReportSharedWithScientistName[] = [],
 ): ServerSideMenuContents {
   const userMenus: ServerSideMenuContents[0]['menus'] = [];
 
@@ -39,10 +43,10 @@ export function buildComplianceMenu(
       end: true,
     });
     if (sharedReports.length > 0) {
-      sharedReports.forEach((sharedReport: ComplianceReportSharedWith) => {
+      sharedReports.forEach((sharedReport: ComplianceReportSharedWithScientistName) => {
         userMenus.push({
           name: 'compliance.shared',
-          label: sharedReport.user.display_name ?? sharedReport.orcid ?? 'Unknown',
+          label: sharedReport.scientistName ?? sharedReport.user.display_name ?? sharedReport.orcid ?? 'Unknown',
           icon: 'layout-dashboard',
           url: `${baseUrl}/shared/reports/${sharedReport.orcid}`,
         });

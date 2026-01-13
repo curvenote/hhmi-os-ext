@@ -6,7 +6,7 @@ import { withAppContext, userHasScopes } from '@curvenote/scms-server';
 import { buildComplianceMenu } from './menu.js';
 import myComplianceIcon from '../assets/my-compliance-lock.svg';
 import { getComplianceReportsSharedWith } from '../backend/access.server.js';
-import { checkScientistExistsByOrcid } from '../backend/airtable.scientists.server.js';
+import { checkScientistExistsByOrcid, fetchScientistByOrcid } from '../backend/airtable.scientists.server.js';
 import { updateUserComplianceMetadata } from '../backend/actionHelpers.server.js';
 import { HHMITrackEvent } from '../analytics/events.js';
 import { hhmi } from '../backend/scopes.js';
@@ -95,13 +95,31 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
   // Check if any compliance dashboards are shared with this user
   const sharedReports = await getComplianceReportsSharedWith(ctx.user.id);
 
+  // Fetch scientist data for each shared report to use their proper names
+  const sharedReportsWithScientistNames = await Promise.all(
+    sharedReports.map(async (report) => {
+      if (report.orcid) {
+        try {
+          const { scientist } = await fetchScientistByOrcid(report.orcid);
+          return {
+            ...report,
+            scientistName: scientist?.fullName,
+          };
+        } catch (error) {
+          console.error(`Failed to fetch scientist data for ORCID ${report.orcid}:`, error);
+        }
+      }
+      return report;
+    }),
+  );
+
   const menu = buildComplianceMenu(
     '/app/compliance',
     isComplianceAdmin,
     !!orcidAccount,
     currentUserExistsInAirtable,
     role,
-    sharedReports,
+    sharedReportsWithScientistNames,
   );
 
   const shouldShowSecondaryNav = isComplianceAdmin || role !== undefined;
