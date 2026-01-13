@@ -39,7 +39,6 @@ export async function getScientistAccessGrants(ctx: SecureContext, orcid: string
     return {
       exists: false,
       accessGrants: [],
-      scientistName: null,
     };
   }
 
