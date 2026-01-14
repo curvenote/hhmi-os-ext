@@ -4,7 +4,7 @@ import { uuidv7 } from 'uuidv7';
 import type { PackageResult } from './handlers/bulk-submission-parser.server.js';
 import { safelyUpdatePMCSubmissionVersionMetadata } from '../submission-version-metadata.utils.server.js';
 import type { EmailProcessing } from '../../common/metadata.schema.js';
-import { INBOUND_EMAIL_SCHEMA } from '@curvenote/scms-server';
+import { INBOUND_EMAIL_PAYLOAD_SCHEMA, INBOUND_EMAIL_RESULTS_SCHEMA } from '@curvenote/scms-server';
 
 /**
  * Creates a new Message record in the database
@@ -18,9 +18,15 @@ export async function createMessageRecord(
   const prisma = await getPrismaClient();
   const now = new Date().toISOString();
 
+  // Add schema to payload indicating it's an unknown structure
+  const payloadWithSchema = {
+    ...payload,
+    $schema: INBOUND_EMAIL_PAYLOAD_SCHEMA,
+  };
+
   // Extract structured data from CloudMailin payload for schema-based rendering
   const structuredResults = {
-    $schema: INBOUND_EMAIL_SCHEMA,
+    $schema: INBOUND_EMAIL_RESULTS_SCHEMA,
     from: payload.envelope?.from || payload.headers?.from || 'unknown',
     to: Array.isArray(payload.envelope?.to)
       ? payload.envelope.to[0]
@@ -63,7 +69,7 @@ export async function createMessageRecord(
       module: 'PMC',
       type: 'inbound_email',
       status: 'PENDING',
-      payload,
+      payload: payloadWithSchema,
       results: finalResults,
     },
   });
