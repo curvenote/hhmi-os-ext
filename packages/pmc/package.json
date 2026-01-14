@@ -56,8 +56,8 @@
   },
   "dependencies": {
     "@curvenote/common": "^0.2.23",
-    "@curvenote/scms-core": "0.0.1",
-    "@curvenote/scms-server": "0.0.1",
+    "@curvenote/scms-core": "^0.13.2",
+    "@curvenote/scms-server": "^0.13.2",
     "@google-cloud/pubsub": "^5.2.0",
     "@prisma/client": "^6.18.0",
     "@react-email/components": "0.5.7",

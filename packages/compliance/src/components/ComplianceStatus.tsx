@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react';
 import type { NormalizedScientist } from '../backend/types.js';
-import { cn, plural } from '@curvenote/scms-core';
+import { cn, plural, ui } from '@curvenote/scms-core';
 import { useSearchParams } from 'react-router';
 
 export function ComplianceStatus({ scientist }: { scientist: NormalizedScientist }) {
@@ -14,14 +14,14 @@ export function ComplianceStatus({ scientist }: { scientist: NormalizedScientist
 
   const handleComplianceIssueClick = () => {
     // Set URL parameter to filter for non-compliant items
-    setSearchParams({ filter: 'non-compliant' });
+    setSearchParams({ filters: ui.encodeFiltersForURL({ 'compliance-state': 'non-compliant' }) });
   };
 
   // Check if there are no publications at all
   if (totalPublications === 0) {
     return (
-      <div className={cn('flex w-auto flex-col self-stretch', 'md:min-w-xs')}>
-        <div className="flex items-center justify-center flex-1 p-6 rounded-lg bg-muted/30 dark:bg-muted/10">
+      <div className={cn('flex flex-col self-stretch w-auto', 'md:min-w-xs')}>
+        <div className="flex flex-1 justify-center items-center p-6 rounded-lg bg-muted/30 dark:bg-muted/10">
           <div className="text-xl font-medium text-muted-foreground">No Published Work</div>
         </div>
       </div>
@@ -38,7 +38,7 @@ export function ComplianceStatus({ scientist }: { scientist: NormalizedScientist
       <div
         className={cn('flex flex-1 items-center rounded-lg bg-success/10 dark:bg-success/10', {
           'justify-center bg-success/10 dark:bg-success/10': allCompliant,
-          'bg-destructive/10 dark:bg-destructive/10 cursor-pointer hover:bg-destructive/15 transition-colors':
+          'transition-colors cursor-pointer bg-destructive/10 dark:bg-destructive/10 hover:bg-destructive/15':
             !allCompliant,
         })}
         onClick={!allCompliant ? handleComplianceIssueClick : undefined}
@@ -57,8 +57,8 @@ export function ComplianceStatus({ scientist }: { scientist: NormalizedScientist
         title={!allCompliant ? 'Click to view non-compliant publications' : undefined}
       >
         {allCompliant && (
-          <div className="flex items-center gap-3 p-6">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-success shrink-0">
+          <div className="flex gap-3 items-center p-6">
+            <div className="flex justify-center items-center w-8 h-8 rounded-full bg-success shrink-0">
               <Check className="w-5 h-5 text-white" />
             </div>
             <div className="text-2xl font-semibold">Compliant</div>
