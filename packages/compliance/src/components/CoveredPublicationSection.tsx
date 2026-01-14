@@ -11,6 +11,7 @@ import {
 import { Files, ListTodo } from 'lucide-react';
 import { filterArticlesByDate } from '../utils/dateFiltering.js';
 import type { ViewContext } from './Badges.js';
+import { useSearchParams } from 'react-router';
 
 export function CoveredPublicationSection({
   publications,
@@ -32,6 +33,7 @@ export function CoveredPublicationSection({
   scientist: NormalizedScientist | undefined;
   viewContext: ViewContext;
 }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [resolvedPublications, setResolvedPublications] = useState<NormalizedArticleRecord[]>([]);
 
   // Resolve publications promise
@@ -53,6 +55,26 @@ export function CoveredPublicationSection({
   const filters = useMemo(() => {
     return generateCoveredPublicationFilters(dateFilteredItems);
   }, [dateFilteredItems]);
+
+  // Compute initial filters based on URL search parameter
+  const initialFilters = useMemo(() => {
+    const filterParam = searchParams.get('filter');
+    if (filterParam === 'non-compliant') {
+      return { 'compliance-state': 'non-compliant' };
+    }
+    return undefined;
+  }, [searchParams]);
+
+  // Clear URL parameter when component mounts with filter param
+  // This ensures the filter is only applied once from the URL
+  useEffect(() => {
+    if (searchParams.has('filter')) {
+      // Clear the filter parameter after it's been used to set initial state
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('filter');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, []);
 
   // Apply date filtering, search, and filters
   const applySearchAndFilters = useCallback(
@@ -155,6 +177,7 @@ export function CoveredPublicationSection({
       items={publications}
       filters={filters}
       persist={true}
+      initialFilters={initialFilters}
       searchComponent={(searchTerm, setSearchTerm) => (
         <HHMIPublicationSearch searchTerm={searchTerm} onSearchChange={setSearchTerm} />
       )}
