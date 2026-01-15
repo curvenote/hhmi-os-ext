@@ -1,10 +1,15 @@
 import type { Context } from '@curvenote/scms-core';
-import { getPrismaClient, $updateSubmissionVersion, SlackEventType } from '@curvenote/scms-server';
+import {
+  getPrismaClient,
+  $updateSubmissionVersion,
+  SlackEventType,
+  INBOUND_EMAIL_PAYLOAD_SCHEMA,
+  INBOUND_EMAIL_RESULTS_SCHEMA,
+} from '@curvenote/scms-server';
 import { uuidv7 } from 'uuidv7';
 import type { PackageResult } from './handlers/bulk-submission-parser.server.js';
 import { safelyUpdatePMCSubmissionVersionMetadata } from '../submission-version-metadata.utils.server.js';
 import type { EmailProcessing } from '../../common/metadata.schema.js';
-import { INBOUND_EMAIL_PAYLOAD_SCHEMA, INBOUND_EMAIL_RESULTS_SCHEMA } from '@curvenote/scms-server';
 
 /**
  * Creates a new Message record in the database
