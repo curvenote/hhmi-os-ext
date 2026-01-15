@@ -92,12 +92,11 @@ export default function ScientistCompliancePage({ loaderData }: { loaderData: Lo
           emptyMessageCovered={`No articles covered by policy found. Only publications since the later of ${scientist?.fullName || orcid}'s HHMI hire date or January 1, 2022 are displayed.`}
           emptyMessageNotCovered="No articles found."
         />
-        {orcid && (
+        {scientist?.orcid && (
           <ShareReportDialog
             open={shareDialogOpen}
             onOpenChange={setShareDialogOpen}
-            orcid={orcid}
-            scientistName={scientist?.fullName}
+            scientist={scientist}
             actionUrl="/app/compliance/scientists"
           />
         )}

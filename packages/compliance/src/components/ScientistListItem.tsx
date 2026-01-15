@@ -234,8 +234,7 @@ export function ScientistListItem({
         <ShareReportDialog
           open={shareDialogOpen}
           onOpenChange={setShareDialogOpen}
-          orcid={scientist.orcid}
-          scientistName={scientist.fullName}
+          scientist={scientist}
           actionUrl="/app/compliance/scientists"
           compact={true}
         />
