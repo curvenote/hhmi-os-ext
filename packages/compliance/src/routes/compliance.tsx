@@ -31,12 +31,12 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
 
   // Lightweight check: does the user's ORCID exist in Airtable?
   let currentUserExistsInAirtable = false;
-  let role = userData.compliance?.role;
+  let userComplianceRole = userData.compliance?.role;
   if (orcidAccount?.idAtProvider) {
     currentUserExistsInAirtable = await checkScientistExistsByOrcid(orcidAccount.idAtProvider);
     // If user exists in Airtable and role is not set, update their compliance metadata asynchronously
-    if (currentUserExistsInAirtable && !role) {
-      role = 'scientist';
+    if (currentUserExistsInAirtable && !userComplianceRole) {
+      userComplianceRole = 'scientist';
       if (!userData.compliance?.role) {
         updateUserComplianceMetadata(ctx.user.id, { role: 'scientist' })
           .then(() => {
@@ -68,7 +68,7 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
       pathname.endsWith('/compliance/reports') ||
       pathname.endsWith('/compliance/reports/me')) &&
     !orcidAccount &&
-    role === 'scientist' &&
+    userComplianceRole === 'scientist' &&
     !isComplianceAdmin
   ) {
     throw redirect('/app/compliance/reports/me/link');
@@ -76,11 +76,14 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
 
   // Users where we know the role should be redirected to the appropriate page
   if (
-    role !== undefined &&
+    userComplianceRole !== undefined &&
     (pathname.endsWith('/compliance') || pathname.endsWith('/compliance/reports'))
   ) {
     // If user has hidden their report, redirect to shared reports instead
-    if (role === 'lab-manager') {
+    if (userComplianceRole === 'lab-manager') {
+      if (userHasScopes(ctx.user, [hhmi.compliance.admin])) {
+        throw redirect('/app/compliance/scientists');
+      }
       throw redirect('/app/compliance/shared');
     } else {
       throw redirect('/app/compliance/reports/me');
@@ -88,7 +91,7 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
   }
 
   // Users where we no not know the role should be redirected to the qualify page
-  if (role === undefined && !pathname.endsWith('/compliance/qualify')) {
+  if (userComplianceRole === undefined && !pathname.endsWith('/compliance/qualify')) {
     throw redirect('/app/compliance/qualify');
   }
 
@@ -100,11 +103,11 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
     isComplianceAdmin,
     !!orcidAccount,
     currentUserExistsInAirtable,
-    role,
+    userComplianceRole,
     sharedReports,
   );
 
-  const shouldShowSecondaryNav = isComplianceAdmin || role !== undefined;
+  const shouldShowSecondaryNav = userComplianceRole !== undefined;
   return {
     menu,
     shouldShowSecondaryNav,

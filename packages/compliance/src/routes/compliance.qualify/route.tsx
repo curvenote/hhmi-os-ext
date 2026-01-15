@@ -9,6 +9,8 @@ import { HHMITrackEvent } from '../../analytics/events.js';
 import { z } from 'zod';
 import { zfd } from 'zod-form-data';
 import { RoleSelectionCard } from './RoleSelectionCard.js';
+import { userHasScopes } from '@curvenote/scms-server';
+import { hhmi } from '../../backend/scopes.js';
 
 export async function loader(args: LoaderFunctionArgs) {
   const ctx = await withAppContext(args);
@@ -20,6 +22,9 @@ export async function loader(args: LoaderFunctionArgs) {
     throw redirect('/app/compliance/reports/me');
   }
   if (role === 'lab-manager') {
+    if (userHasScopes(ctx.user, [hhmi.compliance.admin])) {
+      throw redirect('/app/compliance/scientists');
+    }
     throw redirect('/app/compliance/shared');
   }
 
@@ -54,6 +59,9 @@ export async function action(args: ActionFunctionArgs) {
       if (payload.role === 'scientist') {
         return redirect('/app/compliance/reports/me');
       } else {
+        if (userHasScopes(ctx.user, [hhmi.compliance.admin])) {
+          return redirect('/app/compliance/scientists');
+        }
         return redirect('/app/compliance/shared');
       }
     },
@@ -85,7 +93,7 @@ export default function QualifyUserPage() {
           <RoleSelectionCard
             role="lab-manager"
             title="Manage Compliance for Others"
-            description="I am a Lab Manager or Lab Administrator and I want to help someone else with compliance."
+            description="I am a Lab Manager, a Lab Administrator or in a role where I want to help someone else with compliance."
             icon={Users}
           />
         </div>
