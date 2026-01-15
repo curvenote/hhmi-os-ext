@@ -11,6 +11,7 @@ import {
 import { Files, ListTodo } from 'lucide-react';
 import { filterArticlesByDate } from '../utils/dateFiltering.js';
 import type { ViewContext } from './Badges.js';
+import { useSearchParams } from 'react-router';
 
 export function CoveredPublicationSection({
   publications,
@@ -32,6 +33,7 @@ export function CoveredPublicationSection({
   scientist: NormalizedScientist | undefined;
   viewContext: ViewContext;
 }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [resolvedPublications, setResolvedPublications] = useState<NormalizedArticleRecord[]>([]);
 
   // Resolve publications promise
@@ -155,6 +157,7 @@ export function CoveredPublicationSection({
       items={publications}
       filters={filters}
       persist={true}
+      reactive={true}
       searchComponent={(searchTerm, setSearchTerm) => (
         <HHMIPublicationSearch searchTerm={searchTerm} onSearchChange={setSearchTerm} />
       )}

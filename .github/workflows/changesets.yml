@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
-      - name: Install dependenciesmae'r newidiadau mewn gweithgaredd PR, rydw i'n siarad am hyn, ynghylch y bot newidiadol sydd wedi'i addasu i'r repos, felly does dim angen i wneud hynny trwy gweithgaredd.
+      - name: Install dependencies
         run: npm install
       - name: Check for changesets
         id: changesets
