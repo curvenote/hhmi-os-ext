@@ -28,6 +28,60 @@ export function ComplianceStatus({ scientist }: { scientist: NormalizedScientist
     );
   }
 
+  const complianceDiv = (
+    <div
+      className={cn('flex flex-1 items-center rounded-lg bg-success/10 dark:bg-success/10', {
+        'justify-center bg-success/10 dark:bg-success/10': allCompliant,
+        'transition-colors cursor-pointer bg-destructive/10 dark:bg-destructive/10 hover:bg-destructive/15':
+          !allCompliant,
+      })}
+      onClick={!allCompliant ? handleComplianceIssueClick : undefined}
+      role={!allCompliant ? 'button' : undefined}
+      tabIndex={!allCompliant ? 0 : undefined}
+      onKeyDown={
+        !allCompliant
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleComplianceIssueClick();
+              }
+            }
+          : undefined
+      }
+    >
+      {allCompliant && (
+        <div className="flex gap-3 items-center p-6">
+          <div className="flex justify-center items-center w-8 h-8 rounded-full bg-success shrink-0">
+            <Check className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-2xl font-semibold">Compliant</div>
+        </div>
+      )}
+      {!allCompliant && (
+        <div className="flex items-center py-6">
+          <div className="flex w-full divide-x-2 divide-red-700">
+            {(preprints?.nonCompliant ?? 0) > 0 && (
+              <div className="flex flex-col flex-1 gap-2 px-6">
+                <div className="text-4xl font-semibold text-red-700">{preprints?.nonCompliant}</div>
+                <div>{plural('Preprint compliance issue(s)', preprints?.nonCompliant ?? 0)}</div>
+              </div>
+            )}
+            {(publications?.nonCompliant ?? 0) > 0 && (
+              <div className="flex flex-col flex-1 gap-2 px-6">
+                <div className="text-4xl font-semibold text-red-700">
+                  {publications?.nonCompliant}
+                </div>
+                <div>
+                  {plural('Journal article compliance issue(s)', publications?.nonCompliant ?? 0)}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div
       className={cn('flex w-auto flex-col self-stretch', {
@@ -35,60 +89,13 @@ export function ComplianceStatus({ scientist }: { scientist: NormalizedScientist
         'md:min-w-xs': allCompliant || !bothHaveIssues,
       })}
     >
-      <div
-        className={cn('flex flex-1 items-center rounded-lg bg-success/10 dark:bg-success/10', {
-          'justify-center bg-success/10 dark:bg-success/10': allCompliant,
-          'transition-colors cursor-pointer bg-destructive/10 dark:bg-destructive/10 hover:bg-destructive/15':
-            !allCompliant,
-        })}
-        onClick={!allCompliant ? handleComplianceIssueClick : undefined}
-        role={!allCompliant ? 'button' : undefined}
-        tabIndex={!allCompliant ? 0 : undefined}
-        onKeyDown={
-          !allCompliant
-            ? (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleComplianceIssueClick();
-                }
-              }
-            : undefined
-        }
-        title={!allCompliant ? 'Click to view non-compliant publications' : undefined}
-      >
-        {allCompliant && (
-          <div className="flex gap-3 items-center p-6">
-            <div className="flex justify-center items-center w-8 h-8 rounded-full bg-success shrink-0">
-              <Check className="w-5 h-5 text-white" />
-            </div>
-            <div className="text-2xl font-semibold">Compliant</div>
-          </div>
-        )}
-        {!allCompliant && (
-          <div className="flex items-center py-6">
-            <div className="flex w-full divide-x-2 divide-red-700">
-              {(preprints?.nonCompliant ?? 0) > 0 && (
-                <div className="flex flex-col flex-1 gap-2 px-6">
-                  <div className="text-4xl font-semibold text-red-700">
-                    {preprints?.nonCompliant}
-                  </div>
-                  <div>{plural('Preprint compliance issue(s)', preprints?.nonCompliant ?? 0)}</div>
-                </div>
-              )}
-              {(publications?.nonCompliant ?? 0) > 0 && (
-                <div className="flex flex-col flex-1 gap-2 px-6">
-                  <div className="text-4xl font-semibold text-red-700">
-                    {publications?.nonCompliant}
-                  </div>
-                  <div>
-                    {plural('Journal article compliance issue(s)', publications?.nonCompliant ?? 0)}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+      {!allCompliant ? (
+        <ui.SimpleTooltip title="Click to view non-compliant publications">
+          {complianceDiv}
+        </ui.SimpleTooltip>
+      ) : (
+        complianceDiv
+      )}
     </div>
   );
 }
