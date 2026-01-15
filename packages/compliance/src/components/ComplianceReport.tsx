@@ -148,8 +148,8 @@ export function ComplianceReport({
       <SectionWithHeading heading="Publications" icon={BookCheckIcon}>
         <ui.Tabs defaultValue="covered" className="w-full">
           <ui.TabsList>
-            <ui.TabsTrigger value="covered">Covered by HHMI Policy</ui.TabsTrigger>
-            <ui.TabsTrigger value="not-covered">Not Covered by HHMI Policy</ui.TabsTrigger>
+            <ui.TabsTrigger value="covered">Under HHMI Policy</ui.TabsTrigger>
+            <ui.TabsTrigger value="not-covered">Not under HHMI Policy</ui.TabsTrigger>
           </ui.TabsList>
           <ui.TabsContent value="covered">
             <CoveredPublicationSection
