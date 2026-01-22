@@ -1,5 +1,6 @@
 import type { LoaderFunctionArgs } from 'react-router';
 import { Outlet, redirect } from 'react-router';
+import { useState, useEffect } from 'react';
 import type { ServerSideMenuContents } from '@curvenote/scms-core';
 import { MainWrapper, SecondaryNav } from '@curvenote/scms-core';
 import { withAppContext, userHasScopes, withAppScopedContext } from '@curvenote/scms-server';
@@ -7,62 +8,36 @@ import { buildComplianceMenu } from './menu.js';
 import myComplianceIcon from '../assets/my-compliance-lock.svg';
 import { getComplianceReportsSharedWith } from '../backend/access.server.js';
 import { checkScientistExistsByOrcid } from '../backend/airtable.scientists.server.js';
-import { updateUserComplianceMetadata } from '../backend/actionHelpers.server.js';
-import { HHMITrackEvent } from '../analytics/events.js';
 import { hhmi } from '../backend/scopes.js';
 import { extension } from '../client.js';
 import type { ComplianceUserMetadataSection } from '../backend/types.js';
+import type { ComplianceReportSharedWith } from '../backend/access.server.js';
 
 interface LoaderData {
   menu: ServerSideMenuContents;
   shouldShowSecondaryNav: boolean;
+  currentUserExistsInAirtable: Promise<boolean>;
+  orcid?: string;
+  isComplianceAdmin: boolean;
+  userComplianceRole?: 'scientist' | 'lab-manager';
+  sharedReports: Promise<ComplianceReportSharedWith[]>;
 }
   
 export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
+  // ✅ MINIMAL: Get context (required for user data)
   const ctx = await withAppScopedContext(args, [hhmi.compliance.feature.dashboard]);
   const pathname = new URL(args.request.url).pathname;
 
+  // ✅ MINIMAL: Extract only what's needed for redirects
   const orcidAccount = ctx.user.linkedAccounts.find(
     (account) => account.provider === 'orcid' && !account.pending,
   );
-
-  // Check if user has opted to hide their compliance report
   const userData = (ctx.user.data as ComplianceUserMetadataSection) || { compliance: {} };
-
-  // Lightweight check: does the user's ORCID exist in Airtable?
-  let currentUserExistsInAirtable = false;
-  let userComplianceRole = userData.compliance?.role;
-  if (orcidAccount?.idAtProvider) {
-    currentUserExistsInAirtable = await checkScientistExistsByOrcid(orcidAccount.idAtProvider);
-    // If user exists in Airtable and role is not set, update their compliance metadata asynchronously
-    if (currentUserExistsInAirtable && !userComplianceRole) {
-      userComplianceRole = 'scientist';
-      if (!userData.compliance?.role) {
-        updateUserComplianceMetadata(ctx.user.id, { role: 'scientist' })
-          .then(() => {
-            // Track role qualification (auto-set)
-            ctx
-              .trackEvent(HHMITrackEvent.HHMI_COMPLIANCE_ROLE_QUALIFIED, {
-                role: 'scientist',
-                userId: ctx.user.id,
-                orcid: orcidAccount.idAtProvider,
-                autoSet: true,
-              })
-              .catch((error: unknown) => {
-                console.error('Failed to track role qualification event:', error);
-              });
-          })
-          .catch((error: unknown) => {
-            console.error('Failed to update user compliance metadata:', error);
-          });
-      }
-    }
-  }
-
+  const userComplianceRole = userData.compliance?.role;
   const isComplianceAdmin = userHasScopes(ctx.user, [hhmi.compliance.admin]);
 
-  // Scientists who have not linked their ORCID and are not a compliance admin
-  // should be redirected to the link ORCID page
+  // ✅ STEP 1: Check redirects FIRST (immediate)
+  // Redirect 1: No ORCID + scientist role → redirect to link page
   if (
     (pathname.endsWith('/compliance') ||
       pathname.endsWith('/compliance/reports') ||
@@ -74,14 +49,13 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
     throw redirect('/app/compliance/reports/me/link');
   }
 
-  // Users where we know the role should be redirected to the appropriate page
+  // Redirect 2: Known role → redirect to appropriate page
   if (
     userComplianceRole !== undefined &&
     (pathname.endsWith('/compliance') || pathname.endsWith('/compliance/reports'))
   ) {
-    // If user has hidden their report, redirect to shared reports instead
     if (userComplianceRole === 'lab-manager') {
-      if (userHasScopes(ctx.user, [hhmi.compliance.admin])) {
+      if (isComplianceAdmin) {
         throw redirect('/app/compliance/scientists');
       }
       throw redirect('/app/compliance/shared');
@@ -90,32 +64,93 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
     }
   }
 
-  // Users where we no not know the role should be redirected to the qualify page
+  // Redirect 3: Unknown role → redirect to qualify page
   if (userComplianceRole === undefined && !pathname.endsWith('/compliance/qualify')) {
     throw redirect('/app/compliance/qualify');
   }
 
-  // Check if any compliance dashboards are shared with this user
-  const sharedReports = await getComplianceReportsSharedWith(ctx.user.id);
+  // ✅ STEP 2: Only execute if NOT redirecting (sub-routes)
+  // Defer all expensive operations
+  const sharedReportsPromise = getComplianceReportsSharedWith(ctx.user.id);
+  
+  let currentUserExistsInAirtablePromise: Promise<boolean> | null = Promise.resolve(false);
+  if (orcidAccount?.idAtProvider) {
+    currentUserExistsInAirtablePromise = checkScientistExistsByOrcid(orcidAccount.idAtProvider);
+  }
 
-  const menu = buildComplianceMenu(
+  // Build minimal menu immediately (will be enhanced when promises resolve)
+  const initialMenu = buildComplianceMenu(
     '/app/compliance',
     isComplianceAdmin,
     !!orcidAccount,
-    currentUserExistsInAirtable,
+    false, // Default, will update
     userComplianceRole,
-    sharedReports,
+    [], // Empty initially, will update
   );
 
-  const shouldShowSecondaryNav = userComplianceRole !== undefined;
   return {
-    menu,
-    shouldShowSecondaryNav,
+    menu: initialMenu,
+    shouldShowSecondaryNav: userComplianceRole !== undefined,
+    currentUserExistsInAirtable: currentUserExistsInAirtablePromise || Promise.resolve(false),
+    orcid: orcidAccount?.idAtProvider ?? undefined,
+    isComplianceAdmin,
+    userComplianceRole,
+    sharedReports: sharedReportsPromise, // Return as promise
   };
 }
 
 export default function ComplianceLayout({ loaderData }: { loaderData: LoaderData }) {
-  const { menu, shouldShowSecondaryNav } = loaderData;
+  const {
+    menu: initialMenu,
+    shouldShowSecondaryNav,
+    currentUserExistsInAirtable,
+    orcid,
+    isComplianceAdmin,
+    userComplianceRole,
+    sharedReports,
+  } = loaderData;
+  
+  const [menu, setMenu] = useState(initialMenu);
+  const [, setIsResolvingAirtable] = useState(true);
+
+  useEffect(() => {
+    const startTime = Date.now();
+    
+    // Resolve both promises in parallel
+    Promise.all([
+      currentUserExistsInAirtable,
+      sharedReports,
+    ])
+      .then(async ([exists, reports]) => {
+        // 🧪 TEMPORARY: introduce a 5 second delay here to see the loading state
+        // TODO: Remove this before production
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        const elapsed = Date.now() - startTime;
+        
+        // Rebuild menu with actual values
+        const updatedMenu = buildComplianceMenu(
+          '/app/compliance',
+          isComplianceAdmin,
+          !!orcid,
+          exists,
+          userComplianceRole,
+          reports,
+        );
+        
+        setMenu(updatedMenu);
+        setIsResolvingAirtable(false);
+        
+        // Log if it took a while (for debugging)
+        if (elapsed > 1000) {
+          console.log(`Menu data resolved in ${elapsed}ms`);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to resolve menu data:', error);
+        setIsResolvingAirtable(false);
+        // Keep default menu on error
+      });
+  }, [currentUserExistsInAirtable, sharedReports, isComplianceAdmin, orcid, userComplianceRole]);
 
   return (
     <>

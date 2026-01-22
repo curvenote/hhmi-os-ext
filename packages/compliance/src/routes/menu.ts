@@ -63,7 +63,7 @@ export function buildComplianceMenu(
   }
 
   return [
-    { sectionName: 'Compliance Administration', menus: adminMenus },
-    { sectionName: 'Compliance Tools', menus: userMenus },
+    { menus: adminMenus },
+    { menus: userMenus },
   ];
 }
