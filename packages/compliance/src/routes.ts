@@ -1,3 +1,4 @@
+import type { RouteConfigEntry } from '@react-router/dev/routes';
 import type { RouteRegistration } from '@curvenote/scms-core';
 import { resolveRoutePath } from '@curvenote/scms-server';
 import { route } from '@react-router/dev/routes';
@@ -49,6 +50,16 @@ export async function registerRoutes(appConfig: AppConfig): Promise<RouteRegistr
     {
       attachTo: 'app',
       register: () => routes,
+    },
+    {
+      attachTo: 'v1/hooks',
+      register: () =>
+        [
+          route(
+            'force-airtable-cache',
+            resolveRoutePath(import.meta.url, 'routes/v1.hooks.force-airtable-cache.ts'),
+          ),
+        ] satisfies RouteConfigEntry[],
     },
   ];
 }
