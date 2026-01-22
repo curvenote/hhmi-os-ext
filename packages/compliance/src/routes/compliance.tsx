@@ -114,6 +114,7 @@ export default function ComplianceLayout({ loaderData }: { loaderData: LoaderDat
   const [, setIsResolvingAirtable] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     const startTime = Date.now();
     
     // Resolve both promises in parallel
@@ -122,9 +123,9 @@ export default function ComplianceLayout({ loaderData }: { loaderData: LoaderDat
       sharedReports,
     ])
       .then(async ([exists, reports]) => {
-        // 🧪 TEMPORARY: introduce a 5 second delay here to see the loading state
-        // TODO: Remove this before production
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        // Only update state if component is still mounted and effect hasn't been cleaned up
+        if (!isMounted) return;
+        
         const elapsed = Date.now() - startTime;
         
         // Rebuild menu with actual values
@@ -146,10 +147,18 @@ export default function ComplianceLayout({ loaderData }: { loaderData: LoaderDat
         }
       })
       .catch((error) => {
+        // Only update state if component is still mounted and effect hasn't been cleaned up
+        if (!isMounted) return;
+        
         console.error('Failed to resolve menu data:', error);
         setIsResolvingAirtable(false);
         // Keep default menu on error
       });
+    
+    // Cleanup function: mark as unmounted to prevent stale state updates
+    return () => {
+      isMounted = false;
+    };
   }, [currentUserExistsInAirtable, sharedReports, isComplianceAdmin, orcid, userComplianceRole]);
 
   return (
