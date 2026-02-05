@@ -137,3 +137,25 @@ The `STREAM_BUFFER_KB` variable controls memory usage vs performance:
 - **256KB**: Balanced default (recommended)
 - **512KB**: High-performance storage
 - **1MB**: Large files, fast network/storage
+
+## SFTP client install on mac
+
+You can connect via CLI on mac with SFTP client:
+
+```
+brew install inetutils
+```
+
+To connect to your local server:
+
+```
+sftp curvenote@34.82.165.84
+```
+
+It should prompt for password, then successfully connect.
+
+## SFTP server install on GCP
+
+I followed the instructions here exactly: https://stackoverflow.com/questions/63964361/set-up-ftp-in-google-cloud-platform
+
+The only extra step I had to take was, in `/etc/ssh/sshd_config` change `PasswordAuthentication` from `no` to `yes`. Also, to match the PMC deposit folder structure, create the folder `upload` instead of `uploads`.
