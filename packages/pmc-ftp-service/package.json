@@ -27,7 +27,7 @@
     "test:publish": "ts-node bin/publish.ts"
   },
   "dependencies": {
-    "@curvenote/scms-job-client": "^0.14.3",
+    "@curvenote/scms-tasks": "^0.14.3",
     "pmc-node-utils": "^0.3.1",
     "pmc-utils": "^0.3.1",
     "express": "^4.18.1",

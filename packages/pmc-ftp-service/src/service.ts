@@ -13,16 +13,21 @@
  * - Comprehensive error handling and cleanup
  */
 
-import fs from 'fs/promises';
 import { createWriteStream } from 'fs';
-import { pipeline } from 'stream/promises';
-import os from 'os';
+import fs from 'fs/promises';
 import path from 'path';
+import { pipeline } from 'stream/promises';
+import Client from 'ssh2-sftp-client';
 import express from 'express';
 import fetch from 'node-fetch';
-import { create as createTar } from 'tar';
-import Client from 'ssh2-sftp-client';
 import pLimit from 'p-limit';
+import { create as createTar } from 'tar';
+import {
+  hyphenatedFromDate,
+  removeFolder,
+  withPubSubHandler,
+  type HandlerContext,
+} from '@curvenote/scms-tasks';
 import { preparePMCManifestText } from 'pmc-node-utils';
 import {
   AAMDepositManifestSchema,
@@ -30,24 +35,6 @@ import {
   formatZodErrorForStatus,
   type AAMDepositManifest,
 } from 'pmc-utils';
-import {
-  hyphenatedFromDate,
-  removeFolder,
-  pubsubError,
-  SCMSJobClient,
-} from '@curvenote/scms-job-client';
-
-/**
- * Message attributes structure expected from the pub/sub system
- */
-type Attributes = {
-  userId: string;
-  successState: string;
-  failureState: string;
-  statusUrl: string;
-  jobUrl: string;
-  handshake: string;
-};
 
 /**
  * Creates and configures the Express service for handling PMC deposit requests
@@ -65,69 +52,29 @@ export function createService() {
   });
 
   /**
-   * Main endpoint for processing PMC deposit requests
+   * Main endpoint for processing PMC deposit requests.
    *
-   * Workflow:
-   * 1. Validate incoming manifest data
-   * 2. Create temporary workspace
-   * 3. Download all files using streaming for memory efficiency
-   * 4. Generate PMC manifest and XML metadata
-   * 5. Create tar.gz archive
-   * 6. Upload to SFTP server
-   * 7. Cleanup temporary files
+   * Uses withPubSubHandler for validation, temp folder, job client, and cleanup.
+   * Workflow: validate manifest → download files (streaming) → generate manifest/XML →
+   * create tar.gz → upload to SFTP.
    */
-  app.post('/', async (req, res) => {
-    console.log('Received request', req.body);
-    const { body } = req;
-    if (!body) return pubsubError('no request body', res);
-    const { message } = body;
-    if (!message) return pubsubError('no request message', res);
-    const { attributes, data } = message;
-    if (!data) return pubsubError('no message data', res);
-    if (!attributes) return pubsubError('no message attributes', res);
-
-    let id: string | undefined;
-    let client: SCMSJobClient | undefined;
-
-    // Create temporary folder for processing files
-    console.log('Creating temporary folder');
-    const tmpFolder = await fs.mkdtemp(path.join(os.tmpdir(), 'ftp'));
-    console.log('Temporary folder created', tmpFolder);
-    try {
-      console.log('Received data', JSON.stringify(data, null, 2));
-      console.log('Received attributes', JSON.stringify(attributes, null, 2));
+  app.post(
+    '/',
+    withPubSubHandler(async (ctx: HandlerContext<unknown>) => {
+      const { client, res, tmpFolder } = ctx;
 
       // Extract and validate the manifest data
-      const { jobUrl, statusUrl, handshake, successState, failureState, userId } =
-        attributes as Attributes;
-
-      // Validate all required attributes are present
-      if (!jobUrl) return pubsubError('jobUrl is required', res);
-      if (!statusUrl) return pubsubError('statusUrl is required', res);
-      if (!handshake) return pubsubError('handshake is required', res);
-      if (!successState) return pubsubError('successState is required', res);
-      if (!failureState) return pubsubError('failureState is required', res);
-      if (!userId) return pubsubError('userId is required', res);
-
-      const dataDecoded = Buffer.from(data, 'base64').toString('utf-8');
-      console.log('Decoded data', dataDecoded);
-
-      // Initialize the journal client for status updates
-      client = new SCMSJobClient(jobUrl, statusUrl, handshake);
-      await client.running(res, 'Starting FTP upload job...');
-      const result = AAMDepositManifestSchema.safeParse(JSON.parse(dataDecoded));
-      console.log('Parsed manifest', result);
-
-      if (!result.success) {
-        const errorMessage = formatZodErrorForStatus(result.error);
+      const parseResult = AAMDepositManifestSchema.safeParse(ctx.payload);
+      console.log('Parsed manifest', parseResult);
+      if (!parseResult.success) {
+        const errorMessage = formatZodErrorForStatus(parseResult.error);
         throw new Error(`Invalid manifest: ${errorMessage}`);
       }
-
-      const manifest: AAMDepositManifest = result.data;
-      id = manifest.taskId;
+      const manifest: AAMDepositManifest = parseResult.data;
+      const id = manifest.taskId;
       console.log('Task ID', id);
 
-      // Clean and recreate temporary folder
+      // Clean and recreate temporary folder (match original behavior: empty dir for this job)
       removeFolder(tmpFolder);
       await fs.mkdir(tmpFolder, { recursive: true });
 
@@ -149,7 +96,6 @@ export function createService() {
        * - Default 256KB buffer balances memory usage vs performance
        * - Works with both text and binary files automatically
        */
-
       await client.running(res, `Downloading ${manifest.files.length} files...`);
 
       // Rate limiter: Allow maximum 5 concurrent downloads to prevent overwhelming
@@ -308,45 +254,17 @@ export function createService() {
       await sftpClient.end();
       console.log('Disconnected from SFTP server');
 
-      // Clean up temporary files
-      removeFolder(tmpFolder);
-      console.log('Removed temporary folder');
-
+      // Report success (service responsibility); wrapper handles removeFolder(tmpFolder)
+      const { successState, userId } = ctx.attributes;
       await client.putSubmissionStatus(successState, userId, res);
-
       await client.completed(res, 'FTP upload completed successfully', {
+        taskId: id,
         tarFileName,
         targetDir,
         uploadedFiles: manifest.files.length,
       });
-
-      return res;
-    } catch (err: any) {
-      console.error('Error processing deposit:', err);
-      // Ensure cleanup even on error
-      removeFolder(tmpFolder);
-      try {
-        // Update job status to failed and submission status to failure
-        // Only if client was initialized (after attribute validation)
-        if (client) {
-          const { failureState, userId } = (attributes ?? {}) as Attributes;
-          await client.putSubmissionStatus(failureState, userId, res);
-
-          await client.failed(res, `FTP upload failed: ${err.message}`, {
-            error: err.message,
-            taskId: id,
-          });
-        } else {
-          pubsubError('Unable to process submission over FTP', res);
-        }
-      } catch (e) {
-        // These may error if the response has already been sent.
-        // At this point, do not worry about it.
-      }
-
-      return res;
-    }
-  });
+    }),
+  );
 
   return app;
 }
