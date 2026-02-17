@@ -116,7 +116,7 @@ export async function action(args: ActionFunctionArgs) {
     const jobId = formData.get('jobId') as string;
 
     // Create a new HHMI_GRANTS_SYNC job
-    await jobs.create(
+    await jobs.invoke(
       ctx,
       {
         id: jobId,

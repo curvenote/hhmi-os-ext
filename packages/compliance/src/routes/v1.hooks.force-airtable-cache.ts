@@ -42,9 +42,9 @@ export const loader: LoaderFunction = async (args) => {
     const orcid = scientistWithOrcid.orcid;
 
     await Promise.all([
-        fetchEverythingCoveredByPolicy(orcid),
-        fetchEverythingNotCoveredByPolicy(orcid),
-      ]);
+      fetchEverythingCoveredByPolicy(orcid),
+      fetchEverythingNotCoveredByPolicy(orcid),
+    ]);
 
     return data({ ok: true });
   } catch (error) {

@@ -1,0 +1,24 @@
+{
+  "name": "@curvenote/pmc-ftp-service-cloudrun",
+  "description": "Bundled PMC FTP service",
+  "version": "0.0.1",
+  "private": true,
+  "license": "",
+  "author": "",
+  "engines": {
+    "node": "^22.0.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "build:service": "cd ../.. && npm install && npm run build && cp packages/pmc-ftp-service/dist/* services/pmc-ftp-cloudrun && cd services/pmc-ftp-cloudrun",
+    "build": "npm run build:service && ./build.sh",
+    "deploy": "./deploy.sh",
+    "build:local": "npm run build:service && docker build --tag pmc-ftp .",
+    "dev": "npm run build:local && ./run.sh"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/ssh2-sftp-client": "9.0.4",
+    "ssh2-sftp-client": "^12.0.0"
+  }
+}

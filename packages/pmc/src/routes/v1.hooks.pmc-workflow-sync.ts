@@ -29,7 +29,7 @@ export const loader: LoaderFunction = async (args) => {
   }
 
   // Create a new PMC_WORKFLOW_SYNC job for this site
-  await jobs.create(
+  await jobs.invoke(
     ctx,
     {
       id: uuidv7(),

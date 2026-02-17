@@ -1,12 +1,13 @@
 import type { Context } from '@curvenote/scms-core';
 import {
+  createMessageRecord as createMessageRecordGeneric,
   getPrismaClient,
   $updateSubmissionVersion,
   SlackEventType,
   INBOUND_EMAIL_PAYLOAD_SCHEMA,
   INBOUND_EMAIL_RESULTS_SCHEMA,
+  updateMessageStatus as updateMessageStatusGeneric,
 } from '@curvenote/scms-server';
-import { uuidv7 } from 'uuidv7';
 import type { PackageResult } from './handlers/bulk-submission-parser.server.js';
 import { safelyUpdatePMCSubmissionVersionMetadata } from '../submission-version-metadata.utils.server.js';
 import type { EmailProcessing } from '../../common/metadata.schema.js';
@@ -20,18 +21,10 @@ export async function createMessageRecord(
   payload: any,
   results: any,
 ): Promise<string> {
-  const prisma = await getPrismaClient();
   const now = new Date().toISOString();
-
-  // Add schema to payload indicating it's an unknown structure
-  const payloadWithSchema = {
-    ...payload,
-    $schema: INBOUND_EMAIL_PAYLOAD_SCHEMA,
-  };
 
   // Extract structured data from CloudMailin payload for schema-based rendering
   const structuredResults = {
-    $schema: INBOUND_EMAIL_RESULTS_SCHEMA,
     from: payload.envelope?.from || payload.headers?.from || 'unknown',
     to: Array.isArray(payload.envelope?.to)
       ? payload.envelope.to[0]
@@ -61,25 +54,20 @@ export async function createMessageRecord(
     ? {
         ...structuredResults,
         ...results,
-        // Ensure schema is at the top level
-        $schema: structuredResults.$schema,
       }
     : structuredResults;
 
-  const message = await prisma.message.create({
-    data: {
-      id: uuidv7(),
-      date_created: now,
-      date_modified: now,
-      module: 'PMC',
-      type: 'inbound_email',
-      status: 'PENDING',
-      payload: payloadWithSchema,
-      results: finalResults,
-    },
+  // Note: ctx is currently unused here, but kept for compatibility with existing callers.
+  // This uses the shared message creation utility so the payload/results schema is not hard-coded.
+  return await createMessageRecordGeneric({
+    module: 'PMC',
+    type: 'inbound_email',
+    status: 'PENDING',
+    payload,
+    payloadSchema: INBOUND_EMAIL_PAYLOAD_SCHEMA,
+    results: finalResults,
+    resultsSchema: INBOUND_EMAIL_RESULTS_SCHEMA,
   });
-
-  return message.id;
 }
 
 /**
@@ -91,22 +79,9 @@ export async function updateMessageStatus(
   status: 'PENDING' | 'SUCCESS' | 'ERROR' | 'PARTIAL' | 'IGNORED' | 'BOUNCED',
   results?: any,
 ): Promise<void> {
-  const prisma = await getPrismaClient();
-  // infrequent, unlikely concurrent no OCC
-  const current = await prisma.message.findUnique({
-    where: { id: messageId },
-  });
-  await prisma.message.update({
-    where: { id: messageId },
-    data: {
-      status,
-      results: {
-        ...((current?.results as any) ?? {}),
-        ...results,
-      },
-      date_modified: new Date().toISOString(),
-    },
-  });
+  // Note: ctx is currently unused here, but kept for compatibility with existing callers.
+  // Status is stored as a string in the DB; we update it and merge results if provided.
+  await updateMessageStatusGeneric(messageId, status, results);
 }
 
 /**

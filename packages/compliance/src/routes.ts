@@ -1,8 +1,7 @@
-import type { RouteConfigEntry } from '@react-router/dev/routes';
+import type { RouteConfigEntry, RouteConfig } from '@react-router/dev/routes';
 import type { RouteRegistration } from '@curvenote/scms-core';
 import { resolveRoutePath } from '@curvenote/scms-server';
 import { route } from '@react-router/dev/routes';
-import type { RouteConfig } from '@react-router/dev/routes';
 
 const routes = [
   route('compliance', resolveRoutePath(import.meta.url, 'routes/compliance.tsx'), [
