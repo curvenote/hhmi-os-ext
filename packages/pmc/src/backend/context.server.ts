@@ -11,7 +11,6 @@ import {
 import { httpError } from '@curvenote/scms-core';
 import { SystemRole } from '@curvenote/scms-db';
 
-
 export async function withAppPMCContext<T extends LoaderFunctionArgs | ActionFunctionArgs>(
   args: T,
   scopes: string[],

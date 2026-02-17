@@ -78,7 +78,7 @@ export function createService() {
         console.log('Task ID', id);
 
         // Clean and recreate temporary folder (match original behavior: empty dir for this job)
-        removeFolder(tmpFolder);
+        await removeFolder(tmpFolder);
         await fs.mkdir(tmpFolder, { recursive: true });
 
         /**

@@ -26,7 +26,7 @@ export function PublicationLinks({
   // Get enhancedArticleRendering flag from loader data
   const loaderData = useLoaderData() as { enhancedArticleRendering?: boolean };
   const enhancedArticleRendering = loaderData?.enhancedArticleRendering ?? false;
-  
+
   if (!pub) return null;
   return (
     <div className="flex flex-wrap gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400">

@@ -34,7 +34,7 @@ export function ArticleLinks({
   // Get enhancedArticleRendering flag from loader data
   const loaderData = useLoaderData() as { enhancedArticleRendering?: boolean };
   const enhancedArticleRendering = loaderData?.enhancedArticleRendering ?? false;
-  
+
   // Build array of link elements
   const linkElements: React.ReactNode[] = [];
 

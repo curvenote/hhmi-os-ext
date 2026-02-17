@@ -44,4 +44,3 @@ export async function updateUserComplianceMetadata(
     // Don't throw - this is a background update, shouldn't break the loader
   }
 }
-
