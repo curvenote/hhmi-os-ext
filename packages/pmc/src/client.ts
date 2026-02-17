@@ -12,6 +12,7 @@ import type {
 import { registerNavigation } from './navigation.js';
 import { PMCDepositTaskCard } from './DepositTaskCard.js';
 import { PMCIcon } from './Icon.js';
+import ExtensionAdminCard from './ExtensionAdminCard.js';
 import { PMCTrackEvent, PMCTrackEventDescriptions } from './analytics/events.js';
 import { workflows } from './workflows.js';
 
@@ -67,6 +68,10 @@ export function getWorkflows(): WorkflowRegistration {
   return { workflows };
 }
 
+export function getExtensionAdminCard() {
+  return ExtensionAdminCard;
+}
+
 export const extension: ClientExtension = {
   id,
   name,
@@ -76,4 +81,5 @@ export const extension: ClientExtension = {
   getAnalyticsEvents,
   getWorkflows,
   registerNavigation,
+  getExtensionAdminCard,
 };

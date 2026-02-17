@@ -87,7 +87,7 @@ export async function action(args: ActionFunctionArgs) {
     const jobId = formData.get('jobId') as string;
 
     // Create a new PMC_WORKFLOW_SYNC job for this site
-    await jobs.create(
+    await jobs.invoke(
       ctx,
       {
         id: jobId,

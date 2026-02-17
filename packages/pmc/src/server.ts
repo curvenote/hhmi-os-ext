@@ -1,9 +1,32 @@
 import type { JobRegistration, ServerExtension } from '@curvenote/scms-core';
+import { obfuscateSecret } from '@curvenote/scms-core';
 import { registerRoutes } from './routes.js';
 import { extension as clientExtension } from './client.js';
 import { PMC_DEPOSIT_FTP, pmcDepositHandler } from './backend/jobs/pmc-deposit.js';
 import { PMC_WORKFLOW_SYNC, pmcWorkflowSyncHandler } from './backend/jobs/pmc-workflow-sync.js';
 import { HHMI_GRANTS_SYNC, hhmiGrantsSyncHandler } from './backend/jobs/hhmi-grants-sync.js';
+
+function getSafeAdminConfig(config: Record<string, unknown>): Record<string, unknown> {
+  const depositService = config.depositService as Record<string, unknown> | undefined;
+  const inboundEmail = config.inboundEmail as Record<string, unknown> | undefined;
+  return {
+    depositService: depositService
+      ? {
+          projectId: depositService.projectId,
+          topic: depositService.topic,
+          secretKeyfile: obfuscateSecret(depositService.secretKeyfile),
+        }
+      : undefined,
+    inboundEmail: inboundEmail
+      ? {
+          enabled: inboundEmail.enabled,
+          username: obfuscateSecret(inboundEmail.username),
+          password: obfuscateSecret(inboundEmail.password),
+          senders: Array.isArray(inboundEmail.senders) ? inboundEmail.senders : undefined,
+        }
+      : undefined,
+  };
+}
 
 /**
  * Returns job registrations for the PMC extension.
@@ -33,4 +56,5 @@ export const extension: ServerExtension = {
   ...clientExtension,
   getJobs,
   registerRoutes,
+  getSafeAdminConfig,
 };
