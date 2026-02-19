@@ -7,6 +7,7 @@ import {
   fetchEverythingCoveredByPolicy,
   fetchEverythingNotCoveredByPolicy,
 } from '../backend/airtable.server.js';
+import { CACHE_KEYS, setCached } from '../backend/airtable-cache.server.js';
 
 export const loader: LoaderFunction = async (args) => {
   const ctx = await withContext(args, { noTokens: true });
@@ -28,6 +29,9 @@ export const loader: LoaderFunction = async (args) => {
   try {
     // Step 1: Fetch all scientists and wait for completion
     const scientists = await fetchAllScientists();
+
+    // Step 1b: Always write scientists to DB cache (webhook always updates)
+    await setCached(CACHE_KEYS.scientists.id, CACHE_KEYS.scientists.type, scientists);
 
     // Step 2: Find the first scientist with a valid ORCID
     const scientistWithOrcid = scientists.find((s) => s.orcid && s.orcid.trim() !== '');
