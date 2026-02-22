@@ -3,6 +3,7 @@ import { data } from 'react-router';
 import { withContext } from '@curvenote/scms-server';
 import { error404, error405 } from '@curvenote/scms-core';
 import { fetchAllScientists } from '../backend/airtable.scientists.server.js';
+import { fetchAllJournals } from '../backend/airtable.journals.server.js';
 import {
   fetchEverythingCoveredByPolicy,
   fetchEverythingNotCoveredByPolicy,
@@ -32,6 +33,10 @@ export const loader: LoaderFunction = async (args) => {
 
     // Step 1b: Always write scientists to DB cache (webhook always updates)
     await setCached(CACHE_KEYS.scientists.id, CACHE_KEYS.scientists.type, scientists);
+
+    // Step 1c: Fetch and cache journals for journal search
+    const journals = await fetchAllJournals();
+    await setCached(CACHE_KEYS.journals.id, CACHE_KEYS.journals.type, journals);
 
     // Step 2: Find the first scientist with a valid ORCID
     const scientistWithOrcid = scientists.find((s) => s.orcid && s.orcid.trim() !== '');

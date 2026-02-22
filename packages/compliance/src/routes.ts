@@ -37,6 +37,10 @@ const routes = [
     'task/compliance-wizard',
     resolveRoutePath(import.meta.url, 'routes/task.compliance.wizard.tsx'),
   ),
+  route(
+    'task/journal-search',
+    resolveRoutePath(import.meta.url, 'routes/task.journal.search.tsx'),
+  ),
 ];
 
 /**

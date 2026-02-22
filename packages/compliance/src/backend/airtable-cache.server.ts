@@ -6,7 +6,9 @@
 
 import { getPrismaClient } from '@curvenote/scms-server';
 import type { NormalizedScientist } from './types.js';
+import type { NormalizedJournal } from './airtable.journals.server.js';
 import { fetchAllScientists } from './airtable.scientists.server.js';
+import { fetchAllJournals } from './airtable.journals.server.js';
 
 const HHMI_COMPLIANCE_CACHE_PREFIX = 'hhmi:compliance:';
 
@@ -15,6 +17,10 @@ export const CACHE_KEYS = {
   scientists: {
     id: `${HHMI_COMPLIANCE_CACHE_PREFIX}scientists`,
     type: `${HHMI_COMPLIANCE_CACHE_PREFIX}scientists`,
+  },
+  journals: {
+    id: `${HHMI_COMPLIANCE_CACHE_PREFIX}journals`,
+    type: `${HHMI_COMPLIANCE_CACHE_PREFIX}journals`,
   },
 } as const;
 
@@ -90,4 +96,33 @@ export async function getScientistsFromCacheOrFetch(): Promise<NormalizedScienti
     await setCached(CACHE_KEYS.scientists.id, CACHE_KEYS.scientists.type, scientists);
   }
   return scientists;
+}
+
+/**
+ * Read journals list from cache. Returns null if not present.
+ */
+export async function getJournalsFromCache(): Promise<NormalizedJournal[] | null> {
+  const row = await getCached(CACHE_KEYS.journals.id);
+  if (!row || row.data == null) return null;
+  const parsed = row.data as NormalizedJournal[];
+  return Array.isArray(parsed) ? parsed : null;
+}
+
+/**
+ * Get journals from cache, or fetch from Airtable and write to cache once (cold start).
+ */
+export async function getJournalsFromCacheOrFetch(): Promise<NormalizedJournal[]> {
+  const cached = await getJournalsFromCache();
+  if (cached !== null) return cached;
+
+  const journals = await fetchAllJournals();
+  const prisma = await getPrismaClient();
+  const existing = await prisma.object.findUnique({
+    where: { id: CACHE_KEYS.journals.id },
+    select: { id: true },
+  });
+  if (!existing) {
+    await setCached(CACHE_KEYS.journals.id, CACHE_KEYS.journals.type, journals);
+  }
+  return journals;
 }
