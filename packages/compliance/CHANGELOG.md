@@ -1,5 +1,21 @@
 # @hhmi/compliance
 
+## 0.2.0
+
+### Minor Changes
+
+- 4ef50cb: Adds the Journal Search Tool for Lab Budget advice
+
+### Patch Changes
+
+- 4ef50cb: Adding an in DB caching layer for the all scientists airtable call
+- 535d5df: Fixed lint command and applied it
+- Updated dependencies [535d5df]
+- Updated dependencies [535d5df]
+- Updated dependencies [535d5df]
+- Updated dependencies [535d5df]
+  - @hhmi/pmc@0.2.0
+
 ## 0.1.12
 
 ### Patch Changes

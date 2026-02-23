@@ -1,5 +1,17 @@
 # pmc-ftp-service
 
+## 0.4.0
+
+### Minor Changes
+
+- 535d5df: Updating to use the latest scms-tasks support functions
+
+### Patch Changes
+
+- 535d5df: Updates to stay aligned with SCMS codebase
+- 535d5df: Posting to latest Curvenote task runner utilities
+- 535d5df: Fixed lint command and applied it
+
 ## 0.3.1
 
 ### Patch Changes
