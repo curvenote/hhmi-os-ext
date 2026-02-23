@@ -2,4 +2,4 @@
 '@hhmi/compliance': minor
 ---
 
-Adds the Journal Search Tool for Lab Budget advice:wq
+Adds the Journal Search Tool for Lab Budget advice

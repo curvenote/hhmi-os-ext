@@ -90,10 +90,9 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
   const needsDateOrChoice = selectedJournal
     ? typeRequiresDateOrChoice(selectedJournal.type)
     : false;
-  const hasOverride = selectedJournal
-    ? hasPaymentInstructionOverride(selectedJournal)
-    : false;
+  const hasOverride = selectedJournal ? hasPaymentInstructionOverride(selectedJournal) : false;
   const typeLabel = selectedJournal?.type ? selectedJournal.type : '';
+  const typeNormalized = (selectedJournal?.type ?? '').toLowerCase().trim();
 
   const advice = useMemo(() => {
     if (!selectedJournal) return '';
@@ -106,8 +105,7 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
     return getAdvice(input);
   }, [selectedJournal, variant, submissionDate, submittedOnOrAfterCutoff]);
 
-  const showAdviceImmediately =
-    selectedJournal && (!needsDateOrChoice || hasOverride);
+  const showAdviceImmediately = selectedJournal && (!needsDateOrChoice || hasOverride);
   const showAdviceFromInput =
     selectedJournal &&
     needsDateOrChoice &&
@@ -162,31 +160,31 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
         <div className="space-y-8 max-w-4xl">
           {/* A/B toggle top-right – only when journal needs date/choice and has no override */}
           {selectedJournal && needsDateOrChoice && !hasOverride && (
-          <div className="flex flex-wrap gap-4 justify-between items-center">
-            <div className="flex gap-2 justify-end items-center w-full">
-              <ui.ToggleGroup
-                type="single"
-                value={variant}
-                onValueChange={(v) => v && setVariant(v as 'A' | 'B')}
-                className="inline-flex rounded-md border p-0.5 cursor-pointer"
-              >
-                <ui.ToggleGroupItem
-                  value="A"
-                  aria-label="Date picker"
-                  className="px-3 py-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            <div className="flex flex-wrap gap-4 justify-between items-center">
+              <div className="flex gap-2 justify-end items-center w-full">
+                <ui.ToggleGroup
+                  type="single"
+                  value={variant}
+                  onValueChange={(v) => v && setVariant(v as 'A' | 'B')}
+                  className="inline-flex rounded-md border p-0.5 cursor-pointer"
                 >
-                  A
-                </ui.ToggleGroupItem>
-                <ui.ToggleGroupItem
-                  value="B"
-                  aria-label="Yes/No question"
-                  className="px-3 py-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                >
-                  B
-                </ui.ToggleGroupItem>
-              </ui.ToggleGroup>
+                  <ui.ToggleGroupItem
+                    value="A"
+                    aria-label="Date picker"
+                    className="px-3 py-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    A
+                  </ui.ToggleGroupItem>
+                  <ui.ToggleGroupItem
+                    value="B"
+                    aria-label="Yes/No question"
+                    className="px-3 py-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    B
+                  </ui.ToggleGroupItem>
+                </ui.ToggleGroup>
+              </div>
             </div>
-          </div>
           )}
 
           {/* Journal search */}
@@ -257,14 +255,14 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
               )}
               {variant === 'B' && (
                 <div className="space-y-4">
-                  {typeLabel === 'transformative' && (
+                  {typeNormalized === 'transformative' && (
                     <WizardQuestion
                       question={transformativeQuestion}
                       value={submittedOnOrAfterCutoff}
                       onChange={(v) => setSubmittedOnOrAfterCutoff(v as boolean)}
                     />
                   )}
-                  {typeLabel === 'hybrid' && (
+                  {typeNormalized === 'hybrid' && (
                     <WizardQuestion
                       question={hybridQuestion}
                       value={submittedOnOrAfterCutoff}
