@@ -20,6 +20,7 @@ import { PublicationHelpRequestEmailTemplate } from './backend/emails/publicatio
 import { WorkspaceInvitationEmailTemplate } from './backend/emails/workspace-invitation-email.js';
 import { registerNavigation } from './navigation.js';
 import { ComplianceWizardTaskCard } from './ComplianceWizardTaskCard.js';
+import { JournalSearchTaskCard } from './JournalSearchTaskCard.js';
 import ExtensionAdminCard from './ExtensionAdminCard.js';
 
 export const id = 'hhmi-compliance';
@@ -44,6 +45,12 @@ export function getTasks(): ExtensionTask[] {
       name: 'Get Help with Open Access Policy Compliance',
       description: 'Answer questions to understand your compliance requirements',
       component: ComplianceWizardTaskCard,
+    },
+    {
+      id: 'journal-search',
+      name: 'HHMI Lab Budget Policy Search',
+      description: 'Look up a journal to see whether HHMI lab budgets can be used to pay open access or other fees.',
+      component: JournalSearchTaskCard,
     },
   ];
 }

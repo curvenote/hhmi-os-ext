@@ -8,9 +8,17 @@ export const AIRTABLE_CONFIG = {
       name: 'Publications',
       id: 'tblZw5sCSjmxfd4PC',
       fields: {
+        abstract_text: {
+          name: 'Abstract Text',
+          id: 'fld5gJeDcjPzFyfBy',
+        },
         action_steps: {
           name: 'Action Steps',
           id: 'fldNlLLohngblRPFw',
+        },
+        ai_summary_from_abstract: {
+          name: 'AI Summary (from Abstract)',
+          id: 'fldYAHUAfafLCKR5w',
         },
         all_dates_emailed: {
           name: 'All Dates Emailed',
@@ -504,9 +512,9 @@ export const AIRTABLE_CONFIG = {
           name: 'subject',
           id: 'fld9z1B9p4amhGpir',
         },
-        temp: {
-          name: 'Temp',
-          id: 'fldQNX7kdd0GwRv7r',
+        submission_date: {
+          name: 'submission_date',
+          id: 'fldpfSH4F9SIoySUO',
         },
         title: {
           name: 'title',
@@ -553,6 +561,10 @@ export const AIRTABLE_CONFIG = {
         action_steps: {
           name: 'Action Steps',
           id: 'fldwI1CD7u3ODxUCM',
+        },
+        ai_summary_from_abstract: {
+          name: 'AI Summary (from Abstract)',
+          id: 'fldZJjDEKsNQAFNMW',
         },
         all_dates_emailed: {
           name: 'All Dates Emailed',
@@ -1068,6 +1080,14 @@ export const AIRTABLE_CONFIG = {
           name: 'Hire Date Best',
           id: 'fldDc1fxtgQRJtwfr',
         },
+        iar_review_reminder_sent: {
+          name: 'IAR Review Reminder Sent',
+          id: 'fldEZuv2JsoCsbut9',
+        },
+        iar_review_reminder_template: {
+          name: 'IAR Review Reminder Template',
+          id: 'fldIqSy3wrESOHG2J',
+        },
         institution: {
           name: 'Institution',
           id: 'fldbCeK8vxMzXfY3Z',
@@ -1092,6 +1112,10 @@ export const AIRTABLE_CONFIG = {
           name: 'Investigator - Rehire Date',
           id: 'fldl1uQlOVNsWC5YI',
         },
+        labarchives_access: {
+          name: 'LabArchives Access',
+          id: 'fldFV17b89R581I02',
+        },
         last_date_emailed_any_publication: {
           name: 'Last Date Emailed (Any Publication)',
           id: 'fldQdjyPk9hFRmH5E',
@@ -1115,6 +1139,10 @@ export const AIRTABLE_CONFIG = {
         major_contributions_with_preprints: {
           name: 'Major Contributions with Preprints',
           id: 'fldToKFTkX2BjhDO0',
+        },
+        major_preprints_in_2026: {
+          name: 'Major Preprints in 2026',
+          id: 'fld6MSKtype597SC5',
         },
         max_preprint_version: {
           name: 'Max Preprint Version',
@@ -1196,6 +1224,10 @@ export const AIRTABLE_CONFIG = {
           name: 'Non-Compliant Publications All-Time Status',
           id: 'fldP2izWDgzbG3dKF',
         },
+        open_email: {
+          name: 'Open Email',
+          id: 'fldO6pt85q8gUbs1T',
+        },
         orcid_identifier: {
           name: 'ORCID Identifier',
           id: 'fldRrnnHqTrUS10cv',
@@ -1256,10 +1288,6 @@ export const AIRTABLE_CONFIG = {
           name: 'Resolved Publications',
           id: 'fld4UY5JgfKO5WbbO',
         },
-        reviews: {
-          name: 'Reviews',
-          id: 'fldkU8rEVTpHZ3eMX',
-        },
         ror: {
           name: 'ROR',
           id: 'fldveoFqRzUbHUzqt',
@@ -1303,6 +1331,104 @@ export const AIRTABLE_CONFIG = {
         total_publications_subject_to_policy: {
           name: 'Total Publications Subject to Policy',
           id: 'fld9wBEx4GMH6NB5O',
+        },
+      },
+    },
+    journals: {
+      name: 'Journals',
+      id: 'tblIzVg2kQxXa5Xac',
+      fields: {
+        checker_tool: {
+          name: 'Checker Tool',
+          id: 'fldKH7uQtTS8lwZiL',
+        },
+        created_time: {
+          name: 'Created Time',
+          id: 'fldYDUptjzHL8xnbi',
+        },
+        feedback: {
+          name: 'Feedback',
+          id: 'fldwD2I4HqLuv99Mg',
+        },
+        issn_online: {
+          name: 'ISSN (online)',
+          id: 'fldnkzWJZX4sNgtxe',
+        },
+        issn_print: {
+          name: 'ISSN (print)',
+          id: 'fldXsKaNmfwiCJA3C',
+        },
+        journal_name: {
+          name: 'Journal Name',
+          id: 'fldKfNhrDXUCwYpeZ',
+        },
+        major_contributions_2024_2025: {
+          name: 'Major Contributions 2024-2025',
+          id: 'fldmCqbzaL6HkRfoc',
+        },
+        modified_time: {
+          name: 'Modified Time',
+          id: 'flddRNM87d90HF8HG',
+        },
+        nlm_abbreviation: {
+          name: 'NLM Abbreviation',
+          id: 'fldqrjuCmg8ZgeA6t',
+        },
+        nlm_unique_id: {
+          name: 'NLM Unique ID',
+          id: 'fldaxDubiXEKLKAJI',
+        },
+        number_of_publications: {
+          name: 'Number of Publications',
+          id: 'fldBxTHgyDYTaemUH',
+        },
+        number_of_publishers: {
+          name: 'Number of Publishers',
+          id: 'fldt9cYwpThER4L6s',
+        },
+        other_abbreviation: {
+          name: 'Other Abbreviation',
+          id: 'flddpZQeDlQVmZzTC',
+        },
+        payment_instruction_override: {
+          name: 'Payment Instruction Override',
+          id: 'fldhyh94GCW5VYdMr',
+        },
+        payment_policy: {
+          name: 'Payment Policy',
+          id: 'fldO9XA43Yc7IJ2yr',
+        },
+        pmc_agreement_status: {
+          name: 'PMC Agreement Status',
+          id: 'fldybWGyYGXC4qBCr',
+        },
+        pmc_agreement_to_deposit: {
+          name: 'PMC Agreement to Deposit',
+          id: 'fldSMNCAvJ9OMH5lu',
+        },
+        pmc_embargo: {
+          name: 'PMC Embargo',
+          id: 'fldD0I3I0SOBwRvm3',
+        },
+        pmc_url: {
+          name: 'PMC URL',
+          id: 'fldqtXSJ9DS34YTrN',
+        },
+        preprints: {
+          name: 'Preprints',
+          id: 'fld7BVqnnZZ6rFkcq',
+        },
+        publications: {
+          name: 'Publications',
+          id: 'fldcmt4OB7uqlYDc4',
+        },
+        publisher: {
+          name: 'Publisher',
+          id: 'fldwAkPbaMMwIrza1',
+        },
+        type: {
+          name: 'Type',
+          id: 'fldEsReawHiCqCHUS',
         },
       },
     },

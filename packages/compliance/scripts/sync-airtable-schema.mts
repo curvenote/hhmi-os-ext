@@ -47,11 +47,12 @@ interface AirtableBaseMetadata {
   tables: AirtableTableMetadata[];
 }
 
-// Table IDs we care about
-const TARGET_TABLES = {
+// Table IDs or names we care about. Use table id (e.g. 'tblXXX') or { name: 'Table Name' } to resolve by name.
+const TARGET_TABLES: Record<string, string | { name: string }> = {
   publications: 'tblZw5sCSjmxfd4PC',
   preprints: 'tblRWSiJvlOjt2OI4',
   scientists: 'tblKTlRedfiVcTo36',
+  journals: 'tblIzVg2kQxXa5Xac',
 };
 
 /**
@@ -136,13 +137,18 @@ function generateConfigFile(metadata: AirtableBaseMetadata): string {
   lines.push('  tables: {');
 
   // Only include the tables we care about
-  for (const [tableName, tableId] of Object.entries(TARGET_TABLES)) {
-    const table = metadata.tables.find((t) => t.id === tableId);
+  for (const [configKey, idOrName] of Object.entries(TARGET_TABLES)) {
+    const tableId =
+      typeof idOrName === 'string'
+        ? idOrName
+        : metadata.tables.find((t) => t.name === idOrName.name)?.id;
+    const table = tableId ? metadata.tables.find((t) => t.id === tableId) : undefined;
     if (table) {
       console.log(`  ✓ Found table: ${table.name} (${table.fields.length} fields)`);
       lines.push(generateTableConfig(table));
     } else {
-      console.warn(`  ⚠ Table ${tableName} (${tableId}) not found in base`);
+      const desc = typeof idOrName === 'string' ? idOrName : idOrName.name;
+      console.warn(`  ⚠ Table ${configKey} (${desc}) not found in base`);
     }
   }
 
@@ -180,7 +186,15 @@ async function main() {
 
     // Summary
     console.log('Summary:');
-    const tables = metadata.tables.filter((t) => Object.values(TARGET_TABLES).includes(t.id));
+    const targetIds = new Set<string>();
+    for (const idOrName of Object.values(TARGET_TABLES)) {
+      if (typeof idOrName === 'string') targetIds.add(idOrName);
+      else {
+        const t = metadata.tables.find((tb) => tb.name === idOrName.name);
+        if (t) targetIds.add(t.id);
+      }
+    }
+    const tables = metadata.tables.filter((t) => targetIds.has(t.id));
     for (const table of tables) {
       console.log(`  - ${table.name}: ${table.fields.length} fields`);
     }

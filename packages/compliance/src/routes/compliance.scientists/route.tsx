@@ -1,8 +1,9 @@
 import { PageFrame, MainWrapper } from '@curvenote/scms-core';
 import { withAppScopedContext, withValidFormData, validateFormData } from '@curvenote/scms-server';
-import { fetchAllScientists } from '../../backend/airtable.scientists.server.js';
+import { getScientistsFromCacheOrFetch } from '../../backend/airtable-cache.server.js';
 import { hhmi } from '../../backend/scopes.js';
 import { ScientistsList } from '../../components/ScientistList.js';
+import { UpdateAirtableCacheButton } from '../../components/UpdateAirtableCacheButton.js';
 import type { NormalizedScientist, ComplianceUserMetadataSection } from '../../backend/types.js';
 import { isUserComplianceManager } from '../../utils/analytics.server.js';
 import {
@@ -27,9 +28,6 @@ interface LoaderData {
   isComplianceManager?: boolean;
 }
 
-// Module-level cache for scientist data
-let scientistCache: NormalizedScientist[] | null = null;
-
 export const meta = () => {
   return [
     { title: 'Management - My Compliance' },
@@ -39,7 +37,7 @@ export const meta = () => {
 
 export const loader = async (args: LoaderFunctionArgs): Promise<LoaderData> => {
   const ctx = await withAppScopedContext(args, [hhmi.compliance.admin]);
-  const scientists = fetchAllScientists();
+  const scientists = getScientistsFromCacheOrFetch();
   const userData = (ctx.user.data as ComplianceUserMetadataSection) || { compliance: {} };
   const complianceRole = userData.compliance?.role;
   const path = new URL(args.request.url).pathname;
@@ -52,33 +50,20 @@ export const loader = async (args: LoaderFunctionArgs): Promise<LoaderData> => {
 };
 
 export const clientLoader = async (args: ClientLoaderFunctionArgs): Promise<LoaderData> => {
-  // If we have cached data, return it immediately
-  if (scientistCache !== null) {
-    return { scientists: Promise.resolve(scientistCache) };
-  }
-
-  // No cache, call server loader
-  // Note: Timeout errors are handled client-side via TimeoutErrorHandler component
-  // which displays a user-friendly error message and allows page reload to retry
-  const serverData = await args.serverLoader<LoaderData>();
-
-  // Cache the scientist data via fire and forget
-  serverData.scientists.then((resolvedScientists: any) => {
-    scientistCache = resolvedScientists;
-  });
-
-  // Return the same promise structure
-  return { scientists: serverData.scientists };
+  // Server loader is cache-backed (DB); use it for client-side navigation too.
+  return args.serverLoader<LoaderData>();
 };
-
-// Note: We intentionally do NOT set clientLoader.hydrate = true
-// this gives us cached data on client-side navigation, just not during initial page load.
-// clientLoader.hydrate = true as const;
 
 /**
  * Intent types for admin compliance actions
  */
-const AdminComplianceIntent = z.enum(['get-access-grants', 'share', 'revoke', 'invite-new-user']);
+const AdminComplianceIntent = z.enum([
+  'get-access-grants',
+  'share',
+  'revoke',
+  'invite-new-user',
+  'update-airtable-cache',
+]);
 
 /**
  * Base intent schema to validate the intent field
@@ -122,7 +107,26 @@ const InviteNewUserSchema = zfd.formData({
   orcid: z.string().optional(),
 });
 
-export function shouldRevalidate(args?: { formAction?: string; [key: string]: any }) {
+/**
+ * Schema for triggering Airtable cache update (calls webhook, then revalidates)
+ */
+const UpdateAirtableCacheSchema = zfd.formData({
+  intent: z.literal('update-airtable-cache'),
+});
+
+export function shouldRevalidate(args?: {
+  formAction?: string;
+  actionResult?: { updateCache?: boolean };
+  [key: string]: unknown;
+}) {
+  // After update-airtable-cache, revalidate so loader reads fresh data from Object cache
+  if (
+    args?.actionResult &&
+    typeof args.actionResult === 'object' &&
+    args.actionResult.updateCache
+  ) {
+    return true;
+  }
   // Prevent revalidation for admin sharing actions to avoid closing dialogs and unnecessary reloads
   const formAction = args?.formAction;
   if (
@@ -188,6 +192,44 @@ export async function action(args: ActionFunctionArgs) {
       });
     }
 
+    case 'update-airtable-cache': {
+      const parsed = UpdateAirtableCacheSchema.safeParse(Object.fromEntries(formData));
+      if (!parsed.success) {
+        return data(
+          { error: { type: 'validation', message: parsed.error.message } },
+          { status: 400 },
+        );
+      }
+      const cronSecret = ctx.$config.api.vercel?.cron?.secret;
+      if (!cronSecret) {
+        return data(
+          { error: { type: 'config', message: 'Webhook secret not configured' } },
+          { status: 503 },
+        );
+      }
+      const origin = new URL(args.request.url).origin;
+      const webhookUrl = `${origin}/v1/hooks/force-airtable-cache`;
+      try {
+        const res = await fetch(webhookUrl, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${cronSecret}` },
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          const message =
+            (body as { error?: string })?.error || res.statusText || `HTTP ${res.status}`;
+          return data(
+            { error: { type: 'webhook', message } },
+            { status: res.status >= 500 ? 503 : 400 },
+          );
+        }
+        return data({ updateCache: true });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to call webhook';
+        return data({ error: { type: 'webhook', message } }, { status: 503 });
+      }
+    }
+
     default:
       return data(
         {
@@ -214,9 +256,11 @@ export default function CompliancePage({ loaderData }: { loaderData: LoaderData 
       <PageFrame
         title="Compliance Management"
         description="View compliance data for any scientist in the compliance database"
-        className="mx-auto max-w-screen-lg"
+        className="pb-0 mx-auto mb-0 max-w-screen-lg"
+        containerClassName="space-y-0"
         breadcrumbs={breadcrumbs}
       >
+        <UpdateAirtableCacheButton />
         <ScientistsList scientists={scientists} />
       </PageFrame>
     </MainWrapper>
