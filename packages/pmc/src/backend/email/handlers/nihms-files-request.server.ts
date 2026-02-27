@@ -330,20 +330,6 @@ export const nihmsFilesRequestHandler: InboundEmailHandler = {
           console.log(
             `Email sent: Sent files requested notification to ${submitter.email} for manuscript ${manuscriptId}`,
           );
-
-          // if an email was sent, update the submission version to the REQUEST_NEW_VERSION status immediately
-          // so that the submitter can take action (only if not already in that status)
-          if (submissionVersion.status !== 'REQUEST_NEW_VERSION') {
-            await updateSubmissionStatusOnReceivingEmail(
-              ctx,
-              submissionVersion.work_version_id,
-              'REQUEST_NEW_VERSION',
-            );
-          } else {
-            console.log(
-              `Submission ${submissionVersion.work_version_id} is already in REQUEST_NEW_VERSION status, skipping status update`,
-            );
-          }
         } catch (emailError) {
           // Don't fail the entire processing if email fails
           console.error('Failed to send files requested notification email:', emailError);
@@ -366,6 +352,22 @@ export const nihmsFilesRequestHandler: InboundEmailHandler = {
             },
           });
         }
+      }
+
+      // Always transition to REQUEST_NEW_VERSION when NIHMS requests files - the inbound email is the
+      // authoritative trigger. The submitter must be able to upload a new version regardless of whether
+      // we could send the notification email. This fixes HHMI-940 where items in REVIEWER_APPROVED_INITIAL
+      // (and other states) were not transitioning because the workflow lacked the necessary transitions.
+      if (submissionVersion.status !== 'REQUEST_NEW_VERSION') {
+        await updateSubmissionStatusOnReceivingEmail(
+          ctx,
+          submissionVersion.work_version_id,
+          'REQUEST_NEW_VERSION',
+        );
+      } else {
+        console.log(
+          `Submission ${submissionVersion.work_version_id} is already in REQUEST_NEW_VERSION status, skipping status update`,
+        );
       }
 
       return {
