@@ -48,7 +48,7 @@ const mockNIHJournalList: NIHJournalList = {
   ],
 };
 
-vi.mock('../data/J_Entrez.json', () => ({
+vi.mock('../../data/J_Entrez.json', () => ({
   default: mockNIHJournalList,
 }));
 

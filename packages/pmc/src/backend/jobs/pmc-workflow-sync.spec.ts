@@ -5,6 +5,8 @@ import {
   metadataFromAirtableIdFields,
   activitiesFromAirtableDateFields,
   extractManuscriptId,
+  shouldUpdateStatusOnSync,
+  PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC,
   type SubmissionVersion,
   type AirtableRecord,
   type ActivityStub,
@@ -206,6 +208,61 @@ describe('PMC Airtable Functions', () => {
       // Should return REVIEWER_APPROVED_FINAL based on date field, not PMCID
       // PMCID presence doesn't automatically mean AVAILABLE_ON_PMC since article could be withdrawn
       expect(result).toBe(PMC_STATE_NAMES.REVIEWER_APPROVED_FINAL);
+    });
+  });
+
+  describe('skipped statuses (do not change on sync)', () => {
+    it('should not update status when current status is NO_ACTION_NEEDED even if Airtable resolves differently', () => {
+      const currentStatus = PMC_STATE_NAMES.NO_ACTION_NEEDED;
+      const resolvedStatus = PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC;
+
+      expect(shouldUpdateStatusOnSync(currentStatus, resolvedStatus)).toBe(false);
+    });
+
+    it('should not update status when current status is REQUEST_NEW_VERSION even if Airtable resolves differently', () => {
+      const currentStatus = PMC_STATE_NAMES.REQUEST_NEW_VERSION;
+      const resolvedStatus = PMC_STATE_NAMES.AVAILABLE_ON_PMC;
+
+      expect(shouldUpdateStatusOnSync(currentStatus, resolvedStatus)).toBe(false);
+    });
+
+    it('should not update status when current status is CANCELLED even if Airtable resolves differently', () => {
+      const currentStatus = PMC_STATE_NAMES.CANCELLED;
+      const resolvedStatus = PMC_STATE_NAMES.REVIEWER_APPROVED_FINAL;
+
+      expect(shouldUpdateStatusOnSync(currentStatus, resolvedStatus)).toBe(false);
+    });
+
+    it('should not update status when current status is FAILED even if Airtable resolves differently', () => {
+      const currentStatus = PMC_STATE_NAMES.FAILED;
+      const resolvedStatus = PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC;
+
+      expect(shouldUpdateStatusOnSync(currentStatus, resolvedStatus)).toBe(false);
+    });
+
+    it('should update status when current status is DRAFT and Airtable resolves to a different status', () => {
+      const currentStatus = PMC_STATE_NAMES.DRAFT;
+      const resolvedStatus = PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC;
+
+      expect(shouldUpdateStatusOnSync(currentStatus, resolvedStatus)).toBe(true);
+    });
+
+    it('should not update status when current and resolved status are the same', () => {
+      expect(shouldUpdateStatusOnSync(PMC_STATE_NAMES.DRAFT, PMC_STATE_NAMES.DRAFT)).toBe(false);
+      expect(
+        shouldUpdateStatusOnSync(
+          PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC,
+          PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC,
+        ),
+      ).toBe(false);
+    });
+
+    it('should not update status when current is skipped even when resolved equals current', () => {
+      // Edge case: current is CANCELLED, resolved is also CANCELLED (e.g. from date fallback)
+      // We still don't "update" (no-op), and shouldUpdateStatusOnSync is false because status match
+      expect(shouldUpdateStatusOnSync(PMC_STATE_NAMES.CANCELLED, PMC_STATE_NAMES.CANCELLED)).toBe(
+        false,
+      );
     });
   });
 
