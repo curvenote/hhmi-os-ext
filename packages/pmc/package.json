@@ -56,9 +56,9 @@
   },
   "dependencies": {
     "@curvenote/common": "^0.3.4",
-    "@curvenote/scms-core": "^0.14.0",
-    "@curvenote/scms-server": "^0.14.0",
-    "@curvenote/scms-db": "^0.14.0",
+    "@curvenote/scms-core": "*",
+    "@curvenote/scms-server": "*",
+    "@curvenote/scms-db": "*",
     "@google-cloud/pubsub": "^5.2.0",
     "@react-email/components": "0.5.7",
     "@react-router/dev": "7.9.5",

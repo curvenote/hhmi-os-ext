@@ -56,9 +56,9 @@
     "url": "https://github.com/curvenote/journals/issues"
   },
   "dependencies": {
-    "@curvenote/scms-core": "^0.14.0",
-    "@curvenote/scms-server": "^0.14.0",
-    "@curvenote/scms-db": "^0.14.0",
+    "@curvenote/scms-core": "*",
+    "@curvenote/scms-server": "*",
+    "@curvenote/scms-db": "*",
     "@heroicons/react": "^2.2.0",
     "@hhmi/pmc": "^0.2.0",
     "@react-email/components": "0.5.7",
