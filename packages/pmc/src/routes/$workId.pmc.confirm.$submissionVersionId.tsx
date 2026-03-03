@@ -288,7 +288,7 @@ export default function PMCConfirm({ loaderData }: { loaderData: LoaderData }) {
     : 'Untitled Work';
 
   const breadcrumbs = [
-    { label: 'My Works', href: '/app/works' },
+    { label: 'Home', href: '/app/dashboard' },
     { label: truncatedTitle, href: `/app/works/${work.id}` },
     { label: 'Confirm', isCurrentPage: true },
   ];
