@@ -5,9 +5,11 @@ import {
 } from './utils.server.js';
 import { getPrismaClient } from '@curvenote/scms-server';
 import type { PMCWorkVersionMetadataSection } from '../../common/metadata.schema.js';
-import { hyphenatedFromDate, KnownResendEvents } from '@curvenote/scms-core';
+import { hyphenatedFromDate } from '@curvenote/scms-core';
 import type { WorkContext } from '@curvenote/scms-server';
 import { PMCTrackEvent } from '../../analytics/events.js';
+import { getEmailTemplates } from '../../client.js';
+import { PMC_PENDING_DEPOSIT_NOTIFICATION } from '../emails/pending-deposit-notification.js';
 
 export type ConfirmPMCError = { type: string; message: string };
 export type ConfirmPMCResult = { success: true; submissionId: string } | { error: ConfirmPMCError };
@@ -50,7 +52,7 @@ export async function confirmPMC(
   const currentDate = hyphenatedFromDate(new Date());
 
   const txResult = await prisma.$transaction<
-    { ok: true; submissionId: string } | { error: ConfirmPMCError }
+    { ok: true; submissionId: string; submissionVersionId: string } | { error: ConfirmPMCError }
   >(async (tx) => {
     // Update the work version with metadata
     await tx.workVersion.update({
@@ -138,7 +140,11 @@ export async function confirmPMC(
       },
     });
 
-    return { ok: true, submissionId: submissionVersion.submission_id };
+    return {
+      ok: true,
+      submissionId: submissionVersion.submission_id,
+      submissionVersionId: submissionVersion.id,
+    };
   });
 
   if ('error' in txResult) {
@@ -162,23 +168,24 @@ export async function confirmPMC(
   if (supportEmail) {
     try {
       const title = pmc.title ?? 'Untitled';
-      const bodyLines = [
-        'A new PMC deposit has been confirmed and is now PENDING (New Deposit Uploaded).',
-        '',
-        `Title: ${title}`,
-        `Journal: ${pmc.journalName ?? '—'}`,
-        `DOI: ${pmc.doiUrl ?? '—'}`,
-        `Work version ID: ${workVersionId}`,
-      ];
-      await ctx.sendEmail({
-        eventType: KnownResendEvents.GENERIC_NOTIFICATION,
-        to: supportEmail,
-        subject: 'PMC: New deposit marked PENDING',
-        templateProps: {
-          previewText: `New deposit confirmed: ${title}`,
-          children: bodyLines.join('\n'),
+      const adminSubmissionUrl = ctx.asBaseUrl(
+        `/app/works/${workVersion.work_id}/site/pmc/submission/${txResult.submissionVersionId}`,
+      );
+      await ctx.sendEmail(
+        {
+          eventType: PMC_PENDING_DEPOSIT_NOTIFICATION,
+          to: supportEmail,
+          subject: 'PMC: New deposit marked PENDING',
+          templateProps: {
+            title,
+            journalName: pmc.journalName ?? undefined,
+            doiUrl: pmc.doiUrl ?? undefined,
+            workVersionId,
+            adminSubmissionUrl,
+          },
         },
-      });
+        getEmailTemplates(),
+      );
     } catch (emailError) {
       console.error('Failed to send PENDING notification to support:', emailError);
     }
