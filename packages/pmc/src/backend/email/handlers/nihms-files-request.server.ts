@@ -1,6 +1,5 @@
 import { getPrismaClient } from '@curvenote/scms-server';
 import type { Context } from '@curvenote/scms-core';
-import { KnownResendEvents } from '@curvenote/scms-core';
 import type {
   InboundEmailHandler,
   EmailProcessorConfig,
@@ -13,7 +12,8 @@ import {
   updateSubmissionStatusOnReceivingEmail,
 } from '../email-db.server.js';
 import { extractManuscriptId } from './email-parsing-utils.server.js';
-import { composeFilesRequestEmailBody } from './compose-files-request-email.js';
+import { getEmailTemplates } from '../../../client.js';
+import { PMC_NIHMS_FILES_REQUESTED } from '../../emails/nihms-files-requested.js';
 
 /**
  * Strips all HTML tags and decodes HTML entities from text
@@ -308,25 +308,25 @@ export const nihmsFilesRequestHandler: InboundEmailHandler = {
         `/app/works/${submissionVersion.work_version.work_id}/site/pmc/deposit/${submissionVersion.id}`,
       );
 
-      const emailBody = composeFilesRequestEmailBody({
+      const templateProps = {
         submitterName: submitter?.display_name || undefined,
         manuscriptId,
         message: fullMessage,
         depositUrl,
-      });
+      };
 
       if (submitter?.email) {
         try {
-          await ctx.sendEmail({
-            eventType: KnownResendEvents.GENERIC_NOTIFICATION,
-            to: submitter.email,
-            subject: `NIHMS Files Requested for ${manuscriptId}`,
-            templateProps: {
-              previewText: `NIHMS requires additional files for manuscript ${manuscriptId}`,
-              children: emailBody,
+          await ctx.sendEmail(
+            {
+              eventType: PMC_NIHMS_FILES_REQUESTED,
+              to: submitter.email,
+              subject: `NIHMS Files Requested for ${manuscriptId}`,
+              templateProps,
+              ignoreUnsubscribe: false,
             },
-            ignoreUnsubscribe: false,
-          });
+            getEmailTemplates(),
+          );
           console.log(
             `Email sent: Sent files requested notification to ${submitter.email} for manuscript ${manuscriptId}`,
           );
@@ -342,15 +342,15 @@ export const nihmsFilesRequestHandler: InboundEmailHandler = {
           console.log(`Sending email to support email address: ${ctx.$config.app?.supportEmail}`);
           // this is (probably) the first time the email was received
           // send an email to the support email address to notify them that the request was received but the email was not sent to the submitter
-          await ctx.sendEmail({
-            eventType: KnownResendEvents.GENERIC_NOTIFICATION,
-            to: ctx.$config.app?.supportEmail,
-            subject: `NIHMS Files Request Received but Email Not Sent to Submitter`,
-            templateProps: {
-              previewText: `Unable to email submitter - NIHMS requires additional files for manuscript ${manuscriptId}`,
-              children: emailBody,
+          await ctx.sendEmail(
+            {
+              eventType: PMC_NIHMS_FILES_REQUESTED,
+              to: ctx.$config.app?.supportEmail,
+              subject: `NIHMS Files Request Received but Email Not Sent to Submitter`,
+              templateProps,
             },
-          });
+            getEmailTemplates(),
+          );
         }
       }
 

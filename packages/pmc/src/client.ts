@@ -15,6 +15,10 @@ import {
   PMC_PENDING_DEPOSIT_NOTIFICATION,
   PendingDepositNotificationEmail,
 } from './backend/emails/pending-deposit-notification.js';
+import {
+  PMC_NIHMS_FILES_REQUESTED,
+  NihmsFilesRequestedEmail,
+} from './backend/emails/nihms-files-requested.js';
 import { PMCDepositTaskCard } from './DepositTaskCard.js';
 import { PMCIcon } from './Icon.js';
 import { PMCTrackEvent, PMCTrackEventDescriptions } from './analytics/events.js';
@@ -97,6 +101,44 @@ export function getEmailTemplates(): ExtensionEmailTemplate[] {
             label: 'Admin submission URL',
             type: 'url',
             example: 'https://app.example.com/app/works/.../site/pmc/submission/...',
+          },
+        ],
+      },
+    },
+    {
+      eventType: PMC_NIHMS_FILES_REQUESTED,
+      component: NihmsFilesRequestedEmail,
+      props: {},
+      templateInfo: {
+        name: 'PMC NIHMS Files Requested',
+        description:
+          'Email sent to the submitter when NIHMS requests additional files; also used to notify support when the submitter cannot be emailed',
+        exampleSubject: 'NIHMS Files Requested for {manuscriptId}',
+        fields: [
+          {
+            name: 'submitterName',
+            label: 'Submitter Name',
+            type: 'text',
+            optional: true,
+            example: 'Dr. Jane Smith',
+          },
+          {
+            name: 'manuscriptId',
+            label: 'Manuscript ID',
+            type: 'text',
+            example: 'NIHMS12345',
+          },
+          {
+            name: 'message',
+            label: 'NIHMS Message',
+            type: 'textarea',
+            example: 'Please provide the revised manuscript.',
+          },
+          {
+            name: 'depositUrl',
+            label: 'Deposit URL',
+            type: 'url',
+            example: 'https://app.example.com/app/works/.../site/pmc/deposit/...',
           },
         ],
       },
