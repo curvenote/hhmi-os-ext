@@ -54,12 +54,15 @@ const MERMAID: string | undefined = `graph TD
     PMC_CONFIRMED -->|request_files| FILES_REQUESTED
     PMC_REJECTED -->|request_files| FILES_REQUESTED
     REVIEWER_APPROVED_INIT -->|request_files| FILES_REQUESTED
+    REVIEWER_APPROVED_INIT -->|request_new_version_from_reviewer_approved_initial| REQUEST_NEW
     REVIEWER_REJECTED_INIT -->|request_files| FILES_REQUESTED
     FILES_REQUESTED -->|request_new_version_from_files_requested| REQUEST_NEW
     FILES_REQUESTED -->|cancel_deposit| CANCELLED
     FILES_REQUESTED -->|mark_no_action_needed| NO_ACTION
     REVIEWER_APPROVED_INIT -->|nihms_conversion_complete| NIHMS_COMPLETE
+    NIHMS_COMPLETE -->|request_new_version_from_nihms_conversion_complete| REQUEST_NEW
     NIHMS_COMPLETE -->|reviewer_approve_final| REVIEWER_APPROVED_FINAL
+    REVIEWER_APPROVED_FINAL -->|request_new_version_from_reviewer_approved_final| REQUEST_NEW
     REVIEWER_APPROVED_FINAL -->|publish_to_pmc| AVAILABLE
     AVAILABLE -->|withdraw_from_pmc| WITHDRAWN
     DEPOSIT_FAILED -->|request_new_version_from_failed| REQUEST_NEW
@@ -520,6 +523,19 @@ export const PMC_DEPOSIT_WORKFLOW = {
     },
     {
       version: 1,
+      name: 'request_new_version_from_reviewer_approved_initial',
+      sourceStateName: PMC_STATE_NAMES.REVIEWER_APPROVED_INITIAL,
+      targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
+      labels: {
+        success: 'New version requested for this deposit (triggered by NIHMS files request email)',
+      },
+      userTriggered: false,
+      help: 'NIHMS has requested additional files - submitter must upload a new version',
+      requiredScopes: ['site:submissions:update'],
+      requiresJob: false,
+    },
+    {
+      version: 1,
       name: 'reviewer_approve_final',
       sourceStateName: PMC_STATE_NAMES.NIHMS_CONVERSION_COMPLETE,
       targetStateName: PMC_STATE_NAMES.REVIEWER_APPROVED_FINAL,
@@ -528,6 +544,32 @@ export const PMC_DEPOSIT_WORKFLOW = {
       },
       userTriggered: false,
       help: 'Reviewer approves the final converted version',
+      requiredScopes: ['site:submissions:update'],
+      requiresJob: false,
+    },
+    {
+      version: 1,
+      name: 'request_new_version_from_nihms_conversion_complete',
+      sourceStateName: PMC_STATE_NAMES.NIHMS_CONVERSION_COMPLETE,
+      targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
+      labels: {
+        success: 'New version requested for this deposit (triggered by NIHMS files request email)',
+      },
+      userTriggered: false,
+      help: 'NIHMS has requested additional files - submitter must upload a new version',
+      requiredScopes: ['site:submissions:update'],
+      requiresJob: false,
+    },
+    {
+      version: 1,
+      name: 'request_new_version_from_reviewer_approved_final',
+      sourceStateName: PMC_STATE_NAMES.REVIEWER_APPROVED_FINAL,
+      targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
+      labels: {
+        success: 'New version requested for this deposit (triggered by NIHMS files request email)',
+      },
+      userTriggered: false,
+      help: 'NIHMS has requested additional files - submitter must upload a new version',
       requiredScopes: ['site:submissions:update'],
       requiresJob: false,
     },
