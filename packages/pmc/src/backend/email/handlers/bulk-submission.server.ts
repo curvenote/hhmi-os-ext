@@ -5,7 +5,11 @@ import type {
   ProcessingResult,
   EmailProcessorConfig,
 } from '../types.server.js';
-import { parseEmailContent, type ParsedEmailResult } from './bulk-submission-parser.server.js';
+import {
+  parseEmailContent,
+  isDirectSubmissionOnlyError,
+  type ParsedEmailResult,
+} from './bulk-submission-parser.server.js';
 import { updateSubmissionMetadataAndStatusIfChanged } from '../email-db.server.js';
 
 /**
@@ -86,8 +90,9 @@ export const bulkSubmissionHandler: InboundEmailHandler = {
       // Process each package independently
       for (const packageResult of parsedResult.packages) {
         try {
-          // Determine the target status based on result type
-          let targetStatus: 'DEPOSIT_CONFIRMED_BY_PMC' | 'DEPOSIT_REJECTED_BY_PMC';
+          // Determine the target status based on result type (errors always go to DEPOSIT_REJECTED_BY_PMC first)
+          type BulkTargetStatus = 'DEPOSIT_CONFIRMED_BY_PMC' | 'DEPOSIT_REJECTED_BY_PMC';
+          let targetStatus: BulkTargetStatus;
           if (packageResult.status === 'success' || packageResult.status === 'warning') {
             targetStatus = 'DEPOSIT_CONFIRMED_BY_PMC';
           } else if (packageResult.status === 'error') {
@@ -96,7 +101,7 @@ export const bulkSubmissionHandler: InboundEmailHandler = {
             throw new Error(`Unknown package status: ${packageResult.status}`);
           }
 
-          // Update metadata and status if changed (skips if already at target status)
+          // First transition: update metadata and status (e.g. to DEPOSIT_REJECTED_BY_PMC for errors)
           await updateSubmissionMetadataAndStatusIfChanged(
             ctx,
             packageResult.packageId,
@@ -105,6 +110,22 @@ export const bulkSubmissionHandler: InboundEmailHandler = {
             targetStatus,
             'bulk-submission-initial-email',
           );
+
+          // For "direct submission only" errors, make a second transition to NO_ACTION_NEEDED
+          // so we pass through DEPOSIT_REJECTED_BY_PMC and both status changes are recorded as activities
+          if (
+            packageResult.status === 'error' &&
+            isDirectSubmissionOnlyError(packageResult.message)
+          ) {
+            await updateSubmissionMetadataAndStatusIfChanged(
+              ctx,
+              packageResult.packageId,
+              packageResult,
+              messageId,
+              'NO_ACTION_NEEDED',
+              'bulk-submission-initial-email',
+            );
+          }
 
           // TODO: if we are going to send an email to the submitter
           // we would prepare the content and queue it here
