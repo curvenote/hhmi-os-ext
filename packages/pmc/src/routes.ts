@@ -74,7 +74,11 @@ export async function registerRoutes(appConfig: Config): Promise<RouteRegistrati
               'workflow-sync',
               resolveRoutePath(import.meta.url, 'routes/$siteName.workflow-sync.tsx'),
             ),
-            route('grants', resolveRoutePath(import.meta.url, 'routes/$siteName.grants.tsx')),
+            route('funding', resolveRoutePath(import.meta.url, 'routes/$siteName.grants.tsx')),
+            route(
+              'grants',
+              resolveRoutePath(import.meta.url, 'routes/$siteName.grants.redirect.tsx'),
+            ),
           ]),
         ] satisfies RouteConfigEntry[],
     },

@@ -179,7 +179,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
     job = await jobs.dbCreateJob({
       ...data,
       status: JobStatus.RUNNING,
-      message: 'Starting HHMI grants sync from Airtable',
+      message: 'Starting funding identifiers sync from Airtable',
     });
 
     console.log(`Starting HHMI grants sync job ${job.id}`);
@@ -187,7 +187,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
     // Update job status
     await jobs.dbUpdateJob(job.id, {
       status: JobStatus.RUNNING,
-      message: 'Fetching grants data from Airtable',
+      message: 'Fetching funding identifiers from Airtable',
     });
 
     // Fetch all scientists from Airtable
@@ -231,7 +231,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
 
     await jobs.dbUpdateJob(job.id, {
       status: JobStatus.RUNNING,
-      message: `Updating grants database with ${plural('%s valid record(s)', validCount)}`,
+      message: `Updating funding identifiers with ${plural('%s valid record(s)', validCount)}`,
     });
 
     // Update the scientists data in the database
@@ -246,7 +246,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
     // Complete the job
     await jobs.dbUpdateJob(job.id, {
       status: JobStatus.COMPLETED,
-      message: `HHMI grants sync completed successfully`,
+      message: `Funding Id sync completed successfully`,
       results: {
         startTime,
         endTime: formatDate(),
@@ -265,7 +265,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
     if (job) {
       await jobs.dbUpdateJob(job.id, {
         status: JobStatus.FAILED,
-        message: `HHMI scientists sync failed: ${err.message}`,
+        message: `Funding Id sync failed: ${err.message}`,
         results: {
           startTime,
           endTime: formatDate(),
