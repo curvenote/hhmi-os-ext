@@ -17,6 +17,7 @@ import {
   PMC_CRITICAL_PATH_STATES,
   PMC_MUTUALLY_EXCLUSIVE_STATES,
   PMC_STATE_NAMES,
+  getAvailableTransitionsForAdmin,
 } from '../workflows.js';
 import { getWorkflows } from '../client.js';
 import { withAppPMCContext } from '../backend/context.server.js';
@@ -155,28 +156,7 @@ export const loader = async (args: LoaderFunctionArgs): Promise<LoaderData> => {
     thisSubmissionVersionMetadata,
   );
 
-  // Calculate available transitions for action buttons: state-specific plus "from any state"
-  // (sourceStateName === null). Exclude when target is current state; exclude null-source when in DRAFT.
-  const allCandidates =
-    currentWorkflow?.transitions?.filter((t: WorkflowTransition) => {
-      if (!t.userTriggered || t.targetStateName === currentStatus) return false;
-      const fromCurrent = t.sourceStateName === currentStatus;
-      const fromAny = t.sourceStateName === null;
-      if (fromAny && currentStatus === PMC_STATE_NAMES.DRAFT) return false;
-      return fromCurrent || fromAny;
-    }) ?? [];
-  // Deduplicate by targetStateName: prefer state-specific over null-source
-  const byTarget = new Map<string, WorkflowTransition>();
-  for (const t of allCandidates) {
-    const existing = byTarget.get(t.targetStateName);
-    if (!existing || (t.sourceStateName === currentStatus && existing.sourceStateName === null)) {
-      byTarget.set(t.targetStateName, t);
-    }
-  }
-  // Don't show transitions whose target state is authorOnly (e.g. Cancel → CANCELLED)
-  const transitions = Array.from(byTarget.values()).filter(
-    (t) => !currentWorkflow?.states?.[t.targetStateName]?.authorOnly,
-  );
+  const transitions = getAvailableTransitionsForAdmin(currentWorkflow, currentStatus);
 
   return {
     thisSubmissionVersionId: thisSubmissionVersionId,

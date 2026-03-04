@@ -1,4 +1,4 @@
-import type { Workflow } from '@curvenote/scms-core';
+import type { Workflow, WorkflowTransition } from '@curvenote/scms-core';
 
 export const PMC_STATE_NAMES = {
   DRAFT: 'DRAFT',
@@ -920,6 +920,35 @@ export const PMC_CRITICAL_PATH_STATES = [
   PMC_STATE_NAMES.REVIEWER_APPROVED_FINAL,
   PMC_STATE_NAMES.AVAILABLE_ON_PMC,
 ] as const;
+
+/**
+ * Returns user-triggered transitions available for the given workflow state in the admin UI:
+ * state-specific transitions plus "from any state" (sourceStateName === null), deduplicated by
+ * target (prefer state-specific), excluding transitions whose target state is authorOnly.
+ */
+export function getAvailableTransitionsForAdmin(
+  workflow: Workflow | undefined,
+  currentStatus: string,
+): WorkflowTransition[] {
+  const allCandidates =
+    workflow?.transitions?.filter((t: WorkflowTransition) => {
+      if (!t.userTriggered || t.targetStateName === currentStatus) return false;
+      const fromCurrent = t.sourceStateName === currentStatus;
+      const fromAny = t.sourceStateName === null;
+      if (fromAny && currentStatus === PMC_STATE_NAMES.DRAFT) return false;
+      return fromCurrent || fromAny;
+    }) ?? [];
+  const byTarget = new Map<string, WorkflowTransition>();
+  for (const t of allCandidates) {
+    const existing = byTarget.get(t.targetStateName);
+    if (!existing || (t.sourceStateName === currentStatus && existing.sourceStateName === null)) {
+      byTarget.set(t.targetStateName, t);
+    }
+  }
+  return Array.from(byTarget.values()).filter(
+    (t) => !workflow?.states?.[t.targetStateName]?.authorOnly,
+  );
+}
 
 // Export an array of workflows that this extension provides
 export const workflows: Workflow[] = [PMC_DEPOSIT_WORKFLOW];
