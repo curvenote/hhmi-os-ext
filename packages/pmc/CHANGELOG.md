@@ -1,5 +1,12 @@
 # @hhmi/pmc
 
+## 0.1.15
+
+### Patch Changes
+
+- 7368b9d: Adding a confirmation dialog for PMC Admin inbox actions
+- 7368b9d: Submitters will automatically receive an email when a PMC admin presses "Request New Version"
+
 ## 0.1.14
 
 ### Patch Changes
