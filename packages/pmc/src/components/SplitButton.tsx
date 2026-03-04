@@ -78,7 +78,7 @@ export function SplitButton({
         disabled={disabled}
         overlayBusy
         onClick={() => onPrimaryAction(primaryValue)}
-        className={className}
+        className={cn('w-full', className)}
       >
         {primaryLabel}
       </ui.StatefulButton>
@@ -86,7 +86,7 @@ export function SplitButton({
   }
 
   return (
-    <div className={cn('inline-flex rounded-md shadow-sm', className)} role="group">
+    <div className={cn('flex w-full rounded-md shadow-sm', className)} role="group">
       {/* Primary action – left part of split */}
       <ui.StatefulButton
         variant="default"
@@ -95,7 +95,7 @@ export function SplitButton({
         disabled={disabled}
         overlayBusy
         onClick={() => onPrimaryAction(primaryValue)}
-        className="rounded-r-none border-r border-white/30"
+        className="flex-1 min-w-0 rounded-r-none border-r border-white/30"
       >
         {primaryLabel}
       </ui.StatefulButton>
