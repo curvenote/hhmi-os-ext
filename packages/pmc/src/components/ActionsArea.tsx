@@ -7,64 +7,11 @@ import { JobStatus } from '@curvenote/scms-db';
 import { zfd } from 'zod-form-data';
 import { z } from 'zod';
 import type { Prisma } from '@curvenote/scms-db';
+import { SplitButton, type SplitButtonOption } from './SplitButton.js';
 
 interface SubmissionVersionTransitionInfo {
   id: string;
   transition?: WorkflowTransition | Prisma.JsonValue | null;
-}
-
-interface TransitionActionButtonProps {
-  transition: WorkflowTransition;
-  isPrimary: boolean;
-  submissionVersion: SubmissionVersionTransitionInfo;
-  onError: (error: GeneralError | string | undefined) => void;
-  busy: boolean;
-  disabled: boolean;
-  fetcher: ReturnType<
-    typeof useFetcher<{
-      success: boolean;
-      item?: SubmissionVersionTransitionInfo;
-      error?: GeneralError | string;
-    }>
-  >;
-  formAction?: string;
-}
-
-function TransitionActionButton({
-  transition,
-  isPrimary,
-  submissionVersion,
-  onError,
-  busy,
-  disabled,
-  fetcher,
-  formAction,
-}: TransitionActionButtonProps) {
-  return (
-    <fetcher.Form
-      method="post"
-      action={formAction}
-      onSubmit={() => {
-        onError(undefined);
-      }}
-    >
-      <input type="hidden" name="intent" value="transition" />
-      <input type="hidden" name="submissionVersionId" value={submissionVersion.id} />
-      <input type="hidden" name="transition" value={transition.name} />
-      <div>
-        <ui.StatefulButton
-          variant={isPrimary ? 'default' : 'secondary'}
-          type="submit"
-          busy={busy}
-          disabled={disabled}
-          overlayBusy
-          size="sm"
-        >
-          {transition.labels?.action || transition.name}
-        </ui.StatefulButton>
-      </div>
-    </fetcher.Form>
-  );
 }
 
 interface ActionsAreaProps {
@@ -100,7 +47,6 @@ export function ActionsAreaForm({
 
   useEffect(() => {
     if (fetcher.data?.error) {
-      // Handle error with toaster
       let errorMessage: string;
       if (typeof fetcher.data.error === 'string') {
         errorMessage = fetcher.data.error;
@@ -115,11 +61,9 @@ export function ActionsAreaForm({
       }
       ui.toastError(errorMessage);
     } else if (fetcher.data?.success && fetcher.data?.item) {
-      // Handle success case
       const transition = fetcher.data.item.transition as WorkflowTransition;
       setActiveTransition(transition);
 
-      // Show success toast for successful transitions (except job-based ones)
       if (!transition?.requiresJob) {
         ui.toastSuccess('Action completed successfully');
       }
@@ -132,15 +76,12 @@ export function ActionsAreaForm({
   const handleJobComplete = useCallback(
     (job: JobDTO) => {
       if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
-        // Job ended (success or failure), refresh submission data
         setActiveTransition(null);
         revalidator.revalidate();
 
         if (job.status === JobStatus.COMPLETED) {
-          // Job succeeded, show success toast
           ui.toastSuccess('Action completed successfully');
         } else if (job.status === JobStatus.FAILED) {
-          // Job failed, show error toast
           const errorMessage = `Job failed: ${job.messages?.join(', ') || 'Unknown error'}`;
           ui.toastError(errorMessage);
         }
@@ -169,50 +110,58 @@ export function ActionsAreaForm({
     onError: handleJobError,
   });
 
+  const submitTransition = useCallback(
+    (transitionName: string) => {
+      onError(undefined);
+      fetcher.submit(
+        {
+          intent: 'transition',
+          submissionVersionId: submissionVersion.id,
+          transition: transitionName,
+        },
+        { method: 'post', action: formAction },
+      );
+    },
+    [fetcher, submissionVersion.id, formAction, onError],
+  );
+
   if (transitions.length === 0) {
     return <span className="text-gray-400">No actions</span>;
   }
+
+  const primary = transitions[0];
+  const otherActions: SplitButtonOption[] = transitions.slice(1).map((t) => ({
+    label: t.labels?.action || t.name,
+    value: t.name,
+  }));
+
+  const busy = fetcher.state !== 'idle' || !!activeTransition;
+  const disabled = fetcher.state !== 'idle' || !!activeTransition;
 
   const isHorizontal = layout === 'horizontal';
 
   return (
     <div
       data-name="actions-area"
-      className={`flex ${isHorizontal ? 'flex-row items-center' : 'flex-col'} gap-2`}
+      className={`flex flex-col gap-2 ${isHorizontal ? 'flex-row items-center justify-end' : ''}`}
     >
-      {isHorizontal && activeTransition && (
+      <SplitButton
+        primaryLabel={primary.labels?.action || primary.name}
+        primaryValue={primary.name}
+        onPrimaryAction={submitTransition}
+        otherActions={otherActions}
+        onOptionSelect={submitTransition}
+        disabled={disabled}
+        busy={busy}
+        size="sm"
+      />
+      {activeTransition && (
         <div className="flex gap-2 items-center animate-pulse">
           <ui.Dot />
-          <div className="text-sm text-gray-400">
+          <div className="text-gray-400 text-sm pb-[1px]">
             {activeTransition.labels?.inProgress ?? 'in progress...'}
           </div>
         </div>
-      )}
-      <div className={`flex flex-wrap gap-2 ${isHorizontal ? 'justify-start' : 'justify-center'}`}>
-        {transitions.map((transition: WorkflowTransition, idx: number) => (
-          <TransitionActionButton
-            key={transition.name}
-            transition={transition}
-            isPrimary={idx === 0}
-            submissionVersion={submissionVersion}
-            onError={onError}
-            busy={fetcher.state !== 'idle' || activeTransition?.name === transition.name}
-            disabled={fetcher.state !== 'idle' || !!activeTransition}
-            fetcher={fetcher}
-            formAction={formAction}
-          />
-        ))}
-      </div>
-      {!isHorizontal && activeTransition && (
-        <>
-          <div className="grow" />
-          <div className="flex gap-2 items-center animate-pulse">
-            <ui.Dot />
-            <div className="text-gray-400 text-sm pb-[1px]">
-              {activeTransition.labels?.inProgress ?? 'in progress...'}
-            </div>
-          </div>
-        </>
       )}
     </div>
   );

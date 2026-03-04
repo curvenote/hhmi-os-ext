@@ -1,9 +1,10 @@
 import { formatDistance } from 'date-fns';
 import { Link, useLocation } from 'react-router';
 import { ExternalLink } from 'lucide-react';
-import type { Workflow, GeneralError } from '@curvenote/scms-core';
+import type { Workflow, WorkflowTransition, GeneralError } from '@curvenote/scms-core';
 import { ui } from '@curvenote/scms-core';
 import { ActionsAreaForm } from '../../components/ActionsArea.js';
+import { PMC_STATE_NAMES } from '../../workflows.js';
 import type { ResolvedListing } from './types.js';
 import type { PMCWorkVersionMetadataSection } from '../../common/metadata.schema.js';
 
@@ -26,10 +27,27 @@ export function SubmissionCard({ submission, workflows, siteName }: SubmissionCa
   const workflowName = submission.collection?.workflow;
   const workflow = workflowName ? workflows.find((w) => w.name === workflowName) : undefined;
 
-  // Find user-triggered transitions from this state
-  const transitions =
-    workflow?.transitions?.filter((t: any) => t.sourceStateName === status && t.userTriggered) ??
-    [];
+  // Find user-triggered transitions: state-specific plus "from any state" (sourceStateName === null)
+  const allCandidates =
+    workflow?.transitions?.filter((t: WorkflowTransition) => {
+      if (!t.userTriggered || t.targetStateName === status) return false;
+      const fromCurrent = t.sourceStateName === status;
+      const fromAny = t.sourceStateName === null;
+      if (fromAny && status === PMC_STATE_NAMES.DRAFT) return false;
+      return fromCurrent || fromAny;
+    }) ?? [];
+  // Deduplicate by targetStateName: prefer state-specific over null-source
+  const byTarget = new Map<string, WorkflowTransition>();
+  for (const t of allCandidates) {
+    const existing = byTarget.get(t.targetStateName);
+    if (!existing || (t.sourceStateName === status && existing.sourceStateName === null)) {
+      byTarget.set(t.targetStateName, t);
+    }
+  }
+  // Don't show transitions whose target state is authorOnly (e.g. Cancel → CANCELLED)
+  const transitions = Array.from(byTarget.values()).filter(
+    (t) => !workflow?.states?.[t.targetStateName]?.authorOnly,
+  );
 
   const handleError = (errorValue: GeneralError | string | undefined) => {
     if (errorValue) {

@@ -53,9 +53,11 @@ const MERMAID: string | undefined = `graph TD
     PMC_CONFIRMED -->|reviewer_reject_initial| REVIEWER_REJECTED_INIT
     PMC_CONFIRMED -->|request_files| FILES_REQUESTED
     PMC_REJECTED -->|request_files| FILES_REQUESTED
+    PMC_REJECTED -->|mark_no_action_needed_from_rejected| NO_ACTION
     REVIEWER_APPROVED_INIT -->|request_files| FILES_REQUESTED
     REVIEWER_APPROVED_INIT -->|request_new_version_from_reviewer_approved_initial| REQUEST_NEW
     REVIEWER_REJECTED_INIT -->|request_files| FILES_REQUESTED
+    REVIEWER_REJECTED_INIT -->|mark_no_action_needed_from_reviewer_rejected| NO_ACTION
     FILES_REQUESTED -->|request_new_version_from_files_requested| REQUEST_NEW
     FILES_REQUESTED -->|cancel_deposit| CANCELLED
     FILES_REQUESTED -->|mark_no_action_needed| NO_ACTION
@@ -78,7 +80,9 @@ const MERMAID: string | undefined = `graph TD
     classDef warningState fill:#fff3cd,stroke:#856404,stroke-width:2px
     class NO_ACTION,DEPOSIT_FAILED,PMC_REJECTED,FILES_REQUESTED,REVIEWER_REJECTED_INIT,FAILED,REMOVED_FROM_PROCESSING,REQUEST_NEW endState
     class DEPOSIT_FAILED,PMC_REJECTED,REVIEWER_REJECTED_INIT,FAILED,REMOVED_FROM_PROCESSING errorState
-    class WITHDRAWN,REQUEST_NEW,FILES_REQUESTED warningState`;
+    class WITHDRAWN,REQUEST_NEW,FILES_REQUESTED warningState
+
+    %% Admin: from any state --> request_new_version (REQUEST_NEW), cancel_deposit (CANCELLED)`;
 
 export const PMC_DEPOSIT_WORKFLOW = {
   version: 1,
@@ -278,7 +282,7 @@ export const PMC_DEPOSIT_WORKFLOW = {
       },
       visible: false,
       published: false,
-      authorOnly: false,
+      authorOnly: true, // Depositor action; hide Cancel transition in admin UI
       inbox: false,
       tags: ['error', 'end'],
     },
@@ -631,6 +635,23 @@ export const PMC_DEPOSIT_WORKFLOW = {
     },
     {
       version: 1,
+      name: 'request_new_version',
+      sourceStateName: null,
+      targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
+      labels: {
+        button: 'Request New Version',
+        confirmation: 'Are you sure you want to request a new version of this deposit?',
+        success: 'New version requested for this deposit',
+        action: 'Request New Version',
+        inProgress: 'Requesting new version...',
+      },
+      userTriggered: true,
+      help: 'Request a new version of this deposit from the submitter. Admin can use this from any state.',
+      requiredScopes: ['site:submissions:update'],
+      requiresJob: false,
+    },
+    {
+      version: 1,
       name: 'remove_from_processing',
       sourceStateName: null,
       targetStateName: PMC_STATE_NAMES.REMOVED_FROM_PROCESSING,
@@ -674,6 +695,23 @@ export const PMC_DEPOSIT_WORKFLOW = {
     },
     {
       version: 1,
+      name: 'mark_no_action_needed_from_rejected',
+      sourceStateName: PMC_STATE_NAMES.DEPOSIT_REJECTED_BY_PMC,
+      targetStateName: PMC_STATE_NAMES.NO_ACTION_NEEDED,
+      labels: {
+        button: 'No Action Needed',
+        confirmation: 'Are you sure you want to mark this deposit as no action needed?',
+        success: 'Deposit has been marked as no action needed',
+        action: 'No Action Needed',
+        inProgress: 'Marking as no action needed...',
+      },
+      userTriggered: true,
+      help: 'Mark this deposit as no action needed from the PMC rejected state.',
+      requiredScopes: ['site:submissions:update'],
+      requiresJob: false,
+    },
+    {
+      version: 1,
       name: 'request_new_version_from_rejected',
       sourceStateName: PMC_STATE_NAMES.DEPOSIT_REJECTED_BY_PMC,
       targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
@@ -686,6 +724,23 @@ export const PMC_DEPOSIT_WORKFLOW = {
       },
       userTriggered: true,
       help: 'Request a new version of this deposit from the HHMI Support Team.',
+      requiredScopes: ['site:submissions:update'],
+      requiresJob: false,
+    },
+    {
+      version: 1,
+      name: 'mark_no_action_needed_from_reviewer_rejected',
+      sourceStateName: PMC_STATE_NAMES.REVIEWER_REJECTED_INITIAL,
+      targetStateName: PMC_STATE_NAMES.NO_ACTION_NEEDED,
+      labels: {
+        button: 'No Action Needed',
+        confirmation: 'Are you sure you want to mark this deposit as no action needed?',
+        success: 'Deposit has been marked as no action needed',
+        action: 'No Action Needed',
+        inProgress: 'Marking as no action needed...',
+      },
+      userTriggered: true,
+      help: 'Mark this deposit as no action needed from the reviewer rejected state.',
       requiredScopes: ['site:submissions:update'],
       requiresJob: false,
     },
@@ -820,23 +875,6 @@ export const PMC_DEPOSIT_WORKFLOW = {
       },
       userTriggered: true,
       help: 'Cancel this deposit from the files requested state',
-      requiredScopes: ['site:submissions:update'],
-      requiresJob: false,
-    },
-    {
-      version: 1,
-      name: 'mark_no_action_needed_from_files_requested',
-      sourceStateName: PMC_STATE_NAMES.SUBMITTERS_FILES_REQUESTED,
-      targetStateName: PMC_STATE_NAMES.NO_ACTION_NEEDED,
-      labels: {
-        button: 'No Action Needed',
-        confirmation: 'Are you sure you want to mark this deposit as no action needed?',
-        success: 'Deposit has been marked as no action needed',
-        action: 'No Action Needed',
-        inProgress: 'Marking as no action needed...',
-      },
-      userTriggered: true,
-      help: 'Mark this deposit as no action needed from the files requested state',
       requiredScopes: ['site:submissions:update'],
       requiresJob: false,
     },
