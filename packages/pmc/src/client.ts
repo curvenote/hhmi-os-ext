@@ -19,6 +19,10 @@ import {
   PMC_NIHMS_FILES_REQUESTED,
   NihmsFilesRequestedEmail,
 } from './backend/emails/nihms-files-requested.js';
+import {
+  PMC_REQUEST_NEW_VERSION_BY_TEAM,
+  RequestNewVersionByTeamEmail,
+} from './backend/emails/request-new-version-by-team.js';
 import { PMCDepositTaskCard } from './DepositTaskCard.js';
 import { PMCIcon } from './Icon.js';
 import { PMCTrackEvent, PMCTrackEventDescriptions } from './analytics/events.js';
@@ -139,6 +143,38 @@ export function getEmailTemplates(): ExtensionEmailTemplate[] {
             label: 'Deposit URL',
             type: 'url',
             example: 'https://app.example.com/app/works/.../site/pmc/deposit/...',
+          },
+        ],
+      },
+    },
+    {
+      eventType: PMC_REQUEST_NEW_VERSION_BY_TEAM,
+      component: RequestNewVersionByTeamEmail,
+      props: {},
+      templateInfo: {
+        name: 'PMC Request New Version (by team)',
+        description:
+          'Email sent to the submitter when the HHMI Open Science team triggers "Request new version" from the admin UI',
+        exampleSubject: 'New version requested for your PMC deposit',
+        fields: [
+          {
+            name: 'submitterName',
+            label: 'Submitter Name',
+            type: 'text',
+            optional: true,
+            example: 'Dr. Jane Smith',
+          },
+          {
+            name: 'depositUrl',
+            label: 'Deposit URL',
+            type: 'url',
+            example: 'https://app.example.com/app/works/.../site/pmc/deposit/...',
+          },
+          {
+            name: 'supportEmail',
+            label: 'Support Email',
+            type: 'text',
+            example: 'support@example.com',
           },
         ],
       },

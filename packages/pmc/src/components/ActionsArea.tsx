@@ -110,6 +110,9 @@ export function ActionsAreaForm({
     onError: handleJobError,
   });
 
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [pendingTransitionName, setPendingTransitionName] = useState<string | null>(null);
+
   const submitTransition = useCallback(
     (transitionName: string) => {
       onError(undefined);
@@ -124,6 +127,32 @@ export function ActionsAreaForm({
     },
     [fetcher, submissionVersion.id, formAction, onError],
   );
+
+  const requestTransition = useCallback((transitionName: string) => {
+    setPendingTransitionName(transitionName);
+    setConfirmDialogOpen(true);
+  }, []);
+
+  const handleConfirmAction = useCallback(() => {
+    if (pendingTransitionName) {
+      submitTransition(pendingTransitionName);
+      setPendingTransitionName(null);
+      setConfirmDialogOpen(false);
+    }
+  }, [pendingTransitionName, submitTransition]);
+
+  const handleCancelConfirm = useCallback(() => {
+    setConfirmDialogOpen(false);
+    setPendingTransitionName(null);
+  }, []);
+
+  const pendingTransition = pendingTransitionName
+    ? transitions.find((t) => t.name === pendingTransitionName)
+    : null;
+  const confirmMessage =
+    pendingTransition?.labels?.confirmation ?? 'Are you sure you want to continue with this action?';
+  const confirmActionLabel =
+    pendingTransition?.labels?.action ?? pendingTransition?.labels?.button ?? 'Confirm';
 
   if (transitions.length === 0) {
     return <span className="text-gray-400">No actions</span>;
@@ -148,13 +177,33 @@ export function ActionsAreaForm({
       <SplitButton
         primaryLabel={primary.labels?.action || primary.name}
         primaryValue={primary.name}
-        onPrimaryAction={submitTransition}
+        onPrimaryAction={requestTransition}
         otherActions={otherActions}
-        onOptionSelect={submitTransition}
+        onOptionSelect={requestTransition}
         disabled={disabled}
         busy={busy}
         size="sm"
       />
+      <ui.Dialog
+        open={confirmDialogOpen}
+        onOpenChange={(open) => {
+          setConfirmDialogOpen(open);
+          if (!open) setPendingTransitionName(null);
+        }}
+      >
+        <ui.DialogContent>
+          <ui.DialogHeader>
+            <ui.DialogTitle>Confirm action</ui.DialogTitle>
+            <ui.DialogDescription>{confirmMessage}</ui.DialogDescription>
+          </ui.DialogHeader>
+          <ui.DialogFooter>
+            <ui.Button variant="outline" onClick={handleCancelConfirm}>
+              Cancel
+            </ui.Button>
+            <ui.Button onClick={handleConfirmAction}>{confirmActionLabel}</ui.Button>
+          </ui.DialogFooter>
+        </ui.DialogContent>
+      </ui.Dialog>
       {activeTransition && (
         <div className="flex gap-2 items-center animate-pulse">
           <ui.Dot />

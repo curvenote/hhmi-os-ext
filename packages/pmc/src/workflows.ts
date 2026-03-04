@@ -21,6 +21,9 @@ export const PMC_STATE_NAMES = {
   REQUEST_NEW_VERSION: 'REQUEST_NEW_VERSION',
 };
 
+const REQUEST_NEW_VERSION_CONFIRMATION =
+  'Are you sure you want to request a new version of this deposit? The submitter will be notified by email.';
+
 const MERMAID: string | undefined = `graph TD
     DRAFT[DRAFT<br/>Draft]
     PENDING[PENDING<br/>New Deposit Uploaded]
@@ -417,7 +420,7 @@ export const PMC_DEPOSIT_WORKFLOW = {
       targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
       labels: {
         button: 'Request New Version',
-        confirmation: 'Are you sure you want to request a new version of this deposit?',
+        confirmation: REQUEST_NEW_VERSION_CONFIRMATION,
         success: 'New version requested for this deposit',
         action: 'Request New Version',
         inProgress: 'Requesting new version...',
@@ -640,7 +643,7 @@ export const PMC_DEPOSIT_WORKFLOW = {
       targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
       labels: {
         button: 'Request New Version',
-        confirmation: 'Are you sure you want to request a new version of this deposit?',
+        confirmation: REQUEST_NEW_VERSION_CONFIRMATION,
         success: 'New version requested for this deposit',
         action: 'Request New Version',
         inProgress: 'Requesting new version...',
@@ -683,7 +686,7 @@ export const PMC_DEPOSIT_WORKFLOW = {
       targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
       labels: {
         button: 'Request New Version',
-        confirmation: 'Are you sure you want to request a new version of this deposit?',
+        confirmation: REQUEST_NEW_VERSION_CONFIRMATION,
         success: 'New version requested for this deposit',
         action: 'Request New Version',
         inProgress: 'Requesting new version...',
@@ -717,7 +720,7 @@ export const PMC_DEPOSIT_WORKFLOW = {
       targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
       labels: {
         button: 'Request New Version',
-        confirmation: 'Are you sure you want to request a new version of this deposit?',
+        confirmation: REQUEST_NEW_VERSION_CONFIRMATION,
         success: 'New version requested for this deposit',
         action: 'Request New Version',
         inProgress: 'Requesting new version...',
@@ -751,7 +754,7 @@ export const PMC_DEPOSIT_WORKFLOW = {
       targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
       labels: {
         button: 'Request New Version',
-        confirmation: 'Are you sure you want to request a new version of this deposit?',
+        confirmation: REQUEST_NEW_VERSION_CONFIRMATION,
         success: 'New version requested for this deposit',
         action: 'Request New Version',
         inProgress: 'Requesting new version...',
@@ -768,7 +771,7 @@ export const PMC_DEPOSIT_WORKFLOW = {
       targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
       labels: {
         button: 'Request New Version',
-        confirmation: 'Are you sure you want to request a new version of this deposit?',
+        confirmation: REQUEST_NEW_VERSION_CONFIRMATION,
         success: 'New version requested for this deposit',
         action: 'Request New Version',
         inProgress: 'Requesting new version...',
@@ -785,7 +788,7 @@ export const PMC_DEPOSIT_WORKFLOW = {
       targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
       labels: {
         button: 'Request New Version',
-        confirmation: 'Are you sure you want to request a new version of this deposit?',
+        confirmation: REQUEST_NEW_VERSION_CONFIRMATION,
         success: 'New version requested for this deposit',
         action: 'Request New Version',
         inProgress: 'Requesting new version...',
@@ -851,7 +854,7 @@ export const PMC_DEPOSIT_WORKFLOW = {
       targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
       labels: {
         button: 'Request New Version',
-        confirmation: 'Are you sure you want to request a new version of this deposit?',
+        confirmation: REQUEST_NEW_VERSION_CONFIRMATION,
         success: 'New version requested for this deposit',
         action: 'Request New Version',
         inProgress: 'Requesting new version...',

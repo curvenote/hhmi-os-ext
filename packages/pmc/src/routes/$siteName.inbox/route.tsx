@@ -10,8 +10,10 @@ import {
 } from '@curvenote/scms-core';
 import { withAppPMCContext } from '../../backend/context.server.js';
 import { withValidFormData, sites } from '@curvenote/scms-server';
-import { getWorkflows } from '../../client.js';
+import { getWorkflows, getEmailTemplates } from '../../client.js';
 import { TransitionFormSchema } from '../../components/ActionsArea.js';
+import { PMC_STATE_NAMES } from '../../workflows.js';
+import { PMC_REQUEST_NEW_VERSION_BY_TEAM } from '../../backend/emails/request-new-version-by-team.js';
 import { SubmissionList } from './SubmissionList.js';
 import { dbListPMCSubmissionsWithLatestNonDraftVersion } from './db.server.js';
 
@@ -109,6 +111,40 @@ export async function action(args: ActionFunctionArgs) {
               workflow,
               transitionItem.targetStateName,
             );
+
+            // When UI triggers "Request new version", send email to submitter
+            if (transitionItem.targetStateName === PMC_STATE_NAMES.REQUEST_NEW_VERSION) {
+              const submitter = submissionVersion.submitted_by;
+              const supportEmail = ctx.$config.app?.branding?.supportEmail;
+
+              if (submitter?.email && supportEmail) {
+                const depositUrl = ctx.asBaseUrl(
+                  `/app/works/${submissionVersion.work_version.work_id}/site/pmc/deposit/${submissionVersion.id}`,
+                );
+                try {
+                  await ctx.sendEmail(
+                    {
+                      eventType: PMC_REQUEST_NEW_VERSION_BY_TEAM,
+                      to: submitter.email,
+                      subject: 'New version requested for your PMC deposit',
+                      templateProps: {
+                        submitterName: submitter.display_name ?? undefined,
+                        depositUrl,
+                        supportEmail,
+                      },
+                      ignoreUnsubscribe: false,
+                    },
+                    getEmailTemplates(),
+                  );
+                } catch (emailError) {
+                  console.error(
+                    'Failed to send request new version (by team) notification email:',
+                    emailError,
+                  );
+                }
+              }
+            }
+
             return { success: true, item };
           }
           default:
