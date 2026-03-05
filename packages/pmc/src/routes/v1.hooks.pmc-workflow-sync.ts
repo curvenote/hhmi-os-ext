@@ -1,7 +1,7 @@
 import type { LoaderFunction } from 'react-router';
 import { data } from 'react-router';
-import { withContext, jobs, sites } from '@curvenote/scms-server';
-import { error404, error405 } from '@curvenote/scms-core';
+import { withContext, jobs, sites, getUserById } from '@curvenote/scms-server';
+import { error404, error405, httpError } from '@curvenote/scms-core';
 import { uuidv7 } from 'uuidv7';
 import { getJobs } from '../server.js';
 
@@ -22,6 +22,15 @@ export const loader: LoaderFunction = async (args) => {
     return data({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // we are now authorized but need to manually get the service account user
+  const serviceAccountId = ctx.$config?.api?.submissionsServiceAccount?.id;
+  const serviceAccountUser = await getUserById(serviceAccountId);
+  if (!serviceAccountUser) {
+    console.error('service account user not found');
+    throw httpError(500, 'service account user not found');
+  }
+  ctx.user = { email_verified: true, ...serviceAccountUser };
+
   const site = await sites.get(ctx, 'pmc');
   if (!site) {
     console.error('site `pmc` not found');
@@ -29,7 +38,6 @@ export const loader: LoaderFunction = async (args) => {
   }
 
   // Create a new PMC_WORKFLOW_SYNC job for this site (triggered by webhook/cron)
-  const serviceAccountId = ctx.$config?.api?.submissionsServiceAccount?.id;
   await jobs.create(
     ctx,
     {
