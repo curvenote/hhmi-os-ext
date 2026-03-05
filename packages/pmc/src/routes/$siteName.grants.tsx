@@ -60,8 +60,8 @@ interface LoaderData {
 
 export const meta: MetaFunction<LoaderData> = () => {
   return [
-    { title: 'HHMI Scientists Management' },
-    { name: 'description', content: 'Manage HHMI scientists database and sync from Airtable' },
+    { title: 'NIHMS Funding Identifiers' },
+    { name: 'description', content: 'Manage NIHMS funding identifiers and sync from Airtable' },
   ];
 };
 
@@ -233,7 +233,7 @@ function SyncButton({
         aria-busy={isUpdating || disabled}
       >
         <RefreshCw className={isUpdating ? 'mr-2 animate-spin' : 'mr-2'} />
-        Sync Grants from Airtable
+        Sync Funding Identifiers
       </ui.Button>
     </fetcher.Form>
   );
@@ -244,7 +244,7 @@ function GrantsTable({ scientists }: { scientists: HHMIScientist[] }) {
     return (
       <primitives.Card className="p-6 text-center text-gray-500">
         <Database className="mx-auto mb-2 w-8 h-8" />
-        <p>No grants data available. Click "Sync Grants from Airtable" to load data.</p>
+        <p>No funding data available. Click "Sync Funding Identifiers" to load data.</p>
       </primitives.Card>
     );
   }
@@ -256,10 +256,10 @@ function GrantsTable({ scientists }: { scientists: HHMIScientist[] }) {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                Grant ID
+                NIHMS Funding Id
               </th>
               <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                Scientist Name
+                Investigator Name
               </th>
               <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                 ORCID
@@ -432,7 +432,7 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
   const statsData: StatCardData[] = [
     {
       type: 'count',
-      label: 'Total Grants',
+      label: 'Total Investigators',
       value: stats.totalScientists,
       colorClass: 'text-blue-600',
     },
@@ -502,7 +502,7 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
   }, [loadMoreFetcher.data, loadMoreFetcher.state]);
 
   return (
-    <PageFrame title="HHMI Grants Management">
+    <PageFrame title="NIHMS Funding Identifiers">
       <div className="space-y-6">
         {/* Stats and Sync Section */}
         <StatsSection
@@ -512,7 +512,7 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
 
         {/* Grants Table */}
         <section>
-          <SectionWithHeading heading="HHMI Grants" icon={<User />}>
+          <SectionWithHeading heading="Current NIHMS Funding Identifiers" icon={<User />}>
             <GrantsTable scientists={initialScientists} />
           </SectionWithHeading>
         </section>
@@ -523,7 +523,7 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
             {displayedJobs.length === 0 ? (
               <primitives.Card className="p-6 text-center text-gray-500">
                 <RefreshCw className="mx-auto mb-2 w-8 h-8" />
-                <p>No sync jobs yet. Click "Sync Grants from Airtable" to start your first sync.</p>
+                <p>No sync jobs yet. Click "Sync Funding Identifiers" to start your first sync.</p>
               </primitives.Card>
             ) : (
               <>

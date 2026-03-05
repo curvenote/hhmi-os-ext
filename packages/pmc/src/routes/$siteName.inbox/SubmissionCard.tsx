@@ -4,6 +4,7 @@ import { ExternalLink } from 'lucide-react';
 import type { Workflow, GeneralError } from '@curvenote/scms-core';
 import { ui } from '@curvenote/scms-core';
 import { ActionsAreaForm } from '../../components/ActionsArea.js';
+import { getAvailableTransitionsForAdmin } from '../../workflows.js';
 import type { ResolvedListing } from './types.js';
 import type { PMCWorkVersionMetadataSection } from '../../common/metadata.schema.js';
 
@@ -25,11 +26,7 @@ export function SubmissionCard({ submission, workflows, siteName }: SubmissionCa
   // Look up the workflow and status label
   const workflowName = submission.collection?.workflow;
   const workflow = workflowName ? workflows.find((w) => w.name === workflowName) : undefined;
-
-  // Find user-triggered transitions from this state
-  const transitions =
-    workflow?.transitions?.filter((t: any) => t.sourceStateName === status && t.userTriggered) ??
-    [];
+  const transitions = getAvailableTransitionsForAdmin(workflow, status);
 
   const handleError = (errorValue: GeneralError | string | undefined) => {
     if (errorValue) {

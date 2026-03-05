@@ -28,7 +28,14 @@ type JobResults = {
   unmodifiedCount?: number;
   errorCount?: number;
   modifiedSubmissions?: Array<{ id: string; title: string }>;
+  errors?: Array<{ submissionId?: string; error: string; title?: string }>;
   error?: string;
+};
+
+type WorkflowSyncJobPayload = {
+  site_id?: string;
+  triggered_by_user_id?: string;
+  triggered_by_user_name?: string;
 };
 interface LoaderData {
   jobs: JobDTO[];
@@ -86,13 +93,19 @@ export async function action(args: ActionFunctionArgs) {
   if (intent === 'sync') {
     const jobId = formData.get('jobId') as string;
 
-    // Create a new PMC_WORKFLOW_SYNC job for this site
+    // Create a new PMC_WORKFLOW_SYNC job for this site (triggered by current user)
+    const triggeredByUserName =
+      ctx.user?.display_name ?? ctx.user?.email ?? ctx.user?.username ?? 'User';
     await jobs.invoke(
       ctx,
       {
         id: jobId,
         job_type: 'PMC_WORKFLOW_SYNC',
-        payload: { site_id: ctx.site.id },
+        payload: {
+          site_id: ctx.site.id,
+          triggered_by_user_id: ctx.user?.id,
+          triggered_by_user_name: triggeredByUserName,
+        },
       },
       getJobs(),
     );
@@ -170,6 +183,7 @@ function SyncButton({
 function UpdateJobCard({ job }: { job: JobDTO }) {
   const cancelFetcher = useFetcher();
   const results = job.results as JobResults;
+  const payload = job.payload as WorkflowSyncJobPayload | undefined;
   const isRunning = job.status === 'RUNNING';
   const isCancellable = isRunning;
 
@@ -218,6 +232,14 @@ function UpdateJobCard({ job }: { job: JobDTO }) {
               {job.date_modified ? formatDate(job.date_modified, 'yyyy-MM-dd HH:mm:ss') : '—'}
             </div>
           </div>
+          {(payload?.triggered_by_user_name ?? payload?.triggered_by_user_id) && (
+            <div className="mb-1 text-sm text-gray-500">
+              Triggered by:{' '}
+              <span title={payload?.triggered_by_user_id ?? undefined}>
+                {payload?.triggered_by_user_name ?? '—'}
+              </span>
+            </div>
+          )}
           <div className="flex gap-4">
             <div className="text-sm">
               <div>Total submissions: {results?.totalSubmissions ?? '—'}</div>
@@ -242,11 +264,39 @@ function UpdateJobCard({ job }: { job: JobDTO }) {
                     key={id}
                     href={`/app/sites/pmc/deposits/${id}`}
                     className="px-2 py-1 text-xs text-blue-800 bg-blue-100 rounded transition-colors hover:bg-blue-200"
-                    title={`${title} (${id})`}
+                    title={`${title ?? id} (${id})`}
                   >
-                    {title}
+                    {(title ?? id).slice(0, 32)}
+                    {(title ?? id).length > 32 ? '...' : ''}
                   </a>
                 ))}
+              </div>
+            </div>
+          )}
+          {(results?.errorCount ?? 0) > 0 && results?.errors && results.errors.length > 0 && (
+            <div>
+              <div className="mb-2 text-xs font-medium text-red-600">Submissions with errors:</div>
+              <div className="flex flex-wrap gap-1">
+                {results.errors.map((entry, index) =>
+                  entry.submissionId ? (
+                    <a
+                      key={entry.submissionId}
+                      href={`/app/sites/pmc/deposits/${entry.submissionId}`}
+                      className="px-2 py-1 text-xs text-red-800 bg-red-100 rounded transition-colors hover:bg-red-200"
+                      title={entry.error}
+                    >
+                      {entry.title ?? `…${entry.submissionId.slice(-8)}`}
+                    </a>
+                  ) : (
+                    <span
+                      key={index}
+                      className="px-2 py-1 text-xs text-red-800 bg-red-100 rounded"
+                      title={entry.error}
+                    >
+                      {entry.title ?? `Error ${index + 1}`}
+                    </span>
+                  ),
+                )}
               </div>
             </div>
           )}

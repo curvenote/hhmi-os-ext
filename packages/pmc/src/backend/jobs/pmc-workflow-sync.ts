@@ -47,7 +47,7 @@ type JobResults = {
   unmodifiedCount: number;
   errorCount: number;
   modifiedSubmissions: Array<{ id: string; title: string }>;
-  errors: Array<{ submissionId?: string; error: string }>;
+  errors: Array<{ submissionId?: string; error: string; title?: string }>;
 };
 
 const PMC_STATE_ORDER = [
@@ -69,6 +69,28 @@ const PMC_STATE_ORDER = [
   PMC_STATE_NAMES.REMOVED_FROM_PROCESSING,
   PMC_STATE_NAMES.REQUEST_NEW_VERSION,
 ];
+
+/**
+ * When the submission's current status is in this list, the Airtable sync will not update
+ * the submission status (status update is skipped). Metadata and activity updates still apply.
+ */
+export const PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC: readonly string[] = [
+  PMC_STATE_NAMES.NO_ACTION_NEEDED,
+  PMC_STATE_NAMES.REQUEST_NEW_VERSION,
+  PMC_STATE_NAMES.CANCELLED,
+  PMC_STATE_NAMES.FAILED,
+];
+
+/**
+ * Returns whether the submission status should be updated during sync.
+ * When current status is in PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC, we do not overwrite it.
+ */
+export function shouldUpdateStatusOnSync(currentStatus: string, resolvedStatus: string): boolean {
+  return (
+    resolvedStatus !== currentStatus &&
+    !PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC.includes(currentStatus)
+  );
+}
 
 // Placeholder mapping for milestoneType to PMC_STATE_NAME
 const PMC_DATE_FIELD_LOOKUP: Record<string, string> = {
@@ -327,7 +349,7 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
   let unmodifiedCount = 0;
   let errorCount = 0;
   const modifiedSubmissions: Array<{ id: string; title: string }> = [];
-  const errors: Array<{ submissionId?: string; error: string }> = [];
+  const errors: Array<{ submissionId?: string; error: string; title?: string }> = [];
   let job;
 
   // Invalidate old running jobs
@@ -360,9 +382,12 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
     // Simulate long-running job for testing cancellation
     await checkJobCancellation(job.id);
 
-    // Extract all manuscript IDs from submissions; ignore if they don't have a manuscript ID
+    // Extract all manuscript IDs from submissions; ignore if they have no version or no manuscript ID
     const manuscriptIds = submissions
-      .map((submission) => extractManuscriptId(submission.versions[0]))
+      .map((submission) => {
+        const version = submission.versions?.[0];
+        return version ? extractManuscriptId(version) : undefined;
+      })
       .filter((manuscriptId): manuscriptId is string => !!manuscriptId);
     totalSubmissions = manuscriptIds.length;
 
@@ -397,7 +422,15 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
       }
 
       try {
-        const latestVersion = submission.versions[0];
+        const latestVersion = submission.versions?.[0];
+        if (!latestVersion) {
+          errorCount++;
+          errors.push({
+            submissionId: submission.id,
+            error: 'Submission has no versions; cannot sync from Airtable',
+          });
+          continue;
+        }
         const manuscriptId = extractManuscriptId(latestVersion);
         if (!manuscriptId) continue;
         const submissionTitle = latestVersion.work_version.title || 'Untitled';
@@ -440,9 +473,10 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
         }
 
         const dateCreated = formatDate();
-        if (status !== latestVersion.status || metadataUpdates || newActivities.length > 0) {
+        const shouldUpdateStatus = shouldUpdateStatusOnSync(latestVersion.status, status);
+        if (shouldUpdateStatus || metadataUpdates || newActivities.length > 0) {
           await prisma.$transaction(async (tx) => {
-            if (status !== latestVersion.status) {
+            if (shouldUpdateStatus) {
               await tx.submissionVersion.update({
                 where: { id: latestVersion.id },
                 data: { status, date_modified: new Date().toISOString() },
@@ -480,20 +514,22 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
               });
             }
           });
-          const site = await prisma.site.findUnique({
-            where: { id: siteId },
-          });
-          await ctx.sendSlackNotification({
-            eventType: SlackEventType.SUBMISSION_STATUS_CHANGED,
-            message: `Submission status changed to ${status}`,
-            user: { id: ctx.user?.id },
-            metadata: {
-              status,
-              site: site?.name,
-              submissionId: submission.id,
-              submissionVersionId: latestVersion.id,
-            },
-          });
+          if (shouldUpdateStatus) {
+            const site = await prisma.site.findUnique({
+              where: { id: siteId },
+            });
+            await ctx.sendSlackNotification({
+              eventType: SlackEventType.SUBMISSION_STATUS_CHANGED,
+              message: `Submission status changed to ${status}`,
+              user: { id: ctx.user?.id },
+              metadata: {
+                status,
+                site: site?.name,
+                submissionId: submission.id,
+                submissionVersionId: latestVersion.id,
+              },
+            });
+          }
           modifiedSubmissions.push({ id: submission.id, title: submissionTitle });
           modifiedCount++;
         } else {
@@ -515,7 +551,12 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
       } catch (err: any) {
         console.log(err);
         errorCount++;
-        errors.push({ submissionId: submission.id, error: err.message || String(err) });
+        const title = submission.versions?.[0]?.work_version?.title ?? undefined;
+        errors.push({
+          submissionId: submission.id,
+          error: err.message || String(err),
+          ...(title && { title }),
+        });
       }
     }
 

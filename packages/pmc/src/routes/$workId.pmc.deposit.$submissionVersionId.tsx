@@ -350,21 +350,14 @@ export default function PMCDeposit({ loaderData }: { loaderData: LoaderData }) {
   const lastName = metadata.pmc?.ownerLastName ?? '';
   const email = metadata.pmc?.ownerEmail ?? '';
 
-  const truncatedTitle = work.title
-    ? work.title.length > 32
-      ? work.title.substring(0, 32) + '...'
-      : work.title
-    : 'Untitled Work';
-
   const breadcrumbs = [
-    { label: 'My Works', href: '/app/works' },
-    { label: truncatedTitle, href: `/app/works/${work.id}` },
+    { label: 'Home', href: '/app/dashboard' },
     { label: 'Deposit Form', isCurrentPage: true },
   ];
 
   return (
     <PageFrame
-      className="max-w-4xl mx-auto"
+      className="mx-auto max-w-4xl"
       title="Deposit manuscript to PMC"
       description="Upload all files associated with this manuscript, including any referenced figure, table, video, or supplementary files."
       breadcrumbs={breadcrumbs}
@@ -392,7 +385,7 @@ export default function PMCDeposit({ loaderData }: { loaderData: LoaderData }) {
       <GrantsInfo />
       <PMCReviewerInfo currentUser={{ firstName, lastName, email }} />
       <ValidationReport fetcher={validationFetcher} />
-      <div className="flex items-center justify-start gap-4">
+      <div className="flex gap-4 justify-start items-center">
         <validationFetcher.Form method="post" onSubmit={validateFormAndContinue}>
           <input type="hidden" name="intent" value="preview-deposit" />
           <ui.StatefulButton type="submit" overlayBusy busy={validationFetcher.state !== 'idle'}>

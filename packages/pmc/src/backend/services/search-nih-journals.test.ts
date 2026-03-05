@@ -105,8 +105,8 @@ const mockNIHJournalList: NIHJournalList = {
   ],
 };
 
-// Mock the JSON import
-vi.mock('~/modules/extensions/pmc/data/J_Entrez.json', () => ({
+// Mock the JSON import (path must match nih-journal.server.ts: ../../data/J_Entrez.json)
+vi.mock('../../data/J_Entrez.json', () => ({
   default: mockNIHJournalList,
 }));
 

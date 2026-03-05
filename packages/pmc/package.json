@@ -48,6 +48,10 @@
     "dev": "tsc -w",
     "compile": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "test:ci": "vitest run --reporter=verbose",
     "changeset": "changeset",
     "version": "changeset version && npm install"
   },

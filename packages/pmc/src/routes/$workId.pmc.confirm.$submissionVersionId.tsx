@@ -5,15 +5,17 @@ import {
   joinPageTitle,
   ui,
   toCardinal,
+  getWorkflow,
+  type GeneralError,
 } from '@curvenote/scms-core';
 import { useFetcher, redirect, data } from 'react-router';
 import { PublicationInfoCard } from '../components/PublicationInfoCard.js';
 import { FilesSection } from '../components/FilesSection.js';
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from 'react-router';
-import { withSecureWorkContext } from '@curvenote/scms-server';
+import { withSecureWorkContext, sites, SiteContextWithUser } from '@curvenote/scms-server';
 import type { UserWithRolesDBO, WorkVersionDBO } from '@curvenote/scms-server';
 import { confirmPMC } from '../backend/metadata/confirm.server.js';
-import type { GeneralError } from '@curvenote/scms-core';
+import { getWorkflows } from '../client.js';
 import { unsetPreviewDeposit } from '../backend/metadata/preview.server.js';
 import {
   dbGetNumSubmissionVersions,
@@ -171,12 +173,49 @@ export async function action(args: ActionFunctionArgs) {
   const formData = await args.request.formData();
   const intent = formData.get('intent');
   switch (intent) {
-    case 'confirm':
+    case 'confirm': {
       if (!ctx.user) {
-        // TODO fix context
         return data({ error: { type: 'general', message: 'User not found' } }, { status: 500 });
       }
-      return confirmPMC(ctx, versionDbo.id);
+      const confirmResult = await confirmPMC(ctx, versionDbo.id);
+      if ('error' in confirmResult) {
+        return data(
+          { error: confirmResult.error },
+          { status: confirmResult.error.type === 'general' ? 500 : 400 },
+        );
+      }
+
+      // Automatically transition PENDING → DEPOSITED via send_to_pmc (invokes PMC_DEPOSIT_FTP job)
+      try {
+        const site = await sites.dbGetSite('pmc');
+        if (site) {
+          const siteCtx = new SiteContextWithUser(ctx, site);
+          const submissionVersionForTransition =
+            await sites.submissions.versions.dbGetLatestSubmissionVersionFromSubmission(
+              'pmc',
+              confirmResult.submissionId,
+              'PENDING',
+            );
+          if (submissionVersionForTransition) {
+            const workflow = getWorkflow(
+              ctx.$config,
+              [getWorkflows()],
+              submissionVersionForTransition.submission.collection.workflow,
+            );
+            await sites.submissions.versions.transition(
+              siteCtx,
+              submissionVersionForTransition,
+              workflow,
+              PMC_STATE_NAMES.DEPOSITED,
+            );
+          }
+        }
+      } catch (autoTransitionError) {
+        console.error('Auto transition PENDING → send_to_pmc failed:', autoTransitionError);
+        // Confirm already succeeded; do not fail the request
+      }
+      return data({ success: true });
+    }
     case 'edit-deposit':
       return unsetPreviewDeposit(versionDbo.id);
   }
@@ -249,14 +288,14 @@ export default function PMCConfirm({ loaderData }: { loaderData: LoaderData }) {
     : 'Untitled Work';
 
   const breadcrumbs = [
-    { label: 'My Works', href: '/app/works' },
+    { label: 'Home', href: '/app/dashboard' },
     { label: truncatedTitle, href: `/app/works/${work.id}` },
     { label: 'Confirm', isCurrentPage: true },
   ];
 
   return (
     <PageFrame
-      className="max-w-4xl mx-auto"
+      className="mx-auto max-w-4xl"
       title="Everything look OK?"
       description="Please review the information below and confirm that you would like to deposit your manuscript at PMC."
       breadcrumbs={breadcrumbs}
@@ -286,7 +325,7 @@ export default function PMCConfirm({ loaderData }: { loaderData: LoaderData }) {
       <FilesSection cdnKey={cdnKey} readonly hideEmpty />
       <CertificationStatement />
       <div className="space-y-2">
-        <div className="flex items-center justify-start gap-4">
+        <div className="flex gap-4 justify-start items-center">
           <ConfirmButton onError={setError} />
           <GoBackButton onError={setError} />
         </div>

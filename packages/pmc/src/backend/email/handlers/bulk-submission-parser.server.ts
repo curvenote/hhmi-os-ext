@@ -19,6 +19,18 @@ export interface PackageResult {
   message?: string;
 }
 
+/** Phrase that indicates the "direct submission only" error from PMC */
+const DIRECT_SUBMISSION_ONLY_PHRASE = 'should be submitted directly to PMC';
+
+/**
+ * Returns true if the error message indicates that the journal requires
+ * direct submission to PMC (bulk submission not accepted).
+ */
+export function isDirectSubmissionOnlyError(message: string | undefined): boolean {
+  if (!message || typeof message !== 'string') return false;
+  return message.toLowerCase().includes(DIRECT_SUBMISSION_ONLY_PHRASE.toLowerCase());
+}
+
 /**
  * Extracts package ID from text using regex patterns
  */

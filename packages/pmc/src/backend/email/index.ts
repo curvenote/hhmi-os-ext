@@ -14,6 +14,7 @@ export {
   extractPackageId,
   determineMessageType,
   extractMessage,
+  isDirectSubmissionOnlyError,
 } from './handlers/bulk-submission-parser.server.js';
 
 // Shared email parsing utilities

@@ -3,21 +3,28 @@ import {
   createPMCMetadataDescription,
   formatPMCAuthors,
 } from './utils.server.js';
-import { data } from 'react-router';
 import { getPrismaClient } from '@curvenote/scms-server';
 import type { PMCWorkVersionMetadataSection } from '../../common/metadata.schema.js';
 import { hyphenatedFromDate } from '@curvenote/scms-core';
 import type { WorkContext } from '@curvenote/scms-server';
 import { PMCTrackEvent } from '../../analytics/events.js';
+import { getEmailTemplates } from '../../client.js';
+import { PMC_PENDING_DEPOSIT_NOTIFICATION } from '../emails/pending-deposit-notification.js';
+
+export type ConfirmPMCError = { type: string; message: string };
+export type ConfirmPMCResult = { success: true; submissionId: string } | { error: ConfirmPMCError };
 
 /**
  * Confirms a PMC deposit by updating metadata, work version, and submission version status.
  * Sets the work version to non-draft and submission version to PENDING.
  * @param ctx - Work context
  * @param workVersionId - The work version ID to confirm
- * @returns Success response or error response
+ * @returns Plain result object: { success: true, submissionId } or { error: { type, message } }
  */
-export async function confirmPMC(ctx: WorkContext, workVersionId: string) {
+export async function confirmPMC(
+  ctx: WorkContext,
+  workVersionId: string,
+): Promise<ConfirmPMCResult> {
   const prisma = await getPrismaClient();
 
   // First, safely patch the PMC metadata to set confirmed
@@ -29,14 +36,14 @@ export async function confirmPMC(ctx: WorkContext, workVersionId: string) {
   });
 
   if (!workVersion) {
-    return data({ error: { type: 'general', message: 'Work version not found' } }, { status: 500 });
+    return { error: { type: 'general', message: 'Work version not found' } };
   }
 
   const metadata = workVersion.metadata as PMCWorkVersionMetadataSection;
   const pmc = metadata.pmc;
 
   if (!pmc) {
-    return data({ error: { type: 'general', message: 'PMC metadata not found' } }, { status: 500 });
+    return { error: { type: 'general', message: 'PMC metadata not found' } };
   }
 
   // Create description and format authors using the extracted functions
@@ -44,7 +51,9 @@ export async function confirmPMC(ctx: WorkContext, workVersionId: string) {
   const authors = formatPMCAuthors(pmc);
   const currentDate = hyphenatedFromDate(new Date());
 
-  await prisma.$transaction(async (tx) => {
+  const txResult = await prisma.$transaction<
+    { ok: true; submissionId: string; submissionVersionId: string } | { error: ConfirmPMCError }
+  >(async (tx) => {
     // Update the work version with metadata
     await tx.workVersion.update({
       where: { id: workVersionId },
@@ -72,25 +81,24 @@ export async function confirmPMC(ctx: WorkContext, workVersionId: string) {
     });
 
     if (count === 0) {
-      return data(
-        { error: { type: 'general', message: 'No PMC submission version found for work version' } },
-        { status: 500 },
-      );
+      return {
+        error: {
+          type: 'general',
+          message: 'No PMC submission version found for work version',
+        },
+      };
     }
 
     if (count > 1) {
       console.warn(
         `Multiple PMC submission versions found for work version ${workVersionId}. This should not happen.`,
       );
-      return data(
-        {
-          error: {
-            type: 'general',
-            message: 'Multiple PMC submission versions found. Please contact support.',
-          },
+      return {
+        error: {
+          type: 'general',
+          message: 'Multiple PMC submission versions found. Please contact support.',
         },
-        { status: 500 },
-      );
+      };
     }
 
     // Get the submission version to update both it and its parent submission
@@ -110,10 +118,7 @@ export async function confirmPMC(ctx: WorkContext, workVersionId: string) {
     });
 
     if (!submissionVersion) {
-      return data(
-        { error: { type: 'general', message: 'Failed to find PMC submission version' } },
-        { status: 500 },
-      );
+      return { error: { type: 'general', message: 'Failed to find PMC submission version' } };
     }
 
     // Update the submission version
@@ -134,7 +139,17 @@ export async function confirmPMC(ctx: WorkContext, workVersionId: string) {
         date_modified: new Date().toISOString(),
       },
     });
+
+    return {
+      ok: true,
+      submissionId: submissionVersion.submission_id,
+      submissionVersionId: submissionVersion.id,
+    };
   });
+
+  if ('error' in txResult) {
+    return { error: txResult.error };
+  }
 
   await ctx.trackEvent(PMCTrackEvent.PMC_DEPOSIT_CONFIRMED, {
     workVersionId: workVersionId,
@@ -148,5 +163,33 @@ export async function confirmPMC(ctx: WorkContext, workVersionId: string) {
 
   await ctx.analytics.flush();
 
-  return { success: true };
+  // Notify support when a new deposit transitions to PENDING
+  const supportEmail = ctx.$config.app?.supportEmail;
+  if (supportEmail) {
+    try {
+      const title = pmc.title ?? 'Untitled';
+      const adminSubmissionUrl = ctx.asBaseUrl(
+        `/app/works/${workVersion.work_id}/site/pmc/submission/${txResult.submissionVersionId}`,
+      );
+      await ctx.sendEmail(
+        {
+          eventType: PMC_PENDING_DEPOSIT_NOTIFICATION,
+          to: supportEmail,
+          subject: 'PMC: New deposit marked PENDING',
+          templateProps: {
+            title,
+            journalName: pmc.journalName ?? undefined,
+            doiUrl: pmc.doiUrl ?? undefined,
+            workVersionId,
+            adminSubmissionUrl,
+          },
+        },
+        getEmailTemplates(),
+      );
+    } catch (emailError) {
+      console.error('Failed to send PENDING notification to support:', emailError);
+    }
+  }
+
+  return { success: true, submissionId: txResult.submissionId };
 }

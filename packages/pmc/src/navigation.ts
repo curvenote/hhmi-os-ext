@@ -31,8 +31,8 @@ export function registerNavigation() {
               },
               {
                 name: 'grants-sync',
-                label: 'Grants Sync',
-                url: `${baseUrl}/grants`,
+                label: 'Funding Id Sync',
+                url: `${baseUrl}/funding`,
               },
             ],
           },

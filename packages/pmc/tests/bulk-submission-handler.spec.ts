@@ -363,6 +363,52 @@ describe('Bulk Submission Handler', () => {
       );
     });
 
+    it('should process "direct submission only" error via DEPOSIT_REJECTED_BY_PMC then NO_ACTION_NEEDED', async () => {
+      const payload = {
+        envelope: { from: 'nihms-help@ncbi.nlm.nih.gov' },
+        headers: { subject: 'Bulk submission (errors encountered)' },
+        plain: '',
+        html: `
+          <table>
+            <tr>
+              <td>ERROR</td>
+              <td>Package ID=019bbe52-ff29-7d6b-b9c1-bd0824127826 failed because all manuscripts from this journal should be submitted directly to PMC.</td>
+            </tr>
+          </table>
+        `,
+      };
+
+      const result = await bulkSubmissionHandler.process(mockContext, payload, 'msg-direct');
+
+      expect(result.status).toBe('SUCCESS');
+      expect(result.processedDeposits).toBe(1);
+      expect(updateSubmissionMetadataAndStatusIfChanged).toHaveBeenCalledTimes(2);
+      expect(updateSubmissionMetadataAndStatusIfChanged).toHaveBeenNthCalledWith(
+        1,
+        mockContext,
+        '019bbe52-ff29-7d6b-b9c1-bd0824127826',
+        expect.objectContaining({
+          status: 'error',
+          packageId: '019bbe52-ff29-7d6b-b9c1-bd0824127826',
+        }),
+        'msg-direct',
+        'DEPOSIT_REJECTED_BY_PMC',
+        'bulk-submission-initial-email',
+      );
+      expect(updateSubmissionMetadataAndStatusIfChanged).toHaveBeenNthCalledWith(
+        2,
+        mockContext,
+        '019bbe52-ff29-7d6b-b9c1-bd0824127826',
+        expect.objectContaining({
+          status: 'error',
+          packageId: '019bbe52-ff29-7d6b-b9c1-bd0824127826',
+        }),
+        'msg-direct',
+        'NO_ACTION_NEEDED',
+        'bulk-submission-initial-email',
+      );
+    });
+
     it('should handle multiple packages in single email', async () => {
       const payload = {
         envelope: { from: 'nihms-help@ncbi.nlm.nih.gov' },

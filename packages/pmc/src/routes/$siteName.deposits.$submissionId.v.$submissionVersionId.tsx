@@ -13,7 +13,12 @@ import {
   getActivitiesForSubmissionVersion,
   decorateTramlineWithEmailProcessingOutcomes,
 } from '../common/tramstops/index.js';
-import { PMC_CRITICAL_PATH_STATES, PMC_MUTUALLY_EXCLUSIVE_STATES } from '../workflows.js';
+import {
+  PMC_CRITICAL_PATH_STATES,
+  PMC_MUTUALLY_EXCLUSIVE_STATES,
+  PMC_STATE_NAMES,
+  getAvailableTransitionsForAdmin,
+} from '../workflows.js';
 import { getWorkflows } from '../client.js';
 import { withAppPMCContext } from '../backend/context.server.js';
 import type { DepositSubmissionDetails } from '../backend/loaderHelpers.server.js';
@@ -110,6 +115,17 @@ export const loader = async (args: LoaderFunctionArgs): Promise<LoaderData> => {
     throw redirect('/app/sites/pmc/inbox');
   }
 
+  // Admin should never see draft versions: redirect to latest non-draft or inbox
+  if (thisSubmissionVersion.status === PMC_STATE_NAMES.DRAFT) {
+    const latestNonDraft = submissionVersionsWithCombinedMetadata.find(
+      (sv) => sv.status !== PMC_STATE_NAMES.DRAFT,
+    );
+    if (latestNonDraft) {
+      throw redirect(`/app/sites/pmc/deposits/${args.params.submissionId}/v/${latestNonDraft.id}`);
+    }
+    throw redirect('/app/sites/pmc/inbox');
+  }
+
   // Use the specific submission version's metadata for the main display
   const thisSubmissionVersionMetadata: PMCCombinedMetadataSection =
     thisSubmissionVersion?.metadata ?? {};
@@ -140,11 +156,7 @@ export const loader = async (args: LoaderFunctionArgs): Promise<LoaderData> => {
     thisSubmissionVersionMetadata,
   );
 
-  // Calculate available transitions for action buttons
-  const transitions =
-    currentWorkflow?.transitions?.filter(
-      (t: WorkflowTransition) => t.sourceStateName === currentStatus && t.userTriggered,
-    ) ?? [];
+  const transitions = getAvailableTransitionsForAdmin(currentWorkflow, currentStatus);
 
   return {
     thisSubmissionVersionId: thisSubmissionVersionId,
@@ -325,7 +337,7 @@ export default function PMCDetailsPage({ loaderData }: { loaderData: LoaderData 
                 );
                 return (
                   <div className="text-base text-gray-800">
-                    <div className="flex flex-wrap items-center text-sm text-gray-600 gap-y-1 gap-x-2">
+                    <div className="flex flex-wrap gap-y-1 gap-x-2 items-center text-sm text-gray-600">
                       {sortedSlotEntries.length === 0 ? (
                         <span className="mr-0">no files</span>
                       ) : (

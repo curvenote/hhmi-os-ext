@@ -28,13 +28,18 @@ export const loader: LoaderFunction = async (args) => {
     throw error404();
   }
 
-  // Create a new PMC_WORKFLOW_SYNC job for this site
+  // Create a new PMC_WORKFLOW_SYNC job for this site (triggered by webhook/cron)
+  const serviceAccountId = ctx.$config?.api?.submissionsServiceAccount?.id;
   await jobs.invoke(
     ctx,
     {
       id: uuidv7(),
       job_type: 'PMC_WORKFLOW_SYNC',
-      payload: { site_id: site.id },
+      payload: {
+        site_id: site.id,
+        triggered_by_user_id: serviceAccountId,
+        triggered_by_user_name: 'PMC workflow sync (automated)',
+      },
     },
     getJobs(),
   );

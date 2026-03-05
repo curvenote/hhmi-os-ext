@@ -6,6 +6,7 @@ import {
   extractMessage,
   parseHTMLTableRows,
   parseEmailContent,
+  isDirectSubmissionOnlyError,
 } from '../src/backend/email/handlers/bulk-submission-parser.server.js';
 import { extractManuscriptId } from '../src/backend/email/handlers/email-parsing-utils.server.js';
 import { validateEmailSubject } from '../src/backend/email/email-validation.server.js';
@@ -50,6 +51,31 @@ describe('email-parser', () => {
     it('should handle case insensitive matching', () => {
       const text = 'package id=ABC123 failed';
       expect(extractPackageId(text)).toBe('ABC123');
+    });
+  });
+
+  describe('isDirectSubmissionOnlyError', () => {
+    it('should return true when message contains "should be submitted directly to PMC"', () => {
+      const message =
+        'Package ID=019bbe52-ff29-7d6b-b9c1-bd0824127826 failed because all manuscripts from this journal should be submitted directly to PMC.';
+      expect(isDirectSubmissionOnlyError(message)).toBe(true);
+    });
+
+    it('should return true for case-insensitive match', () => {
+      expect(isDirectSubmissionOnlyError('Should be submitted directly to PMC')).toBe(true);
+      expect(isDirectSubmissionOnlyError('SHOULD BE SUBMITTED DIRECTLY TO PMC')).toBe(true);
+    });
+
+    it('should return false when message does not contain the phrase', () => {
+      expect(isDirectSubmissionOnlyError('Package ID=abc failed with validation error')).toBe(
+        false,
+      );
+      expect(isDirectSubmissionOnlyError('submitted to PMC')).toBe(false);
+    });
+
+    it('should return false for undefined or empty message', () => {
+      expect(isDirectSubmissionOnlyError(undefined)).toBe(false);
+      expect(isDirectSubmissionOnlyError('')).toBe(false);
     });
   });
 
