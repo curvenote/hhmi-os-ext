@@ -1,5 +1,12 @@
 # @hhmi/pmc
 
+## 0.1.16
+
+### Patch Changes
+
+- 7a83694: Limit the Request New Version transition from certain states
+- f42cdda: Fixes to workflow sync webhook and improvements in Workflow Sync UI to display more error info and indicate how a job was started
+
 ## 0.1.15
 
 ### Patch Changes

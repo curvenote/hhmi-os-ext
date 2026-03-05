@@ -22,6 +22,8 @@ export interface SplitButtonProps {
   busy?: boolean;
   /** Optional size for the button and dropdown menu (default: default) */
   size?: 'xs' | 'sm' | 'default';
+  /** Optional variant (default: default) */
+  variant?: 'default' | 'outline';
   /** Optional class for the root container */
   className?: string;
 }
@@ -33,9 +35,9 @@ const menuSizeClasses = {
     default: 'min-w-[10rem] p-1',
   },
   item: {
-    xs: 'px-2 py-1.5 text-xs',
-    sm: 'px-3 py-2 text-sm',
-    default: 'px-4 py-2 text-base',
+    xs: 'px-2 py-1.5 text-[11px]',
+    sm: 'px-3 py-2 text-xs',
+    default: 'px-4 py-2 text-sm',
   },
   chevron: {
     xs: 'h-4 w-4',
@@ -58,6 +60,7 @@ export function SplitButton({
   disabled = false,
   busy = false,
   size = 'default',
+  variant = 'default',
   className,
 }: SplitButtonProps) {
   const [open, setOpen] = useState(false);
@@ -68,11 +71,16 @@ export function SplitButton({
   };
 
   const hasDropdown = otherActions.length > 0;
+  const splitDividerClass =
+    variant === 'outline'
+      ? 'border-r border-stone-200 dark:border-stone-700'
+      : 'border-r border-white/30';
+  const openClass = variant === 'outline' ? 'bg-stone-100 dark:bg-stone-800' : 'bg-primary/60';
 
   if (!hasDropdown) {
     return (
       <ui.StatefulButton
-        variant="default"
+        variant={variant}
         size={size}
         busy={busy}
         disabled={disabled}
@@ -86,16 +94,16 @@ export function SplitButton({
   }
 
   return (
-    <div className={cn('flex w-full rounded-md shadow-sm', className)} role="group">
+    <div className={cn('flex w-full rounded-md shadow-xs', className)} role="group">
       {/* Primary action – left part of split */}
       <ui.StatefulButton
-        variant="default"
+        variant={variant}
         size={size}
         busy={busy}
         disabled={disabled}
         overlayBusy
         onClick={() => onPrimaryAction(primaryValue)}
-        className="flex-1 min-w-0 rounded-r-none border-r border-white/30"
+        className={cn('flex-1 min-w-0 rounded-r-none', splitDividerClass)}
       >
         {primaryLabel}
       </ui.StatefulButton>
@@ -105,12 +113,13 @@ export function SplitButton({
         <ui.MenuTrigger asChild>
           <ui.Button
             type="button"
-            variant="default"
+            variant={variant}
             size={size}
             disabled={disabled || busy}
             className={cn(
-              'px-2 rounded-l-none border-l-0 border-white/30 transition-colors',
-              open && 'bg-primary/60',
+              'px-2 rounded-l-none border-l-0 transition-colors',
+              variant === 'default' && 'border-white/30',
+              open && openClass,
             )}
             aria-label="More actions"
           >

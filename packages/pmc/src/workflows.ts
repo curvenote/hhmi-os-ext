@@ -24,6 +24,14 @@ export const PMC_STATE_NAMES = {
 const REQUEST_NEW_VERSION_CONFIRMATION =
   'Are you sure you want to request a new version of this deposit? The submitter will be notified by email.';
 
+const MARK_NO_ACTION_NEEDED_LABELS = {
+  button: 'No Action Needed',
+  confirmation: 'Are you sure you want to mark this deposit as no action needed?',
+  success: 'Deposit has been marked as no action needed',
+  action: 'No Action Needed',
+  inProgress: 'Marking as no action needed...',
+} as const;
+
 const MERMAID: string | undefined = `graph TD
     DRAFT[DRAFT<br/>Draft]
     PENDING[PENDING<br/>New Deposit Uploaded]
@@ -40,17 +48,17 @@ const MERMAID: string | undefined = `graph TD
     AVAILABLE[AVAILABLE_ON_PMC<br/>Available on PMC]
     WITHDRAWN[WITHDRAWN_FROM_PMC<br/>Withdrawn from PMC]
     REQUEST_NEW[REQUEST_NEW_VERSION<br/>Request New Version]
+    CANCELLED[CANCELLED<br/>Cancelled]
     FAILED[FAILED<br/>Failed]
     REMOVED_FROM_PROCESSING[REMOVED_FROM_PROCESSING<br/>Removed from Processing]
 
     DRAFT -->|submit_to_hhmi| PENDING
     PENDING -->|send_to_pmc| DEPOSITED
     PENDING -->|mark_deposit_failed| DEPOSIT_FAILED
-    PENDING -->|mark_no_action_needed| NO_ACTION
     DEPOSITED -->|confirmed_by_pmc| PMC_CONFIRMED
     DEPOSITED -->|rejected_by_pmc| PMC_REJECTED
-    DEPOSITED -->|request_new_version_from_deposited| REQUEST_NEW
     DEPOSIT_FAILED -->|clear_failure_from_deposit_failed| PENDING
+    DEPOSIT_FAILED -->|mark_no_action_needed_from_deposit_failed| NO_ACTION
     FAILED -->|clear_failure_from_failed| PENDING
     PMC_CONFIRMED -->|reviewer_approve_initial| REVIEWER_APPROVED_INIT
     PMC_CONFIRMED -->|reviewer_reject_initial| REVIEWER_REJECTED_INIT
@@ -58,34 +66,33 @@ const MERMAID: string | undefined = `graph TD
     PMC_REJECTED -->|request_files| FILES_REQUESTED
     PMC_REJECTED -->|mark_no_action_needed_from_rejected| NO_ACTION
     REVIEWER_APPROVED_INIT -->|request_files| FILES_REQUESTED
-    REVIEWER_APPROVED_INIT -->|request_new_version_from_reviewer_approved_initial| REQUEST_NEW
     REVIEWER_REJECTED_INIT -->|request_files| FILES_REQUESTED
     REVIEWER_REJECTED_INIT -->|mark_no_action_needed_from_reviewer_rejected| NO_ACTION
     FILES_REQUESTED -->|request_new_version_from_files_requested| REQUEST_NEW
-    FILES_REQUESTED -->|cancel_deposit| CANCELLED
-    FILES_REQUESTED -->|mark_no_action_needed| NO_ACTION
+    FILES_REQUESTED -->|mark_no_action_needed_from_files_requested| NO_ACTION
+    FILES_REQUESTED -->|cancel_deposit_from_files_requested| CANCELLED
     REVIEWER_APPROVED_INIT -->|nihms_conversion_complete| NIHMS_COMPLETE
-    NIHMS_COMPLETE -->|request_new_version_from_nihms_conversion_complete| REQUEST_NEW
     NIHMS_COMPLETE -->|reviewer_approve_final| REVIEWER_APPROVED_FINAL
-    REVIEWER_APPROVED_FINAL -->|request_new_version_from_reviewer_approved_final| REQUEST_NEW
     REVIEWER_APPROVED_FINAL -->|publish_to_pmc| AVAILABLE
     AVAILABLE -->|withdraw_from_pmc| WITHDRAWN
     DEPOSIT_FAILED -->|request_new_version_from_failed| REQUEST_NEW
     PMC_REJECTED -->|request_new_version_from_rejected| REQUEST_NEW
     REVIEWER_REJECTED_INIT -->|request_new_version_from_reviewer_rejected| REQUEST_NEW
     FAILED -->|request_new_version_from_failed_state| REQUEST_NEW
+    FAILED -->|mark_no_action_needed_from_failed| NO_ACTION
     REMOVED_FROM_PROCESSING -->|request_new_version_from_removed| REQUEST_NEW
+    REMOVED_FROM_PROCESSING -->|mark_no_action_needed_from_removed| NO_ACTION
     REQUEST_NEW -->|complete_cloning| DRAFT
 
     %% Style end states
     classDef endState fill:#e5f5e5,stroke:#2d5a2d,stroke-width:2px
     classDef errorState fill:#ffe6e6,stroke:#cc0000,stroke-width:2px
     classDef warningState fill:#fff3cd,stroke:#856404,stroke-width:2px
-    class NO_ACTION,DEPOSIT_FAILED,PMC_REJECTED,FILES_REQUESTED,REVIEWER_REJECTED_INIT,FAILED,REMOVED_FROM_PROCESSING,REQUEST_NEW endState
+    class NO_ACTION,DEPOSIT_FAILED,PMC_REJECTED,FILES_REQUESTED,REVIEWER_REJECTED_INIT,FAILED,REMOVED_FROM_PROCESSING,REQUEST_NEW,CANCELLED endState
     class DEPOSIT_FAILED,PMC_REJECTED,REVIEWER_REJECTED_INIT,FAILED,REMOVED_FROM_PROCESSING errorState
     class WITHDRAWN,REQUEST_NEW,FILES_REQUESTED warningState
 
-    %% Admin: from any state --> request_new_version (REQUEST_NEW), cancel_deposit (CANCELLED)`;
+    %% Request New Version from every state except DRAFT and AVAILABLE_ON_PMC`;
 
 export const PMC_DEPOSIT_WORKFLOW = {
   version: 1,
@@ -372,23 +379,6 @@ export const PMC_DEPOSIT_WORKFLOW = {
     },
     {
       version: 1,
-      name: 'mark_no_action_needed',
-      sourceStateName: PMC_STATE_NAMES.PENDING,
-      targetStateName: PMC_STATE_NAMES.NO_ACTION_NEEDED,
-      labels: {
-        button: 'No Action Needed',
-        confirmation: 'Confirm you want to mark this deposit as no action needed',
-        success: 'Deposit has been marked as no action needed',
-        action: 'No Action Needed',
-        inProgress: 'Marking as no action needed...',
-      },
-      userTriggered: true,
-      help: 'Send this deposit to PMC for processing',
-      requiredScopes: ['site:submissions:update'],
-      requiresJob: false,
-    },
-    {
-      version: 1,
       name: 'confirmed_by_pmc',
       sourceStateName: PMC_STATE_NAMES.DEPOSITED,
       targetStateName: PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC,
@@ -411,23 +401,6 @@ export const PMC_DEPOSIT_WORKFLOW = {
       userTriggered: false,
       help: 'Confirmation was received from PMC that the deposit has been accepted without errors',
       requiredScopes: ['site:submissions:update'], // TODO dedicated PMC scopes and roles
-      requiresJob: false,
-    },
-    {
-      version: 1,
-      name: 'request_new_version_from_deposited',
-      sourceStateName: PMC_STATE_NAMES.DEPOSITED,
-      targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
-      labels: {
-        button: 'Request New Version',
-        confirmation: REQUEST_NEW_VERSION_CONFIRMATION,
-        success: 'New version requested for this deposit',
-        action: 'Request New Version',
-        inProgress: 'Requesting new version...',
-      },
-      userTriggered: true,
-      help: 'Request a new version of this deposit from the HHMI Support Team.',
-      requiredScopes: ['site:submissions:update'],
       requiresJob: false,
     },
     {
@@ -530,19 +503,6 @@ export const PMC_DEPOSIT_WORKFLOW = {
     },
     {
       version: 1,
-      name: 'request_new_version_from_reviewer_approved_initial',
-      sourceStateName: PMC_STATE_NAMES.REVIEWER_APPROVED_INITIAL,
-      targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
-      labels: {
-        success: 'New version requested for this deposit (triggered by NIHMS files request email)',
-      },
-      userTriggered: false,
-      help: 'NIHMS has requested additional files - submitter must upload a new version',
-      requiredScopes: ['site:submissions:update'],
-      requiresJob: false,
-    },
-    {
-      version: 1,
       name: 'reviewer_approve_final',
       sourceStateName: PMC_STATE_NAMES.NIHMS_CONVERSION_COMPLETE,
       targetStateName: PMC_STATE_NAMES.REVIEWER_APPROVED_FINAL,
@@ -551,32 +511,6 @@ export const PMC_DEPOSIT_WORKFLOW = {
       },
       userTriggered: false,
       help: 'Reviewer approves the final converted version',
-      requiredScopes: ['site:submissions:update'],
-      requiresJob: false,
-    },
-    {
-      version: 1,
-      name: 'request_new_version_from_nihms_conversion_complete',
-      sourceStateName: PMC_STATE_NAMES.NIHMS_CONVERSION_COMPLETE,
-      targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
-      labels: {
-        success: 'New version requested for this deposit (triggered by NIHMS files request email)',
-      },
-      userTriggered: false,
-      help: 'NIHMS has requested additional files - submitter must upload a new version',
-      requiredScopes: ['site:submissions:update'],
-      requiresJob: false,
-    },
-    {
-      version: 1,
-      name: 'request_new_version_from_reviewer_approved_final',
-      sourceStateName: PMC_STATE_NAMES.REVIEWER_APPROVED_FINAL,
-      targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
-      labels: {
-        success: 'New version requested for this deposit (triggered by NIHMS files request email)',
-      },
-      userTriggered: false,
-      help: 'NIHMS has requested additional files - submitter must upload a new version',
       requiredScopes: ['site:submissions:update'],
       requiresJob: false,
     },
@@ -638,23 +572,6 @@ export const PMC_DEPOSIT_WORKFLOW = {
     },
     {
       version: 1,
-      name: 'request_new_version',
-      sourceStateName: null,
-      targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
-      labels: {
-        button: 'Request New Version',
-        confirmation: REQUEST_NEW_VERSION_CONFIRMATION,
-        success: 'New version requested for this deposit',
-        action: 'Request New Version',
-        inProgress: 'Requesting new version...',
-      },
-      userTriggered: true,
-      help: 'Request a new version of this deposit from the submitter. Admin can use this from any state.',
-      requiredScopes: ['site:submissions:update'],
-      requiresJob: false,
-    },
-    {
-      version: 1,
       name: 'remove_from_processing',
       sourceStateName: null,
       targetStateName: PMC_STATE_NAMES.REMOVED_FROM_PROCESSING,
@@ -693,6 +610,17 @@ export const PMC_DEPOSIT_WORKFLOW = {
       },
       userTriggered: true,
       help: 'Request a new version of this deposit from the HHMI Support Team.',
+      requiredScopes: ['site:submissions:update'],
+      requiresJob: false,
+    },
+    {
+      version: 1,
+      name: 'mark_no_action_needed_from_deposit_failed',
+      sourceStateName: PMC_STATE_NAMES.DEPOSIT_FAILED,
+      targetStateName: PMC_STATE_NAMES.NO_ACTION_NEEDED,
+      labels: MARK_NO_ACTION_NEEDED_LABELS,
+      userTriggered: true,
+      help: 'Mark this deposit as no action needed from the deposit failed state.',
       requiredScopes: ['site:submissions:update'],
       requiresJob: false,
     },
@@ -783,6 +711,17 @@ export const PMC_DEPOSIT_WORKFLOW = {
     },
     {
       version: 1,
+      name: 'mark_no_action_needed_from_failed',
+      sourceStateName: PMC_STATE_NAMES.FAILED,
+      targetStateName: PMC_STATE_NAMES.NO_ACTION_NEEDED,
+      labels: MARK_NO_ACTION_NEEDED_LABELS,
+      userTriggered: true,
+      help: 'Mark this deposit as no action needed from the failed state.',
+      requiredScopes: ['site:submissions:update'],
+      requiresJob: false,
+    },
+    {
+      version: 1,
       name: 'request_new_version_from_removed',
       sourceStateName: PMC_STATE_NAMES.REMOVED_FROM_PROCESSING,
       targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
@@ -795,6 +734,17 @@ export const PMC_DEPOSIT_WORKFLOW = {
       },
       userTriggered: true,
       help: 'Request a new version of this deposit from the HHMI Support Team.',
+      requiredScopes: ['site:submissions:update'],
+      requiresJob: false,
+    },
+    {
+      version: 1,
+      name: 'mark_no_action_needed_from_removed',
+      sourceStateName: PMC_STATE_NAMES.REMOVED_FROM_PROCESSING,
+      targetStateName: PMC_STATE_NAMES.NO_ACTION_NEEDED,
+      labels: MARK_NO_ACTION_NEEDED_LABELS,
+      userTriggered: true,
+      help: 'Mark this deposit as no action needed from the removed from processing state.',
       requiredScopes: ['site:submissions:update'],
       requiresJob: false,
     },
@@ -866,6 +816,17 @@ export const PMC_DEPOSIT_WORKFLOW = {
     },
     {
       version: 1,
+      name: 'mark_no_action_needed_from_files_requested',
+      sourceStateName: PMC_STATE_NAMES.SUBMITTERS_FILES_REQUESTED,
+      targetStateName: PMC_STATE_NAMES.NO_ACTION_NEEDED,
+      labels: MARK_NO_ACTION_NEEDED_LABELS,
+      userTriggered: true,
+      help: 'Mark this deposit as no action needed from the files requested state.',
+      requiredScopes: ['site:submissions:update'],
+      requiresJob: false,
+    },
+    {
+      version: 1,
       name: 'cancel_deposit_from_files_requested',
       sourceStateName: PMC_STATE_NAMES.SUBMITTERS_FILES_REQUESTED,
       targetStateName: PMC_STATE_NAMES.CANCELLED,
@@ -893,7 +854,10 @@ export const PMC_MUTUALLY_EXCLUSIVE_STATES = {
   [PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC]: [PMC_STATE_NAMES.DEPOSIT_REJECTED_BY_PMC],
   [PMC_STATE_NAMES.DEPOSITED]: [PMC_STATE_NAMES.NO_ACTION_NEEDED, PMC_STATE_NAMES.DEPOSIT_FAILED],
   [PMC_STATE_NAMES.REVIEWER_APPROVED_INITIAL]: [PMC_STATE_NAMES.REVIEWER_REJECTED_INITIAL],
-  [PMC_STATE_NAMES.SUBMITTERS_FILES_REQUESTED]: [PMC_STATE_NAMES.REQUEST_NEW_VERSION],
+  [PMC_STATE_NAMES.SUBMITTERS_FILES_REQUESTED]: [
+    PMC_STATE_NAMES.REQUEST_NEW_VERSION,
+    PMC_STATE_NAMES.NO_ACTION_NEEDED,
+  ],
 } as const;
 
 /**
@@ -925,9 +889,32 @@ export const PMC_CRITICAL_PATH_STATES = [
 ] as const;
 
 /**
+ * Priority order for admin action buttons: earlier entries appear first (primary in SplitButton).
+ * - Exact transition names list first.
+ * - Prefix 'request_new_version' matches all request_new_version_from_* transitions.
+ */
+const ADMIN_ACTION_PRIORITY: (string | { prefix: string })[] = [
+  'send_to_pmc',
+  { prefix: 'request_new_version' },
+];
+
+function getTransitionSortKey(name: string): number {
+  for (let i = 0; i < ADMIN_ACTION_PRIORITY.length; i++) {
+    const rule = ADMIN_ACTION_PRIORITY[i];
+    if (typeof rule === 'string') {
+      if (name === rule) return i;
+    } else if (name.startsWith(rule.prefix)) {
+      return i;
+    }
+  }
+  return ADMIN_ACTION_PRIORITY.length;
+}
+
+/**
  * Returns user-triggered transitions available for the given workflow state in the admin UI:
  * state-specific transitions plus "from any state" (sourceStateName === null), deduplicated by
  * target (prefer state-specific), excluding transitions whose target state is authorOnly.
+ * Results are ordered so that Send to PMC and Request New Version are prioritised (first in list).
  */
 export function getAvailableTransitionsForAdmin(
   workflow: Workflow | undefined,
@@ -948,9 +935,11 @@ export function getAvailableTransitionsForAdmin(
       byTarget.set(t.targetStateName, t);
     }
   }
-  return Array.from(byTarget.values()).filter(
+  const list = Array.from(byTarget.values()).filter(
     (t) => !workflow?.states?.[t.targetStateName]?.authorOnly,
   );
+  list.sort((a, b) => getTransitionSortKey(a.name) - getTransitionSortKey(b.name));
+  return list;
 }
 
 // Export an array of workflows that this extension provides
