@@ -348,7 +348,7 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
   let modifiedCount = 0;
   let unmodifiedCount = 0;
   let errorCount = 0;
-  const modifiedSubmissions: Array<{ id: string; title: string }> = [];
+  const modifiedSubmissions: Array<{ id: string; title: string } & any> = [];
   const errors: Array<{ submissionId?: string; error: string; title?: string }> = [];
   let job;
 
@@ -475,6 +475,12 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
         const dateCreated = formatDate();
         const shouldUpdateStatus = shouldUpdateStatusOnSync(latestVersion.status, status);
         if (shouldUpdateStatus || metadataUpdates || newActivities.length > 0) {
+          console.log('Updating submission', submission.id);
+          console.log('shouldUpdateStatus', shouldUpdateStatus);
+          console.log(
+            'Update by user',
+            ctx.user.id ?? ctx.$config?.api?.submissionsServiceAccount?.id ?? 'undefined',
+          );
           await prisma.$transaction(async (tx) => {
             if (shouldUpdateStatus) {
               await tx.submissionVersion.update({
@@ -505,11 +511,13 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
                 data: {
                   id: uuidv7(),
                   submission_id: submission.id,
+                  submission_version_id: latestVersion.id,
                   activity_type: ActivityType.SUBMISSION_VERSION_STATUS_CHANGE,
                   status: activity.status,
                   date_created: activity.date_created || dateCreated,
                   date_modified: activity.date_created || dateCreated,
-                  activity_by_id: ctx.user?.id || 'system',
+                  activity_by_id:
+                    ctx.user.id ?? ctx.$config?.api?.submissionsServiceAccount?.id ?? undefined,
                 },
               });
             }
@@ -530,7 +538,13 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
               },
             });
           }
-          modifiedSubmissions.push({ id: submission.id, title: submissionTitle });
+          modifiedSubmissions.push({
+            id: submission.id,
+            title: submissionTitle,
+            shouldUpdateStatus,
+            metadataUpdates,
+            newActivities,
+          });
           modifiedCount++;
         } else {
           unmodifiedCount++;
