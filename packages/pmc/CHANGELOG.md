@@ -1,5 +1,11 @@
 # @hhmi/pmc
 
+## 0.1.18
+
+### Patch Changes
+
+- 2bfb8bd: Marking Available on PMC as an end state so that it is treated as a success state in the status timeline
+
 ## 0.1.17
 
 ### Patch Changes
