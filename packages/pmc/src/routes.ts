@@ -60,6 +60,10 @@ export async function registerRoutes(appConfig: Config): Promise<RouteRegistrati
           route('sites/pmc', resolveRoutePath(import.meta.url, 'routes/$siteName.tsx'), [
             route('inbox', resolveRoutePath(import.meta.url, 'routes/$siteName.inbox/route.tsx')),
             route(
+              'deposits/:submissionId',
+              resolveRoutePath(import.meta.url, 'routes/$siteName.deposits.$submissionId.tsx'),
+            ),
+            route(
               'deposits/:submissionId/v/:submissionVersionId',
               resolveRoutePath(
                 import.meta.url,
