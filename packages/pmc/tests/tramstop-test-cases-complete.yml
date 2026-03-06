@@ -383,7 +383,7 @@ test_cases:
 
   # Alternative State Handling Tests
   - name: 'Alternative state handling - NO_ACTION_NEEDED'
-    description: 'When NO_ACTION_NEEDED is current status with activity, it should replace DEPOSITED and show as end state'
+    description: 'When NO_ACTION_NEEDED is current status with activity, it is inserted after last activity (PENDING) and show as end state'
     current_status: 'NO_ACTION_NEEDED'
     activities:
       - status: 'PENDING'
@@ -401,6 +401,10 @@ test_cases:
         error: false
         warning: false
         subtitle: '2024-01-15T14:30:00Z'
+      - status: 'DEPOSITED'
+        completed: false
+        error: false
+        warning: false
       - status: 'DEPOSIT_CONFIRMED_BY_PMC'
         completed: false
         error: false
@@ -466,16 +470,20 @@ test_cases:
         warning: false
 
   - name: 'Alternative state handling - NO_ACTION_NEEDED without activities'
-    description: 'When NO_ACTION_NEEDED is current status with no activities, it should still replace DEPOSITED'
+    description: 'When NO_ACTION_NEEDED is current status with no activities, it is inserted at position 0 (after last activity)'
     current_status: 'NO_ACTION_NEEDED'
     activities: []
     expected_tramline:
-      - status: 'PENDING'
+      - status: 'NO_ACTION_NEEDED'
         completed: true
         error: false
         warning: false
-      - status: 'NO_ACTION_NEEDED'
-        completed: true
+      - status: 'PENDING'
+        completed: false
+        error: false
+        warning: false
+      - status: 'DEPOSITED'
+        completed: false
         error: false
         warning: false
       - status: 'DEPOSIT_CONFIRMED_BY_PMC'
@@ -1029,8 +1037,8 @@ test_cases:
         subtitle: '2024-02-10T09:30:00Z'
 
   # Activity Filtering Tests
-  - name: 'Activity filtering - contradictory activities'
-    description: 'When activities contain contradictions (DEPOSITED and NO_ACTION_NEEDED), only valid activities should be used'
+  - name: 'Activity filtering - DEPOSITED with NO_ACTION_NEEDED in activities'
+    description: 'When current status is DEPOSITED and activities include both DEPOSITED and NO_ACTION_NEEDED, tramline shows DEPOSITED in slot (no longer treated as contradictory pair)'
     current_status: 'DEPOSITED'
     activities:
       - status: 'PENDING'
