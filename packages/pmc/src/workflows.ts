@@ -255,7 +255,7 @@ export const PMC_DEPOSIT_WORKFLOW = {
       published: false,
       authorOnly: false,
       inbox: true,
-      tags: [],
+      tags: ['end'],
     },
     [PMC_STATE_NAMES.WITHDRAWN_FROM_PMC]: {
       name: PMC_STATE_NAMES.WITHDRAWN_FROM_PMC,
