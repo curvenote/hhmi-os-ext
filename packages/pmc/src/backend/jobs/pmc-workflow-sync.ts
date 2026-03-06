@@ -348,7 +348,7 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
   let modifiedCount = 0;
   let unmodifiedCount = 0;
   let errorCount = 0;
-  const modifiedSubmissions: Array<{ id: string; title: string }> = [];
+  const modifiedSubmissions: Array<{ id: string; title: string } & any> = [];
   const errors: Array<{ submissionId?: string; error: string; title?: string }> = [];
   let job;
 
@@ -453,10 +453,23 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
 
         // Finally, resolve the current submission status
         const status = resolveSubmissionStatus(latestVersion, airtableRecord, activities);
+        const shouldUpdateStatus = shouldUpdateStatusOnSync(latestVersion.status, status);
 
+        // get all activites from the database for this submission version
+        const existingActivities = await prisma.activity.findMany({
+          where: {
+            submission_id: submission.id,
+            submission_version_id: latestVersion.id,
+          },
+          select: { status: true },
+        });
+        const existingActivityStatuses = existingActivities.map((a) => a.status);
+        console.log('existingActivityStatuses', existingActivityStatuses);
         // Get all new activities for this submission of the correct type by comparing to existing activities
         const newActivities: ActivityStub[] = [];
         for (const activity of activities) {
+          // skip adding a status change activity if it already exists
+          if (existingActivityStatuses.includes(activity.status)) continue;
           if (!activity.date_created) {
             newActivities.push(activity);
           } else {
@@ -473,8 +486,16 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
         }
 
         const dateCreated = formatDate();
-        const shouldUpdateStatus = shouldUpdateStatusOnSync(latestVersion.status, status);
+
         if (shouldUpdateStatus || metadataUpdates || newActivities.length > 0) {
+          console.log('Updating submission', submission.id);
+          console.log('shouldUpdateStatus', shouldUpdateStatus);
+          console.log('metadataUpdates', metadataUpdates);
+          console.log('activities', newActivities.length > 0 ? 'yes' : 'no');
+          console.log(
+            'Update by user',
+            ctx.user.id ?? ctx.$config?.api?.submissionsServiceAccount?.id ?? 'undefined',
+          );
           await prisma.$transaction(async (tx) => {
             if (shouldUpdateStatus) {
               await tx.submissionVersion.update({
@@ -505,11 +526,13 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
                 data: {
                   id: uuidv7(),
                   submission_id: submission.id,
+                  submission_version_id: latestVersion.id,
                   activity_type: ActivityType.SUBMISSION_VERSION_STATUS_CHANGE,
                   status: activity.status,
                   date_created: activity.date_created || dateCreated,
                   date_modified: activity.date_created || dateCreated,
-                  activity_by_id: ctx.user?.id || 'system',
+                  activity_by_id:
+                    ctx.user.id ?? ctx.$config?.api?.submissionsServiceAccount?.id ?? undefined,
                 },
               });
             }
@@ -530,7 +553,13 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
               },
             });
           }
-          modifiedSubmissions.push({ id: submission.id, title: submissionTitle });
+          modifiedSubmissions.push({
+            id: submission.id,
+            title: submissionTitle,
+            shouldUpdateStatus,
+            metadataUpdates,
+            newActivities,
+          });
           modifiedCount++;
         } else {
           unmodifiedCount++;
