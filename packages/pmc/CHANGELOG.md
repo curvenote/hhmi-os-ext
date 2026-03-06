@@ -1,5 +1,15 @@
 # @hhmi/pmc
 
+## 0.1.17
+
+### Patch Changes
+
+- e93762b: Fix workflow webhook for submission version in an workspace only statuses, prevent continuous updates but still log unseen statuses as activites
+- 0dfae6f: Improve job logging for workflow sync tasks
+- 23946e3: Add redirect route for pmc deposit submissions to their latest version
+- a0c17b7: Updates to the pizza tracker to allow No Action Needed to be disaplyed after the last known status from activities
+- 679e0e5: Assigning service account user to context in workflow sync webhook
+
 ## 0.1.16
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@hhmi/pmc",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "PMC extension for the HHMI Workspace - powered by Curvenote.",
   "author": "Curvenote <support@curvenote.com>",
   "homepage": "https://github.com/HHMI-HQ/hhmi-workspace",
