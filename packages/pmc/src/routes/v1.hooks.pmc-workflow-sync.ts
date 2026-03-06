@@ -38,7 +38,6 @@ export const loader: LoaderFunction = async (args) => {
   }
 
   // Create a new PMC_WORKFLOW_SYNC job for this site (triggered by webhook/cron)
-  const serviceAccountId = ctx.$config?.api?.submissionsServiceAccount?.id;
   await jobs.invoke(
     ctx,
     {
