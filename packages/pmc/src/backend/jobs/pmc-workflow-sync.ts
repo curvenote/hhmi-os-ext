@@ -477,6 +477,9 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
         if (shouldUpdateStatus || metadataUpdates || newActivities.length > 0) {
           console.log('Updating submission', submission.id);
           console.log('shouldUpdateStatus', shouldUpdateStatus);
+          console.log('metadataUpdates', metadataUpdates);
+          console.log('activities', newActivities);
+          console.log('ctx.user', ctx.user);
           console.log(
             'Update by user',
             ctx.user.id ?? ctx.$config?.api?.submissionsServiceAccount?.id ?? 'undefined',
