@@ -425,7 +425,7 @@ export default function PMCDepositUserFacingDetails({ loaderData }: { loaderData
                 );
                 return (
                   <div className="text-base text-gray-800">
-                    <div className="flex flex-wrap items-center text-sm text-gray-600 gap-y-1 gap-x-2">
+                    <div className="flex flex-wrap gap-y-1 gap-x-2 items-center text-sm text-gray-600">
                       {sortedSlotEntries.length === 0 ? (
                         <span className="mr-0">no files</span>
                       ) : (

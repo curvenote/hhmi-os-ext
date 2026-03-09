@@ -25,7 +25,6 @@ import {
 } from './backend/emails/request-new-version-by-team.js';
 import { PMCDepositTaskCard } from './DepositTaskCard.js';
 import { PMCIcon } from './Icon.js';
-import ExtensionAdminCard from './ExtensionAdminCard.js';
 import { PMCTrackEvent, PMCTrackEventDescriptions } from './analytics/events.js';
 import { workflows } from './workflows.js';
 
@@ -79,10 +78,6 @@ export function getAnalyticsEvents(): ExtensionAnalyticsEvents {
  */
 export function getWorkflows(): WorkflowRegistration {
   return { workflows };
-}
-
-export function getExtensionAdminCard() {
-  return ExtensionAdminCard;
 }
 
 /**
@@ -196,5 +191,4 @@ export const extension: ClientExtension = {
   getEmailTemplates,
   getWorkflows,
   registerNavigation,
-  getExtensionAdminCard,
 };
