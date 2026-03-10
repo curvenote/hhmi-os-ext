@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "@curvenote/scms-core": "*",
+    "fuse.js": "^7.1.0",
     "@curvenote/scms-server": "*",
     "@curvenote/scms-db": "*",
     "@heroicons/react": "^2.2.0",

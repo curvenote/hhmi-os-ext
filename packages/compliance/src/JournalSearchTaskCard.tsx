@@ -16,7 +16,7 @@ export function JournalSearchTaskCard() {
             <FileSearch className="w-20 h-20 text-green-700" strokeWidth={1.25} aria-hidden />
           </div>
           <div className="flex-1 text-left">
-            <h3 className="text-lg font-normal">HHMI Lab Budget Policy Search</h3>
+            <h3 className="text-lg font-normal">Journal Checker Tool</h3>
             <p className="text-sm text-muted-foreground">
               Look up a journal to see whether HHMI lab budgets can be used to pay open access or
               other fees.

@@ -5,10 +5,13 @@ import {
   PageFrame,
   getBrandingFromMetaMatches,
   joinPageTitle,
+  RequestHelpDialog,
   WizardQuestion,
   ui,
   cn,
 } from '@curvenote/scms-core';
+import Fuse from 'fuse.js';
+import type { IFuseOptions } from 'fuse.js';
 import { useCallback, useMemo, useState } from 'react';
 import { getJournalsFromCacheOrFetch } from '../backend/airtable-cache.server.js';
 import type { NormalizedJournal } from '../backend/airtable.journals.server.js';
@@ -30,7 +33,10 @@ export const meta: MetaFunction<LoaderData> = ({ matches }) => {
 
 export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
   await withAppContext(args);
-  const journals = await getJournalsFromCacheOrFetch();
+  const raw = await getJournalsFromCacheOrFetch();
+  const journals = [...raw].sort((a, b) =>
+    (a.journal_name ?? '').localeCompare(b.journal_name ?? '', undefined, { sensitivity: 'base' }),
+  );
   return { journals };
 }
 
@@ -38,11 +44,20 @@ function toOption(j: NormalizedJournal): { value: string; label: string } {
   return { value: j.id, label: j.journal_name };
 }
 
-function formatDateForAdvice(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+const FUSE_CONFIG: IFuseOptions<NormalizedJournal> = {
+  keys: [{ name: 'journal_name', weight: 1 }],
+  threshold: 0.35,
+  distance: 200,
+  minMatchCharLength: 2,
+  ignoreLocation: true,
+  findAllMatches: true,
+  shouldSort: true,
+  includeScore: true,
+};
+
+function sanitizeSearchInput(input: string): string {
+  if (typeof input !== 'string') return '';
+  return input.trim().replace(/\s+/g, ' ').substring(0, 100);
 }
 
 /** Pill background + text classes by journal type (open access, subscription, transformative, hybrid, unknown). */
@@ -65,27 +80,58 @@ function pillClassesForType(type: string | null | undefined): string {
 export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderData }) {
   const { journals } = loaderData;
   const [selectedJournalId, setSelectedJournalId] = useState<string>('');
-  const [variant, setVariant] = useState<'A' | 'B'>('B');
-  const [submissionDate, setSubmissionDate] = useState<Date | null>(null);
   const [submittedOnOrAfterCutoff, setSubmittedOnOrAfterCutoff] = useState<boolean | null>(null);
+  const [showHelpDialog, setShowHelpDialog] = useState(false);
 
   const selectedJournal = useMemo(
     () => journals.find((j) => j.id === selectedJournalId) ?? null,
     [journals, selectedJournalId],
   );
 
+  const fuse = useMemo(() => new Fuse(journals, FUSE_CONFIG), [journals]);
+
   const onSearch = useCallback(
     (query: string) => {
-      const q = query.trim().toLowerCase();
-      const filtered = q
-        ? journals.filter((j) => j.journal_name.toLowerCase().includes(q))
-        : journals;
-      return Promise.resolve(filtered.slice(0, 100).map(toOption));
+      const sanitized = sanitizeSearchInput(query);
+      if (!sanitized) {
+        return Promise.resolve(journals.slice(0, 50).map(toOption));
+      }
+      const results = fuse.search(sanitized);
+      const options = results.slice(0, 100).map((result) => toOption(result.item));
+      return Promise.resolve(options);
     },
-    [journals],
+    [journals, fuse],
   );
 
   const journalOptions = useMemo(() => journals.map(toOption), [journals]);
+
+  const journalByValue = useCallback(
+    (value: string) => journals.find((j) => j.id === value) ?? null,
+    [journals],
+  );
+
+  const renderOptionWithBadge = useCallback(
+    (option: { value: string; label: string }) => {
+      const journal = journalByValue(option.value);
+      const typeLabel = journal?.type ?? '';
+      return (
+        <>
+          <span className="truncate">{option.label}</span>
+          {journal && (
+            <span
+              className={cn(
+                'shrink-0 px-2 py-0.5 text-xs font-medium rounded-full',
+                pillClassesForType(journal.type),
+              )}
+            >
+              {typeLabel || 'Unknown'}
+            </span>
+          )}
+        </>
+      );
+    },
+    [journalByValue],
+  );
 
   const needsDateOrChoice = selectedJournal
     ? typeRequiresDateOrChoice(selectedJournal.type)
@@ -97,23 +143,17 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
   const advice = useMemo(() => {
     if (!selectedJournal) return '';
     const input: Parameters<typeof getAdvice>[0] = { journal: selectedJournal };
-    if (variant === 'A' && submissionDate) {
-      input.submissionDate = formatDateForAdvice(submissionDate);
-    } else if (variant === 'B' && submittedOnOrAfterCutoff !== null) {
+    if (submittedOnOrAfterCutoff !== null) {
       input.submittedOnOrAfterCutoff = submittedOnOrAfterCutoff;
     }
     return getAdvice(input);
-  }, [selectedJournal, variant, submissionDate, submittedOnOrAfterCutoff]);
+  }, [selectedJournal, submittedOnOrAfterCutoff]);
 
   const showAdviceImmediately = selectedJournal && (!needsDateOrChoice || hasOverride);
   const showAdviceFromInput =
-    selectedJournal &&
-    needsDateOrChoice &&
-    !hasOverride &&
-    (variant === 'A' ? submissionDate != null : submittedOnOrAfterCutoff !== null);
+    selectedJournal && needsDateOrChoice && !hasOverride && submittedOnOrAfterCutoff !== null;
 
   const resetDateAndChoice = useCallback(() => {
-    setSubmissionDate(null);
     setSubmittedOnOrAfterCutoff(null);
   }, []);
 
@@ -127,7 +167,7 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
 
   const breadcrumbs = [
     { label: 'Home', href: '/app/dashboard' },
-    { label: 'Journal search – HHMI spending policies', isCurrentPage: true },
+    { label: 'Journal Checker Tool', isCurrentPage: true },
   ];
 
   const transformativeQuestion = {
@@ -153,140 +193,143 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
   return (
     <MainWrapper>
       <PageFrame
-        title="Search for HHMI spending policies on supported journals"
-        description="Select a journal to see whether HHMI lab budgets can be used to pay open access or other fees."
+        title="Journal Checker Tool"
+        description="Search for a journal to see whether HHMI lab budgets can be used to pay open access or other fees."
+        // description="If the journal you have searched for is not listed here, please reach out to oapolicy@hhmi.org for assistance with questions about paying open access fees."
         breadcrumbs={breadcrumbs}
       >
-        <div className="space-y-8 max-w-4xl">
-          {/* A/B toggle top-right – only when journal needs date/choice and has no override */}
-          {selectedJournal && needsDateOrChoice && !hasOverride && (
-            <div className="flex flex-wrap gap-4 justify-between items-center">
-              <div className="flex gap-2 justify-end items-center w-full">
-                <ui.ToggleGroup
-                  type="single"
-                  value={variant}
-                  onValueChange={(v) => v && setVariant(v as 'A' | 'B')}
-                  className="inline-flex rounded-md border p-0.5 cursor-pointer"
-                >
-                  <ui.ToggleGroupItem
-                    value="A"
-                    aria-label="Date picker"
-                    className="px-3 py-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                  >
-                    A
-                  </ui.ToggleGroupItem>
-                  <ui.ToggleGroupItem
-                    value="B"
-                    aria-label="Yes/No question"
-                    className="px-3 py-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                  >
-                    B
-                  </ui.ToggleGroupItem>
-                </ui.ToggleGroup>
-              </div>
-            </div>
-          )}
-
+        <div className="space-y-8 max-w-3xl">
           {/* Journal search */}
           <div>
-            <label className="block mb-2 font-medium">Search for a journal</label>
+            <label className="block mb-1">Search for a journal</label>
             <ui.AsyncComboBox
+              triggerMode="inline"
               value={selectedJournalId}
               onValueChange={handleJournalChange}
               onSearch={onSearch}
-              placeholder="Search for a journal..."
+              placeholder="Start typing to search..."
               searchPlaceholder="Type to search..."
               emptyMessage="No journals found."
               minSearchLength={1}
               initialOptions={journalOptions.length > 0 ? journalOptions.slice(0, 50) : []}
               triggerClassName="w-full"
+              renderOption={renderOptionWithBadge}
             />
-          </div>
-
-          {/* Selected journal type pill */}
-          {selectedJournal && (
-            <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-md">HHMI classifies this journal as:</span>
-              <span
-                className={cn(
-                  'px-3 py-1 text-sm font-medium rounded-full',
-                  pillClassesForType(selectedJournal.type),
-                )}
+            <div className="mt-1 max-w-2xl text-xs font-light text-muted-foreground">
+              If the journal you have searched for is not listed here, please reach out to the{' '}
+              <ui.Button
+                variant="link"
+                className="p-0 h-auto text-xs font-light underline text-primary underline-offset-4 hover:no-underline"
+                onClick={() => setShowHelpDialog(true)}
               >
-                {typeLabel || 'Unknown'}
-              </span>
+                Open Science Team
+              </ui.Button>{' '}
+              for assistance with questions about paying open access fees at this journal.
             </div>
-          )}
+          </div>
+          {selectedJournal && (
+            <ui.Card className="p-6 py-8 space-y-12">
+              <div className="space-y-8">
+                {selectedJournal && (
+                  <div className="space-y-1">
+                    <div className="text-2xl font-medium">{selectedJournal.journal_name}</div>
+                    <div>
+                      {typeLabel ? (
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <span className="font-light text-md">
+                            HHMI classifies this journal as:
+                          </span>
+                          <span
+                            className={cn(
+                              'px-3 py-[2px] text-sm font-medium rounded-full',
+                              pillClassesForType(selectedJournal.type),
+                            )}
+                          >
+                            {typeLabel}
+                          </span>
+                        </div>
+                      ) : (
+                        <ui.SimpleAlert
+                          type="info"
+                          className="mt-8"
+                          message={
+                            <div className="font-light text-md">
+                              HHMI has not classified this journal. Please reach out to the{' '}
+                              <ui.Button
+                                variant="link"
+                                className="p-0 h-auto font-light underline text-primary underline-offset-4 hover:no-underline"
+                                onClick={() => setShowHelpDialog(true)}
+                              >
+                                Open Science Team
+                              </ui.Button>{' '}
+                              for assistance with questions about paying open access fees at this
+                              journal.
+                            </div>
+                          }
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
 
-          {/* Immediate advice for open access / subscription – styled like Compliance Wizard outcomes */}
-          {showAdviceImmediately && advice && (
-            <ui.SimpleAlert
-              type="info"
-              message={
-                <div className="flex flex-col">
-                  <div className="text-lg font-medium">Spending policy</div>
-                  <span className="text-inherit">{advice}</span>
-                </div>
-              }
-            />
-          )}
+                {/* Immediate advice for open access / subscription – styled like Compliance Wizard outcomes */}
+                {showAdviceImmediately && advice && (
+                  <ui.SimpleAlert
+                    type="info"
+                    message={
+                      <div className="flex flex-col">
+                        <div className="text-lg font-medium">Spending policy</div>
+                        <span className="text-inherit">{advice}</span>
+                      </div>
+                    }
+                  />
+                )}
 
-          {/* Date picker (variant A) or Yes/No (variant B) for transformative / hybrid – skip when override is set */}
-          {selectedJournal && needsDateOrChoice && !hasOverride && (
-            <div className="space-y-4">
-              {variant === 'A' && (
-                <div>
-                  <label className="block mb-2 text-sm font-medium">Submission date</label>
-                  <ui.Popover>
-                    <ui.PopoverTrigger asChild>
-                      <ui.Button variant="outline" className="justify-start w-full text-left">
-                        {submissionDate ? submissionDate.toLocaleDateString() : 'Pick a date'}
-                      </ui.Button>
-                    </ui.PopoverTrigger>
-                    <ui.PopoverContent className="p-0 w-auto">
-                      <ui.Calendar
-                        mode="single"
-                        selected={submissionDate ?? undefined}
-                        onSelect={(d) => setSubmissionDate(d ?? null)}
+                {/* Yes/No question for transformative / hybrid – skip when override is set */}
+                {selectedJournal && needsDateOrChoice && !hasOverride && (
+                  <div className="space-y-4">
+                    {typeNormalized === 'transformative' && (
+                      <WizardQuestion
+                        question={transformativeQuestion}
+                        value={submittedOnOrAfterCutoff}
+                        onChange={(v) => setSubmittedOnOrAfterCutoff(v as boolean)}
                       />
-                    </ui.PopoverContent>
-                  </ui.Popover>
-                </div>
-              )}
-              {variant === 'B' && (
-                <div className="space-y-4">
-                  {typeNormalized === 'transformative' && (
-                    <WizardQuestion
-                      question={transformativeQuestion}
-                      value={submittedOnOrAfterCutoff}
-                      onChange={(v) => setSubmittedOnOrAfterCutoff(v as boolean)}
-                    />
-                  )}
-                  {typeNormalized === 'hybrid' && (
-                    <WizardQuestion
-                      question={hybridQuestion}
-                      value={submittedOnOrAfterCutoff}
-                      onChange={(v) => setSubmittedOnOrAfterCutoff(v as boolean)}
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+                    )}
+                    {typeNormalized === 'hybrid' && (
+                      <WizardQuestion
+                        question={hybridQuestion}
+                        value={submittedOnOrAfterCutoff}
+                        onChange={(v) => setSubmittedOnOrAfterCutoff(v as boolean)}
+                      />
+                    )}
+                  </div>
+                )}
 
-          {/* Advice from date or yes/no – styled like Compliance Wizard outcomes */}
-          {showAdviceFromInput && advice && (
-            <ui.SimpleAlert
-              type="info"
-              message={
-                <div className="flex flex-col">
-                  <div className="text-lg font-medium">Spending policy</div>
-                  <span className="text-inherit">{advice}</span>
-                </div>
-              }
-            />
+                {/* Advice from yes/no choice – styled like Compliance Wizard outcomes */}
+                {showAdviceFromInput && advice && (
+                  <ui.SimpleAlert
+                    type="info"
+                    message={
+                      <div className="flex flex-col">
+                        <div className="text-lg font-medium">Spending policy</div>
+                        <span className="text-inherit">{advice}</span>
+                      </div>
+                    }
+                  />
+                )}
+              </div>
+            </ui.Card>
           )}
         </div>
+        <RequestHelpDialog
+          open={showHelpDialog}
+          onOpenChange={setShowHelpDialog}
+          title="Request Help from the Open Science Team"
+          prompt="Please describe your question about a journal that is not listed, about journal classification, or about paying open access fees."
+          intent="general-help"
+          successMessage="Your request has been sent to the HHMI Open Science Team. We'll get back to you as soon as possible."
+          messageOptional={true}
+        />
       </PageFrame>
     </MainWrapper>
   );

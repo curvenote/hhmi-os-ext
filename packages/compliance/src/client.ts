@@ -47,8 +47,9 @@ export function getTasks(): ExtensionTask[] {
     },
     {
       id: 'journal-search',
-      name: 'HHMI Lab Budget Policy Search',
-      description: 'Look up a journal to see whether HHMI lab budgets can be used to pay open access or other fees.',
+      name: 'Journal Checker Tool',
+      description:
+        'Look up a journal to see whether HHMI lab budgets can be used to pay open access or other fees.',
       component: JournalSearchTaskCard,
     },
   ];
