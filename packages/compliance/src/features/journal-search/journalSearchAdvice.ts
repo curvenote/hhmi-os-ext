@@ -14,18 +14,42 @@ export type JournalType = (typeof JOURNAL_TYPES)[number];
 export const TRANSFORMATIVE_CUTOFF = '2026-01-01';
 export const HYBRID_CUTOFF = '2023-01-01';
 
+export type AdviceAlertType = 'info' | 'warning' | 'success';
+
+export interface AdviceResult {
+  message: string;
+  type: AdviceAlertType;
+}
+
 /** All advice messages in one place for easy update. */
 export const ADVICE_MESSAGES = {
-  OPEN_ACCESS: 'HHMI lab budgets can be used to pay open access fees for this paper.',
-  SUBSCRIPTION:
-    'This journal does not have an open access option, so there are no open access fees. HHMI lab budgets can be used to pay other types of fees (e.g., page/color charges) at this journal.',
-  TRANSFORMATIVE_ON_OR_AFTER_CUTOFF:
-    'HHMI lab budgets cannot be used to pay open access fees for this paper, but can be used to pay other types of fees (e.g., page/color charges).',
-  TRANSFORMATIVE_BEFORE_CUTOFF:
-    'HHMI lab budgets can be used to pay open access fees for this paper.',
-  HYBRID_ON_OR_AFTER_CUTOFF:
-    'HHMI lab budgets cannot be used to pay open access fees for this paper, but can be used to pay other types of fees (e.g., page/color charges).',
-  HYBRID_BEFORE_CUTOFF: 'HHMI lab budgets can be used to pay open access fees for this paper.',
+  OPEN_ACCESS: {
+    message: 'HHMI lab budgets can be used to pay open access fees for this paper.',
+    type: 'success',
+  },
+  SUBSCRIPTION: {
+    message:
+      'This journal does not have an open access option, so there are no open access fees. HHMI lab budgets can be used to pay other types of fees (e.g., page/color charges) at this journal.',
+    type: 'info',
+  },
+  TRANSFORMATIVE_ON_OR_AFTER_CUTOFF: {
+    message:
+      'HHMI lab budgets cannot be used to pay open access fees for this paper, but can be used to pay other types of fees (e.g., page/color charges).',
+    type: 'warning',
+  },
+  TRANSFORMATIVE_BEFORE_CUTOFF: {
+    message: 'HHMI lab budgets can be used to pay open access fees for this paper.',
+    type: 'success',
+  },
+  HYBRID_ON_OR_AFTER_CUTOFF: {
+    message:
+      'HHMI lab budgets cannot be used to pay open access fees for this paper, but can be used to pay other types of fees (e.g., page/color charges).',
+    type: 'warning',
+  },
+  HYBRID_BEFORE_CUTOFF: {
+    message: 'HHMI lab budgets can be used to pay open access fees for this paper.',
+    type: 'success',
+  },
 } as const;
 
 /** Copy for variant B yes/no questions. */
@@ -48,13 +72,13 @@ export interface GetAdviceInput {
 }
 
 /**
- * Returns the advice string for the given journal and optional date/yes-no.
+ * Returns the advice message + alert type for the given journal and optional date/yes-no.
  * If journal has payment_instruction_override set, that is returned. Otherwise logic from type + date applies.
  */
-export function getAdvice(input: GetAdviceInput): string {
+export function getAdvice(input: GetAdviceInput): AdviceResult | null {
   const { journal, submissionDate, submittedOnOrAfterCutoff } = input;
   const override = (journal.payment_instruction_override ?? '').trim();
-  if (override) return override;
+  if (override) return { message: override, type: 'info' };
 
   const type = (journal.type ?? '').toLowerCase().trim();
 
@@ -75,7 +99,7 @@ export function getAdvice(input: GetAdviceInput): string {
           ? ADVICE_MESSAGES.TRANSFORMATIVE_ON_OR_AFTER_CUTOFF
           : ADVICE_MESSAGES.TRANSFORMATIVE_BEFORE_CUTOFF;
       }
-      return ''; // need date or yes/no
+      return null; // need date or yes/no
     }
     case 'hybrid': {
       if (submittedOnOrAfterCutoff !== undefined) {
@@ -89,10 +113,10 @@ export function getAdvice(input: GetAdviceInput): string {
           ? ADVICE_MESSAGES.HYBRID_ON_OR_AFTER_CUTOFF
           : ADVICE_MESSAGES.HYBRID_BEFORE_CUTOFF;
       }
-      return ''; // need date or yes/no
+      return null; // need date or yes/no
     }
     default:
-      return '';
+      return null;
   }
 }
 

@@ -141,7 +141,7 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
   const typeNormalized = (selectedJournal?.type ?? '').toLowerCase().trim();
 
   const advice = useMemo(() => {
-    if (!selectedJournal) return '';
+    if (!selectedJournal) return null;
     const input: Parameters<typeof getAdvice>[0] = { journal: selectedJournal };
     if (submittedOnOrAfterCutoff !== null) {
       input.submittedOnOrAfterCutoff = submittedOnOrAfterCutoff;
@@ -228,7 +228,7 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
             </div>
           </div>
           {selectedJournal && (
-            <ui.Card className="p-6 py-8 space-y-12">
+            <ui.Card className="p-6 pt-6 pb-8 space-y-12">
               <div className="space-y-8">
                 {selectedJournal && (
                   <div className="space-y-1">
@@ -275,11 +275,11 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
                 {/* Immediate advice for open access / subscription – styled like Compliance Wizard outcomes */}
                 {showAdviceImmediately && advice && (
                   <ui.SimpleAlert
-                    type="info"
+                    type={advice.type}
                     message={
                       <div className="flex flex-col">
                         <div className="text-lg font-medium">Spending policy</div>
-                        <span className="text-inherit">{advice}</span>
+                        <span className="text-inherit">{advice.message}</span>
                       </div>
                     }
                   />
@@ -308,11 +308,11 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
                 {/* Advice from yes/no choice – styled like Compliance Wizard outcomes */}
                 {showAdviceFromInput && advice && (
                   <ui.SimpleAlert
-                    type="info"
+                    type={advice.type}
                     message={
                       <div className="flex flex-col">
                         <div className="text-lg font-medium">Spending policy</div>
-                        <span className="text-inherit">{advice}</span>
+                        <span className="text-inherit">{advice.message}</span>
                       </div>
                     }
                   />
