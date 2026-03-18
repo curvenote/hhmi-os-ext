@@ -31,7 +31,7 @@ export const ADVICE_MESSAGES = {
 /** Copy for variant B yes/no questions. */
 export const JOURNAL_SEARCH_QUESTIONS = {
   transformative: 'Was the work submitted on or after 1 January 2026?',
-  hybrid: 'Was it submitted on or after 1 January 2023?',
+  hybrid: 'Was the work submitted on or after 1 January 2023?',
 } as const;
 
 function isOnOrAfter(dateStr: string, cutoff: string): boolean {
