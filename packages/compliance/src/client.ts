@@ -38,12 +38,14 @@ export function getTasks(): ExtensionTask[] {
       description:
         'Get an up to date review of the compliance of your preprints and journal articles.',
       component: ComplianceReportTaskCard,
+      category: 'hhmi policy',
     },
     {
       id: 'compliance-wizard',
       name: 'Get Help with Open Access Policy Compliance',
       description: 'Answer questions to understand your compliance requirements',
       component: ComplianceWizardTaskCard,
+      category: 'hhmi policy',
     },
     {
       id: 'journal-search',
@@ -51,6 +53,7 @@ export function getTasks(): ExtensionTask[] {
       description:
         'Look up a journal to see whether HHMI lab budgets can be used to pay open access or other fees.',
       component: JournalSearchTaskCard,
+      category: 'hhmi policy',
     },
   ];
 }

@@ -35,8 +35,8 @@ export function ComplianceReportTaskCard() {
         disabled={isLoading}
       >
         <div className="flex gap-0 items-center mx-2 h-full">
-          <div className="flex-shrink-0">
-            <img src={myOpenAccessComplianceIcon} alt="Check Compliance" className="w-20 h-20" />
+          <div className="flex-shrink-0 p-2">
+            <img src={myOpenAccessComplianceIcon} alt="Check Compliance" className="w-16 h-16" />
           </div>
           <div className="flex-1 text-left">
             <h3 className="text-lg font-normal">My Compliance Dashboard</h3>

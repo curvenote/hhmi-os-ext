@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { primitives } from '@curvenote/scms-core';
-import journalCoverageIcon from './assets/journal-coverage.svg';
+import journalCoverageIcon from './assets/journal-coverage-icon.svg';
 
 const JOURNAL_SEARCH_PATH = '/app/task/journal-search';
 

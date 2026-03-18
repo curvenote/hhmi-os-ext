@@ -43,6 +43,7 @@ export function getTasks(): ExtensionTask[] {
       name: 'PMC Deposit',
       description: 'Submit to PubMed Central',
       component: PMCDepositTaskCard,
+      category: 'publish',
     },
   ];
 }
