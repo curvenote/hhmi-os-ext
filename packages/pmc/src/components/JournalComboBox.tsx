@@ -65,6 +65,7 @@ export function JournalComboBox({
 
   return (
     <ui.AsyncComboBox
+      boxed
       value={value}
       onValueChange={onValueChange}
       onSearch={searchJournals}

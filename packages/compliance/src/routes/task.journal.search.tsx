@@ -204,7 +204,7 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
             <label className="block mb-1">Search for a journal</label>
             <ui.AsyncComboBox
               triggerMode="inline"
-              {...({ selectedLabel: selectedJournal?.journal_name } as Record<string, unknown>)}
+              selectedLabel={selectedJournal?.journal_name}
               value={selectedJournalId}
               onValueChange={handleJournalChange}
               onSearch={onSearch}

@@ -176,6 +176,7 @@ export function ShareReportForm({
                 Search (by name or email)
               </label>
               <ui.AsyncComboBox
+                boxed
                 value={selectedUser}
                 onValueChange={setSelectedUser}
                 onSearch={searchUsers}

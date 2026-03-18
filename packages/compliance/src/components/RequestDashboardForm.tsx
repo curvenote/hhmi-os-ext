@@ -167,6 +167,7 @@ export function RequestDashboardForm({
                 Search (by name or email)
               </label>
               <ui.AsyncComboBox
+                boxed
                 value={selectedUser}
                 onValueChange={setSelectedUser}
                 onSearch={searchUsers}
