@@ -39,7 +39,6 @@ function normalizeScientist(scientistData: ScientistData): NormalizedScientist {
       Number(fields[SCIENTIST_FIELDS.compliance_rate_covered_preprints.id]) || 0,
     complianceRateCoveredPublications:
       Number(fields[SCIENTIST_FIELDS.compliance_rate_covered_publications.id]) || 0,
-    nextReviewWithin2Years: !!fields[SCIENTIST_FIELDS.next_review_within_2_years.id] || false,
     preprints: {
       total: Number(fields[SCIENTIST_FIELDS.total_preprints.id]) || 0,
       totalSubjectToPolicy:

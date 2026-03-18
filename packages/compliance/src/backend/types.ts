@@ -70,7 +70,6 @@ export interface NormalizedScientist {
   institution: string;
   complianceRateCoveredPreprints: number;
   complianceRateCoveredPublications: number;
-  nextReviewWithin2Years: boolean;
   preprints: {
     total: number;
     totalSubjectToPolicy: number;

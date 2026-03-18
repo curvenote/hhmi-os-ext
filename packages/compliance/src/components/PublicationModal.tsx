@@ -138,7 +138,7 @@ export function ComplianceStatusBar({
           {item.isLinkedToPrimaryOrcid && (
             <>
               <div className="text-sm font-light">
-                You are a major contributor on this publication and{' '}
+                This publication represents a major contribution from your lab and{' '}
                 <span className="font-medium">
                   you should take steps to resolve this compliance issue.
                 </span>
@@ -152,16 +152,12 @@ export function ComplianceStatusBar({
               <span className="font-medium">you are not required to take action</span>.
             </div>
           )}
+          {item.isLinkedToPrimaryOrcid && item.journal?.reviewReminder && (
+            <div className="text-sm font-light">
+              <span className="font-semibold">Review Reminder:</span> {item.journal.reviewReminder}
+            </div>
+          )}
           {item.isLinkedToPrimaryOrcid &&
-            scientist?.nextReviewWithin2Years &&
-            item.journal?.reviewReminder && (
-              <div className="text-sm font-light">
-                <span className="font-semibold">Review Reminder:</span>{' '}
-                {item.journal.reviewReminder}
-              </div>
-            )}
-          {item.isLinkedToPrimaryOrcid &&
-            scientist?.nextReviewWithin2Years &&
             item.preprint?.reviewReminder &&
             !item.journal?.reviewReminder && (
               <div className="text-sm font-light">
