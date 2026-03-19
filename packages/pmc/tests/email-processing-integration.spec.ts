@@ -45,6 +45,8 @@ describe('Email Processing Integration Tests', () => {
           },
         },
       },
+      sendSlackNotification: vi.fn().mockResolvedValue(undefined),
+      asBaseUrl: vi.fn((path: string) => `https://example.com${path}`),
     } as any;
   });
 
