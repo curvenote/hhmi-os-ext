@@ -1,5 +1,21 @@
 # @hhmi/compliance
 
+## 0.2.1
+
+### Patch Changes
+
+- d6b92ba: Changes to wording based on feedback
+- 5f78c90: - Wording changes to compliance dashboards for major contributions from labs
+  - Removed Review Reminder label from publication dialog
+  - Review reminder text is now shown for all unresolved issues, not just those within 2 years of review
+  -
+- Updated dependencies [e2b0efb]
+- Updated dependencies [4670e7c]
+- Updated dependencies [d6b92ba]
+- Updated dependencies [e2b0efb]
+- Updated dependencies [e2b0efb]
+  - @hhmi/pmc@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes

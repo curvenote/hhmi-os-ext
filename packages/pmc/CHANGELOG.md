@@ -1,5 +1,15 @@
 # @hhmi/pmc
 
+## 0.2.1
+
+### Patch Changes
+
+- e2b0efb: Add missing transitions from `REVIEWER_APPROVED_INITIAL` to `REQUEST_NEW_VERSION` and `NO_ACTION_NEEDED`, update the PMC workflow Mermaid diagram, and replace the split button with a kebab menu for workflow actions.
+- 4670e7c: Additional fix to incoming email body parsing to ensure that NIUHMS links are stripped
+- d6b92ba: Changed task title
+- e2b0efb: Ping slack on inbound email
+- e2b0efb: Updated email processor to not ignore emails if there are problems parsing messages from the body, a fallback will be used instead. Made the body parsing more general to allow for more variation in the expected greeting line.
+
 ## 0.2.0
 
 ### Patch Changes
