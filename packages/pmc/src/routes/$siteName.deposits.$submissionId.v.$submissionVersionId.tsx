@@ -43,8 +43,8 @@ import {
 } from '@curvenote/scms-core';
 import { EmailProcessingAlert } from '../components/EmailProcessingAlert.js';
 import { PublicationInfoCard } from '../components/PublicationInfoCard.js';
-import { ActionsAreaForm } from '../components/ActionsArea.js';
-import { useState } from 'react';
+import { ActionsAreaForm, ActionsAreaActiveTransition } from '../components/ActionsArea.js';
+import { useEffect, useRef, useState } from 'react';
 import type { UserWithRolesDBO } from '@curvenote/scms-server';
 import { getPrismaClient } from '@curvenote/scms-server';
 
@@ -186,6 +186,17 @@ export default function PMCDetailsPage({ loaderData }: { loaderData: LoaderData 
     transitions,
   } = loaderData;
   const [error, setError] = useState<GeneralError | string | undefined>(undefined);
+  const [activeTransition, setActiveTransition] = useState<WorkflowTransition | null>(null);
+  const prevSubmissionVersionIdRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (
+      prevSubmissionVersionIdRef.current !== undefined &&
+      prevSubmissionVersionIdRef.current !== thisSubmissionVersionId
+    ) {
+      setActiveTransition(null);
+    }
+    prevSubmissionVersionIdRef.current = thisSubmissionVersionId;
+  }, [thisSubmissionVersionId]);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -309,14 +320,18 @@ export default function PMCDetailsPage({ loaderData }: { loaderData: LoaderData 
             />
           )}
           {currentSubmissionVersion && transitions.length > 0 && (
-            <div className="flex justify-end">
+            <div className="flex flex-col items-end gap-2 w-full max-w-md ml-auto">
               <ActionsAreaForm
+                key={currentSubmissionVersion.id}
                 transitions={transitions}
                 submissionVersion={currentSubmissionVersion}
                 onError={setError}
                 formAction="/app/sites/pmc/inbox"
                 layout="horizontal"
+                actionDisplay="splitButton"
+                onActiveTransitionChange={setActiveTransition}
               />
+              <ActionsAreaActiveTransition transition={activeTransition} />
             </div>
           )}
           {error && <ui.ErrorMessage error={error} />}

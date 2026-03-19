@@ -8,10 +8,28 @@ import { zfd } from 'zod-form-data';
 import { z } from 'zod';
 import type { Prisma } from '@curvenote/scms-db';
 import { EllipsisVertical } from 'lucide-react';
+import { SplitButton } from './SplitButton.js';
 
 interface SubmissionVersionTransitionInfo {
   id: string;
   transition?: WorkflowTransition | Prisma.JsonValue | null;
+}
+
+export function ActionsAreaActiveTransition({
+  transition,
+}: {
+  transition: WorkflowTransition | Prisma.JsonValue | null | undefined;
+}) {
+  const t = transition as WorkflowTransition | null | undefined;
+  if (!t) return null;
+  return (
+    <div className="flex gap-2 items-center animate-pulse">
+      <ui.Dot />
+      <div className="text-gray-400 text-sm pb-[1px]">
+        {t.labels?.inProgress ?? 'in progress...'}
+      </div>
+    </div>
+  );
 }
 
 interface ActionsAreaProps {
@@ -20,6 +38,10 @@ interface ActionsAreaProps {
   onError: (error: GeneralError | string | undefined) => void;
   formAction?: string;
   layout?: 'vertical' | 'horizontal';
+  /** Kebab menu (compact) vs split primary + dropdown */
+  actionDisplay?: 'menu' | 'splitButton';
+  /** When set, in-progress transition is reported here instead of rendering inside the actions area */
+  onActiveTransitionChange?: (transition: WorkflowTransition | null) => void;
 }
 
 export const TransitionFormSchema = zfd.formData({
@@ -34,11 +56,22 @@ export function ActionsAreaForm({
   onError,
   formAction,
   layout = 'vertical',
+  actionDisplay = 'menu',
+  onActiveTransitionChange,
 }: ActionsAreaProps) {
   const [activeTransition, setActiveTransition] = useState<WorkflowTransition | null>(
     submissionVersion.transition as WorkflowTransition | null,
   );
   const revalidator = useRevalidator();
+
+  // Reset when viewing a different submission version (avoids stale in-progress state)
+  useEffect(() => {
+    setActiveTransition(submissionVersion.transition as WorkflowTransition | null);
+  }, [submissionVersion.id]);
+
+  useEffect(() => {
+    onActiveTransitionChange?.(activeTransition);
+  }, [activeTransition, onActiveTransitionChange]);
   const fetcher = useFetcher<{
     success: boolean;
     item?: SubmissionVersionTransitionInfo;
@@ -163,40 +196,60 @@ export function ActionsAreaForm({
 
   const isHorizontal = layout === 'horizontal';
 
+  const primary = transitions[0];
+  const otherTransitions = transitions.slice(1);
+
   return (
     <div
       data-name="actions-area"
-      className={`flex flex-col gap-2 ${isHorizontal ? 'flex-row items-center justify-end' : ''}`}
+      className={`flex flex-col gap-2 ${isHorizontal ? 'flex-row justify-end items-center' : ''}`}
     >
-      <ui.Menu>
-        <ui.MenuTrigger asChild>
-          <ui.Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={disabled}
-            aria-label="Actions"
-            className="px-2 border-stone-400 dark:border-stone-500 text-stone-900 dark:text-white bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800"
-          >
-            <EllipsisVertical className="h-5 w-5" />
-          </ui.Button>
-        </ui.MenuTrigger>
-        <ui.MenuContent align="end" sideOffset={4} className="min-w-[12rem]">
-          {transitions.map((t) => (
-            <ui.MenuItem
-              key={t.name}
+      {actionDisplay === 'splitButton' ? (
+        <SplitButton
+          primaryLabel={primary.labels?.action || primary.name}
+          primaryValue={primary.name}
+          onPrimaryAction={requestTransition}
+          otherActions={otherTransitions.map((t) => ({
+            label: t.labels?.action || t.name,
+            value: t.name,
+          }))}
+          onOptionSelect={requestTransition}
+          disabled={disabled}
+          busy={fetcher.state !== 'idle'}
+          size="sm"
+          className={isHorizontal ? 'max-w-md' : undefined}
+        />
+      ) : (
+        <ui.Menu>
+          <ui.MenuTrigger asChild>
+            <ui.Button
+              type="button"
+              variant="ghost"
+              size="icon"
               disabled={disabled}
-              onSelect={(e) => {
-                e.preventDefault();
-                requestTransition(t.name);
-              }}
-              className="px-3 py-2 text-sm cursor-pointer"
+              aria-label="Actions"
             >
-              {t.labels?.action || t.name}
-            </ui.MenuItem>
-          ))}
-        </ui.MenuContent>
-      </ui.Menu>
+              <EllipsisVertical />
+            </ui.Button>
+          </ui.MenuTrigger>
+          <ui.MenuContent align="end" sideOffset={4} className="min-w-[12rem]">
+            {transitions.map((t) => (
+              <ui.MenuItem
+                key={t.name}
+                disabled={disabled}
+                onSelect={() => {
+                  // Do not call preventDefault() — Radix closes the menu on select by default;
+                  // preventDefault() would leave an uncontrolled menu open behind the dialog.
+                  requestTransition(t.name);
+                }}
+                className="px-3 py-2 text-sm cursor-pointer"
+              >
+                {t.labels?.action || t.name}
+              </ui.MenuItem>
+            ))}
+          </ui.MenuContent>
+        </ui.Menu>
+      )}
       <ui.Dialog
         open={confirmDialogOpen}
         onOpenChange={(open) => {
@@ -217,14 +270,6 @@ export function ActionsAreaForm({
           </ui.DialogFooter>
         </ui.DialogContent>
       </ui.Dialog>
-      {activeTransition && (
-        <div className="flex gap-2 items-center animate-pulse">
-          <ui.Dot />
-          <div className="text-gray-400 text-sm pb-[1px]">
-            {activeTransition.labels?.inProgress ?? 'in progress...'}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
