@@ -242,7 +242,7 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
 
   const breadcrumbs = [
     { label: 'Home', href: '/app/dashboard' },
-    { label: 'Journal Checker Tool', isCurrentPage: true },
+    { label: 'Journal Payment Lookup Tool', isCurrentPage: true },
   ];
 
   const transformativeQuestion = {
@@ -268,9 +268,8 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
   return (
     <MainWrapper>
       <PageFrame
-        title="Journal Checker Tool"
+        title="Journal Payment Lookup Tool"
         description="Search for a journal to see whether HHMI lab budgets can be used to pay open access or other fees."
-        // description="If the journal you have searched for is not listed here, please reach out to oapolicy@hhmi.org for assistance with questions about paying open access fees."
         breadcrumbs={breadcrumbs}
       >
         <div className="space-y-8 max-w-3xl">
@@ -291,7 +290,7 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
               triggerClassName="w-full"
               renderOption={renderOptionWithBadge}
             />
-            <div className="mt-1 max-w-2xl text-xs font-light text-muted-foreground">
+            <div className="mt-1 max-w-2xl text-sm font-light text-muted-foreground">
               If the journal you have searched for is not listed here, please reach out to the{' '}
               <ui.Button
                 variant="link"

@@ -77,9 +77,9 @@ export const HHMITrackEventDescriptions: Record<HHMITrackEvent, string> = {
   [HHMITrackEvent.HHMI_COMPLIANCE_DASHBOARD_REQUESTED]:
     'User requested another user to share their compliance dashboard',
   [HHMITrackEvent.HHMI_COMPLIANCE_JOURNAL_SEARCH_TASK_CLICKED]:
-    'User clicked the Journal Checker Tool task card from dashboard',
+    'User clicked the Journal Payment Lookup Tool task card from dashboard',
   [HHMITrackEvent.HHMI_COMPLIANCE_JOURNAL_SEARCH_ADVICE_SHOWN]:
-    'Spending policy advice was shown in the Journal Checker Tool',
+    'Spending policy advice was shown in the Journal Payment Lookup Tool',
   [HHMITrackEvent.COMPLIANCE_WIZARD_CLICKED]:
     'User clicked the compliance wizard task card button on dashboard',
   [HHMITrackEvent.COMPLIANCE_WIZARD_STARTED]: 'User started the PMC compliance wizard page',

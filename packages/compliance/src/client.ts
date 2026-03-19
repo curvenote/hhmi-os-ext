@@ -49,7 +49,7 @@ export function getTasks(): ExtensionTask[] {
     },
     {
       id: 'journal-search',
-      name: 'Journal Checker Tool',
+      name: 'Journal Payment Lookup Tool',
       description:
         'Look up a journal to see whether HHMI lab budgets can be used to pay open access or other fees.',
       component: JournalSearchTaskCard,
