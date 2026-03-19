@@ -12,19 +12,29 @@ import {
 } from '@curvenote/scms-core';
 import Fuse from 'fuse.js';
 import type { IFuseOptions } from 'fuse.js';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getJournalsFromCacheOrFetch } from '../backend/airtable-cache.server.js';
 import type { NormalizedJournal } from '../backend/airtable.journals.server.js';
+import type { ComplianceUserMetadataSection } from '../backend/types.js';
+import { HHMITrackEvent } from '../analytics/events.js';
 import {
   getAdvice,
   hasPaymentInstructionOverride,
   typeRequiresDateOrChoice,
   JOURNAL_SEARCH_QUESTIONS,
 } from '../features/journal-search/journalSearchAdvice.js';
+import { isUserComplianceManager } from '../utils/analytics.server.js';
+import { useCompliancePingEvent } from '../utils/analytics.js';
 
 interface LoaderData {
   journals: NormalizedJournal[];
+  complianceRole?: 'scientist' | 'lab-manager';
+  path?: string;
+  isComplianceManager?: boolean;
 }
+
+/** Max length for advice text in analytics (payment overrides can be long). */
+const ADVICE_MESSAGE_ANALYTICS_MAX_LEN = 1000;
 
 export const meta: MetaFunction<LoaderData> = ({ matches }) => {
   const branding = getBrandingFromMetaMatches(matches);
@@ -32,12 +42,24 @@ export const meta: MetaFunction<LoaderData> = ({ matches }) => {
 };
 
 export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
-  await withAppContext(args);
+  const ctx = await withAppContext(args);
   const raw = await getJournalsFromCacheOrFetch();
   const journals = [...raw].sort((a, b) =>
     (a.journal_name ?? '').localeCompare(b.journal_name ?? '', undefined, { sensitivity: 'base' }),
   );
-  return { journals };
+  const userData = (ctx.user.data as ComplianceUserMetadataSection) || { compliance: {} };
+  const complianceRole = userData.compliance?.role;
+  const path = new URL(args.request.url).pathname;
+
+  // Keep route-level user context available via `loaderData` (even if the current
+  // UI doesn't directly render it) so future conditional rendering/analytics can
+  // reuse a single source of truth.
+  return {
+    journals,
+    complianceRole,
+    path,
+    isComplianceManager: isUserComplianceManager(ctx.user),
+  };
 }
 
 function toOption(j: NormalizedJournal): { value: string; label: string } {
@@ -79,6 +101,12 @@ function pillClassesForType(type: string | null | undefined): string {
 
 export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderData }) {
   const { journals } = loaderData;
+  const pingEvent = useCompliancePingEvent();
+
+  // Store the latest ping callback without adding it to the effect dependencies.
+  // This prevents accidental re-runs of the analytics effect due to function identity changes.
+  const pingEventRef = useRef(pingEvent);
+  pingEventRef.current = pingEvent;
   const [selectedJournalId, setSelectedJournalId] = useState<string>('');
   const [submittedOnOrAfterCutoff, setSubmittedOnOrAfterCutoff] = useState<boolean | null>(null);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
@@ -136,6 +164,9 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
   const needsDateOrChoice = selectedJournal
     ? typeRequiresDateOrChoice(selectedJournal.type)
     : false;
+
+  // If the journal's spending policy depends on additional user input (e.g. a cutover
+  // date / yes-no), we delay showing the advice until that input is provided.
   const hasOverride = selectedJournal ? hasPaymentInstructionOverride(selectedJournal) : false;
   const typeLabel = selectedJournal?.type ? selectedJournal.type : '';
   const typeNormalized = (selectedJournal?.type ?? '').toLowerCase().trim();
@@ -149,9 +180,53 @@ export default function JournalSearchRoute({ loaderData }: { loaderData: LoaderD
     return getAdvice(input);
   }, [selectedJournal, submittedOnOrAfterCutoff]);
 
-  const showAdviceImmediately = selectedJournal && (!needsDateOrChoice || hasOverride);
-  const showAdviceFromInput =
-    selectedJournal && needsDateOrChoice && !hasOverride && submittedOnOrAfterCutoff !== null;
+  const showAdviceImmediately = Boolean(selectedJournal && (!needsDateOrChoice || hasOverride));
+  const showAdviceFromInput = Boolean(
+    selectedJournal && needsDateOrChoice && !hasOverride && submittedOnOrAfterCutoff !== null,
+  );
+
+  // Same condition for showing advice and emitting analytics: ping runs whenever
+  // this is true and any dependency changes (e.g. hybrid yes/no toggles) — no dedupe.
+  const adviceVisible = Boolean(
+    selectedJournal && advice && (showAdviceImmediately || showAdviceFromInput),
+  );
+
+  useEffect(() => {
+    if (!adviceVisible || !selectedJournal || !advice) return;
+
+    // Track the moment the spending policy alert is presented to the user.
+    const payload: Record<string, unknown> = {
+      journalName: selectedJournal.journal_name,
+      journalType: selectedJournal.type ?? '',
+      journalId: selectedJournal.id,
+      adviceAlertType: advice.type,
+      adviceMessage:
+        advice.message.length > ADVICE_MESSAGE_ANALYTICS_MAX_LEN
+          ? `${advice.message.slice(0, ADVICE_MESSAGE_ANALYTICS_MAX_LEN)}…`
+          : advice.message,
+      hasPaymentInstructionOverride: hasOverride,
+    };
+
+    // When the advice depends on the cutover decision, include the answer so
+    // analytics can correlate outcomes with user input.
+    if (needsDateOrChoice && !hasOverride && submittedOnOrAfterCutoff !== null) {
+      payload.submittedOnOrAfterCutoff = submittedOnOrAfterCutoff;
+    }
+
+    void pingEventRef.current(HHMITrackEvent.HHMI_COMPLIANCE_JOURNAL_SEARCH_ADVICE_SHOWN, payload, {
+      ignoreAdmin: true,
+    });
+  }, [
+    adviceVisible,
+    selectedJournal?.id,
+    selectedJournal?.journal_name,
+    selectedJournal?.type,
+    advice?.type,
+    advice?.message,
+    hasOverride,
+    needsDateOrChoice,
+    submittedOnOrAfterCutoff,
+  ]);
 
   const resetDateAndChoice = useCallback(() => {
     setSubmittedOnOrAfterCutoff(null);

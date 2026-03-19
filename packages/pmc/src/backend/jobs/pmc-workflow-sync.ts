@@ -1,4 +1,4 @@
-import type { Context, CreateJob } from '@curvenote/scms-core';
+import { asSiteSubmissionUrl, type Context, type CreateJob } from '@curvenote/scms-core';
 import { jobs, getPrismaClient, SlackEventType } from '@curvenote/scms-server';
 import { ActivityType, JobStatus } from '@curvenote/scms-db';
 import type { Prisma } from '@curvenote/scms-db';
@@ -541,15 +541,17 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
             const site = await prisma.site.findUnique({
               where: { id: siteId },
             });
+            const siteName = site?.name;
             await ctx.sendSlackNotification({
               eventType: SlackEventType.SUBMISSION_STATUS_CHANGED,
               message: `Submission status changed to ${status}`,
               user: { id: ctx.user?.id },
               metadata: {
                 status,
-                site: site?.name,
+                site: siteName,
                 submissionId: submission.id,
                 submissionVersionId: latestVersion.id,
+                submissionUrl: asSiteSubmissionUrl(ctx.asBaseUrl, siteName, submission.id),
               },
             });
           }

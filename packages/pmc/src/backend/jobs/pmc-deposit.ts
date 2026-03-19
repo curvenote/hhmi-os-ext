@@ -15,6 +15,7 @@ import {
   httpError,
   ErrorWithObject,
   generateUniqueFileLabel,
+  asSiteSubmissionUrl,
 } from '@curvenote/scms-core';
 import type { KnownBuckets } from '@curvenote/scms-server';
 import { JobStatus } from '@curvenote/scms-db';
@@ -447,8 +448,9 @@ export async function pmcDepositHandler(ctx: Context, data: CreateJob) {
       metadata: {
         status: PMC_STATE_NAMES.DEPOSIT_FAILED,
         site: PMC_WORKSPACE_SITE_NAME,
-        submissionId,
+        submissionId: submissionId,
         submissionVersionId: submission_version_id,
+        submissionUrl: asSiteSubmissionUrl(ctx.asBaseUrl, PMC_WORKSPACE_SITE_NAME, submissionId),
       },
     });
 

@@ -1,4 +1,4 @@
-import type { Context } from '@curvenote/scms-core';
+import { asSiteSubmissionUrl, type Context } from '@curvenote/scms-core';
 import {
   createMessageRecord as createMessageRecordGeneric,
   getPrismaClient,
@@ -262,6 +262,11 @@ export async function updateSubmissionStatusOnReceivingEmail(
   const updated = await $updateSubmissionVersion(userId, submissionVersion.id, {
     status,
   });
+  const submissionUrl = asSiteSubmissionUrl(
+    ctx.asBaseUrl,
+    updated.submission.site.name,
+    updated.submission.id,
+  );
   await ctx.sendSlackNotification({
     eventType: SlackEventType.SUBMISSION_STATUS_CHANGED,
     message: `Submission status changed to ${updated.status}`,
@@ -269,8 +274,8 @@ export async function updateSubmissionStatusOnReceivingEmail(
     metadata: {
       status: updated.status,
       site: updated.submission.site.name,
-      submissionId: updated.submission.id,
-      submissionVersionId: updated.id,
+      submissionId: submissionUrl,
+      submissionVersionId: submissionUrl,
     },
   });
 }

@@ -18,6 +18,8 @@ export enum HHMITrackEvent {
   HHMI_COMPLIANCE_REPORT_TASK_CLICKED = 'HHMI Compliance Report Task Card Clicked',
   HHMI_COMPLIANCE_ROLE_QUALIFIED = 'HHMI Compliance Role Qualified',
   HHMI_COMPLIANCE_DASHBOARD_REQUESTED = 'HHMI Compliance Dashboard Requested',
+  HHMI_COMPLIANCE_JOURNAL_SEARCH_TASK_CLICKED = 'HHMI Compliance Journal Search Task Clicked',
+  HHMI_COMPLIANCE_JOURNAL_SEARCH_ADVICE_SHOWN = 'HHMI Compliance Journal Search Advice Shown',
 
   // Wizard flow events
   COMPLIANCE_WIZARD_CLICKED = 'PMC Compliance Wizard Clicked',
@@ -74,6 +76,10 @@ export const HHMITrackEventDescriptions: Record<HHMITrackEvent, string> = {
     'User qualified their compliance role (scientist or lab-manager)',
   [HHMITrackEvent.HHMI_COMPLIANCE_DASHBOARD_REQUESTED]:
     'User requested another user to share their compliance dashboard',
+  [HHMITrackEvent.HHMI_COMPLIANCE_JOURNAL_SEARCH_TASK_CLICKED]:
+    'User clicked the Journal Checker Tool task card from dashboard',
+  [HHMITrackEvent.HHMI_COMPLIANCE_JOURNAL_SEARCH_ADVICE_SHOWN]:
+    'Spending policy advice was shown in the Journal Checker Tool',
   [HHMITrackEvent.COMPLIANCE_WIZARD_CLICKED]:
     'User clicked the compliance wizard task card button on dashboard',
   [HHMITrackEvent.COMPLIANCE_WIZARD_STARTED]: 'User started the PMC compliance wizard page',
