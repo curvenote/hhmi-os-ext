@@ -59,7 +59,7 @@
     "url": "https://github.com/curvenote/journals/issues"
   },
   "dependencies": {
-    "@curvenote/common": "^0.3.4",
+    "@curvenote/common": "^0.4.2",
     "@curvenote/scms-core": "*",
     "@curvenote/scms-server": "*",
     "@curvenote/scms-db": "*",
@@ -70,7 +70,7 @@
     "fuse.js": "^7.1.0",
     "js-yaml": "^4.1.1",
     "lucide-react": "^0.552.0",
-    "myst-common": "^1.9.3",
+    "myst-common": "^1.9.5",
     "pmc-utils": "0.3.1",
     "react": "^18.3.1",
     "react-router": "7.9.5",
