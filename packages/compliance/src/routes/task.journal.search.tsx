@@ -41,12 +41,23 @@ export const meta: MetaFunction<LoaderData> = ({ matches }) => {
   return [{ title: joinPageTitle('Journal search – HHMI spending policies', branding.title) }];
 };
 
+function decodeJournalTitleEntities(title: string): string {
+  return title.replace(/&(amp|#38|#x26);/gi, '&');
+}
+
 export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
   const ctx = await withAppContext(args);
   const raw = await getJournalsFromCacheOrFetch();
-  const journals = [...raw].sort((a, b) =>
-    (a.journal_name ?? '').localeCompare(b.journal_name ?? '', undefined, { sensitivity: 'base' }),
-  );
+  const journals = raw
+    .map((journal) => ({
+      ...journal,
+      journal_name: decodeJournalTitleEntities(journal.journal_name),
+    }))
+    .sort((a, b) =>
+      (a.journal_name ?? '').localeCompare(b.journal_name ?? '', undefined, {
+        sensitivity: 'base',
+      }),
+    );
   const userData = (ctx.user.data as ComplianceUserMetadataSection) || { compliance: {} };
   const complianceRole = userData.compliance?.role;
   const path = new URL(args.request.url).pathname;
