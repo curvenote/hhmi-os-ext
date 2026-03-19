@@ -211,7 +211,7 @@ export function SubmissionCard({ submission, workflows, siteName }: SubmissionCa
                 transitions={transitions}
                 submissionVersion={latestVersion}
                 onError={handleError}
-                actionDisplay="menu"
+                display="menu"
                 onActiveTransitionChange={setActiveTransition}
               />
             </div>

@@ -320,7 +320,7 @@ export default function PMCDetailsPage({ loaderData }: { loaderData: LoaderData 
             />
           )}
           {currentSubmissionVersion && transitions.length > 0 && (
-            <div className="flex flex-col items-end gap-2 w-full max-w-md ml-auto">
+            <div className="flex flex-col gap-2 items-end ml-auto w-full max-w-md">
               <ActionsAreaForm
                 key={currentSubmissionVersion.id}
                 transitions={transitions}
@@ -328,7 +328,7 @@ export default function PMCDetailsPage({ loaderData }: { loaderData: LoaderData 
                 onError={setError}
                 formAction="/app/sites/pmc/inbox"
                 layout="horizontal"
-                actionDisplay="splitButton"
+                display="button"
                 onActiveTransitionChange={setActiveTransition}
               />
               <ActionsAreaActiveTransition transition={activeTransition} />

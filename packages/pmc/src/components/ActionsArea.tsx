@@ -39,7 +39,7 @@ interface ActionsAreaProps {
   formAction?: string;
   layout?: 'vertical' | 'horizontal';
   /** Kebab menu (compact) vs split primary + dropdown */
-  actionDisplay?: 'menu' | 'splitButton';
+  display?: 'menu' | 'button';
   /** When set, in-progress transition is reported here instead of rendering inside the actions area */
   onActiveTransitionChange?: (transition: WorkflowTransition | null) => void;
 }
@@ -56,7 +56,7 @@ export function ActionsAreaForm({
   onError,
   formAction,
   layout = 'vertical',
-  actionDisplay = 'menu',
+  display = 'button',
   onActiveTransitionChange,
 }: ActionsAreaProps) {
   const [activeTransition, setActiveTransition] = useState<WorkflowTransition | null>(
@@ -204,7 +204,7 @@ export function ActionsAreaForm({
       data-name="actions-area"
       className={`flex flex-col gap-2 ${isHorizontal ? 'flex-row justify-end items-center' : ''}`}
     >
-      {actionDisplay === 'splitButton' ? (
+      {display === 'button' ? (
         <SplitButton
           primaryLabel={primary.labels?.action || primary.name}
           primaryValue={primary.name}
