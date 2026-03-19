@@ -80,7 +80,7 @@ export function parseFilesRequestEmail(payload: any): FilesRequestParsedResult {
 
   let parsedMessage = '';
   try {
-    const startPattern = /[^\n]*Howard Hughes Medical Institute,/i;
+    const startPattern = /[^\n]*Howard Hughes Medical Institute.*,/i;
     const startMatch = startPattern.exec(content);
 
     if (startMatch) {
