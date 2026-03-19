@@ -33,35 +33,41 @@ async function sendInboundEmailSlackNotification(
   payload: any,
   result: Pick<ProcessingResult, 'messageId' | 'status' | 'errors' | 'processor'>,
 ): Promise<void> {
-  const subjectRaw = String(payload?.headers?.subject ?? '(no subject)');
-  const subject =
-    subjectRaw.length > SUBJECT_MAX_LEN
-      ? `${subjectRaw.slice(0, SUBJECT_MAX_LEN - 3)}...`
-      : subjectRaw;
-  const fromAddr = String(payload?.envelope?.from ?? '(unknown)');
+  try {
+    const subjectRaw = String(payload?.headers?.subject ?? '(no subject)');
+    const subject =
+      subjectRaw.length > SUBJECT_MAX_LEN
+        ? `${subjectRaw.slice(0, SUBJECT_MAX_LEN - 3)}...`
+        : subjectRaw;
+    const fromAddr = String(payload?.envelope?.from ?? '(unknown)');
 
-  const messageLink =
-    result.messageId && result.messageId !== 'unknown'
-      ? ctx.asBaseUrl(`/app/platform/messages/${result.messageId}`)
-      : undefined;
+    const messageLink =
+      result.messageId && result.messageId !== 'unknown'
+        ? ctx.asBaseUrl(`/app/platform/messages/${result.messageId}`)
+        : undefined;
 
-  const metadata: Record<string, string> = {
-    status: result.status,
-    from: fromAddr,
-    ...(messageLink ? { messageLink } : {}),
-    ...(result.processor ? { processor: result.processor } : {}),
-  };
+    const metadata: Record<string, string> = {
+      status: result.status,
+      from: fromAddr,
+      ...(messageLink ? { messageLink } : {}),
+      ...(result.processor ? { processor: result.processor } : {}),
+    };
 
-  if (result.errors?.length) {
-    metadata.errors = result.errors.join('; ');
+    if (result.errors?.length) {
+      metadata.errors = result.errors.join('; ');
+    }
+
+    await ctx.sendSlackNotification({
+      eventType: SlackEventType.INBOUND_EMAIL_RECEIVED,
+      message: `PMC inbound email: ${subject}`,
+      color: slackColorForInboundStatus(result.status),
+      metadata,
+    });
+  } catch (err) {
+    // Never let Slack failures break processInboundEmail's ProcessingResult contract
+    // (especially the outer catch path that must always return fatal).
+    console.error('Failed to send inbound email Slack notification:', err);
   }
-
-  await ctx.sendSlackNotification({
-    eventType: SlackEventType.INBOUND_EMAIL_RECEIVED,
-    message: `PMC inbound email: ${subject}`,
-    color: slackColorForInboundStatus(result.status),
-    metadata,
-  });
 }
 
 /**
