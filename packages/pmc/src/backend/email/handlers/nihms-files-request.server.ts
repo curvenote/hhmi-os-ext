@@ -41,6 +41,27 @@ function stripHtmlTags(text: string): string {
 }
 
 /**
+ * Removes URL-like segments from the NIHMS excerpt so submitter notifications do not
+ * include raw links, wrapped/defanged URLs (e.g. urldefense), or mailto targets.
+ */
+function stripUrlsFromNihmsExcerpt(text: string): string {
+  let t = text;
+  // Markdown [label](url) — keep visible label only
+  t = t.replace(/\[([^\]]*)\]\(\s*(?:https?:\/\/|mailto:|ftp:\/\/)[^)]*\)/gi, '$1');
+  // Angle-bracket URLs (common in plain-text email)
+  t = t.replace(/<\s*(?:https?:\/\/|mailto:|ftp:\/\/)[^>\s]+>/gi, '');
+  // http(s), ftp
+  t = t.replace(/\b(?:https?|ftp):\/\/[^\s<>\])}'"]+/gi, '');
+  t = t.replace(/\bmailto:\S+/gi, '');
+  // Bare www. hostnames sometimes pasted without a scheme
+  t = t.replace(/\bwww\.[^\s<>\])}'"]+/gi, '');
+  // Tidy whitespace left by removals
+  t = t.replace(/[ \t]{2,}/g, ' ');
+  t = t.replace(/[ \t]*\n[ \t]*/g, '\n');
+  return t.trim();
+}
+
+/**
  * Result of parsing a NIHMS files request email
  */
 export interface FilesRequestParsedResult {
@@ -84,15 +105,26 @@ export function parseFilesRequestEmail(payload: any): FilesRequestParsedResult {
     const startMatch = startPattern.exec(content);
 
     if (startMatch) {
-      const endMarker = 'To access the manuscript record';
-      const endIndex = content.indexOf(endMarker, startMatch.index);
+      const contentStart = startMatch.index + startMatch[0].length;
+      const accessMarker = 'To access the manuscript record';
+      const movedBackMarker =
+        'We have moved the manuscript back to a state where you can upload files.';
 
-      const messageContent =
-        endIndex !== -1
-          ? content.substring(startMatch.index + startMatch[0].length, endIndex).trim()
-          : content.substring(startMatch.index + startMatch[0].length).trim();
+      const accessIdx = content.indexOf(accessMarker, contentStart);
+      const movedIdx = content.indexOf(movedBackMarker, contentStart);
 
-      const cleanedContent = stripHtmlTags(messageContent);
+      /** Exclusive end index: smallest boundary so we drop login URLs, signatures, and forwards. */
+      let endExclusive = content.length;
+      if (movedIdx !== -1) {
+        endExclusive = Math.min(endExclusive, movedIdx + movedBackMarker.length);
+      }
+      if (accessIdx !== -1) {
+        endExclusive = Math.min(endExclusive, accessIdx);
+      }
+
+      const messageContent = content.substring(contentStart, endExclusive).trim();
+
+      const cleanedContent = stripUrlsFromNihmsExcerpt(stripHtmlTags(messageContent));
 
       parsedMessage = cleanedContent
         .replace(/\r\n/g, '\n')
@@ -104,6 +136,8 @@ export function parseFilesRequestEmail(payload: any): FilesRequestParsedResult {
         .replace(/[ \t]+\n/g, '\n')
         .replace(/\n[ \t]+/g, '\n')
         .trim();
+
+      parsedMessage = stripUrlsFromNihmsExcerpt(parsedMessage);
     }
   } catch (error) {
     console.warn('Error parsing message content:', error);

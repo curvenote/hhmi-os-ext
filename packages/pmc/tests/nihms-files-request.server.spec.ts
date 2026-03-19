@@ -332,6 +332,85 @@ describe('nihms-files-request handler', () => {
       expect(result.message).toContain('no subject');
       expect(result.message).toContain('We could not determine the reason');
     });
+
+    it('stops parsed body after NIHMS "moved back" sentence (production extended data captions forward)', () => {
+      const subject = 'Please upload missing Extended Data figure captions to NIHMS';
+      const plain = `---------- Forwarded message ---------
+From: nihms-help via HHMI PMC Deposits <hhmi-pmc-deposit@curvenote.com>
+
+External Email: Use Caution
+
+"A druggable redox switch on SHP1 controls macrophage inflammation"
+(NIHMS2150669)
+
+Dear Dr. Howard Hughes Medical Institute,
+
+The captions for the Extended Data Figure captions are missing from the
+above-listed manuscript. We are, therefore, unable to proceed with the
+processing of this submission for PubMed Central at this time.
+
+We have moved the manuscript back to a state where you can upload files. To
+access the manuscript record, please log in to
+https://urldefense.com/v3/__https://www.nihms.nih.gov/__;!!Eh6p8Q!BKZDqRKkjk5IRx3mjtFgxXKkfanHnMouZppWOCqTW-EDFf1rSKr-uqLyLZu2TB9Q20RW1dMgWrRb5ra3AHKYhRlZrV45JQ$
+
+and click on the manuscript title in the Needs Your Attention filter of
+your manuscript list.
+
+Thank you,
+
+The NIHMS Team
+NTCSR5`;
+
+      const result = parseFilesRequestEmail(defaultPayload(plain, subject));
+      expect(result.manuscriptId).toBe('2150669');
+      expect(result.message).toContain(subject);
+      expect(result.message).toContain(
+        'The captions for the Extended Data Figure captions are missing from the',
+      );
+      expect(result.message).toContain(
+        'We have moved the manuscript back to a state where you can upload files.',
+      );
+      expect(result.message).not.toContain('To access the manuscript record');
+      expect(result.message).not.toContain('urldefense.com');
+      expect(result.message).not.toContain('Thank you');
+      expect(result.message).not.toContain('NTCSR5');
+    });
+
+    it('strips http(s), mailto, www., and markdown links from the parsed excerpt', () => {
+      const plain = `(NIHMS2109555)
+
+Dear Howard Hughes Medical Institute,
+
+The files are missing. For reference see https://urldefense.com/v3/__https://www.nihms.nih.gov/__;!!foo$
+Also visit www.nihms.nih.gov or mailto:support@nih.gov and read [more](https://example.com/path).
+
+We have moved the manuscript back to a state where you can upload files.`;
+
+      const result = parseFilesRequestEmail(defaultPayload(plain));
+      expect(result.message).toContain('The files are missing');
+      expect(result.message).toContain('We have moved the manuscript back');
+      expect(result.message).not.toMatch(/https?:\/\//);
+      expect(result.message).not.toContain('urldefense.com');
+      expect(result.message).not.toContain('www.nihms');
+      expect(result.message).not.toContain('mailto:');
+      expect(result.message).not.toContain('example.com');
+      expect(result.message).toContain('more');
+    });
+
+    it('strips link hrefs from HTML body in the parsed excerpt', () => {
+      const payload = {
+        envelope: { from: 'nihms@nih.gov' },
+        headers: { subject: 'Please upload missing file(s) to NIHMS' },
+        html: `<p>(NIHMS2109555)</p>
+<p>Dear Howard Hughes Medical Institute,</p>
+<p>The files are missing. Link: <a href="https://malicious.example/phish">click here</a>.</p>
+<p>We have moved the manuscript back to a state where you can upload files.</p>`,
+      };
+      const result = parseFilesRequestEmail(payload);
+      expect(result.message).toContain('The files are missing');
+      expect(result.message).not.toContain('malicious.example');
+      expect(result.message).not.toMatch(/https?:\/\//);
+    });
   });
 
   describe('process', () => {
