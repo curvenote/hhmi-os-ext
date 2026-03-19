@@ -1,5 +1,12 @@
 # @hhmi/pmc
 
+## 0.2.2
+
+### Patch Changes
+
+- b0ca960: Better links on slcack notifications
+- 1596480: Further changes to slack messages to include links
+
 ## 0.2.1
 
 ### Patch Changes

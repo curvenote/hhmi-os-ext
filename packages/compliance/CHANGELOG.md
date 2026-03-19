@@ -1,5 +1,15 @@
 # @hhmi/compliance
 
+## 0.2.2
+
+### Patch Changes
+
+- 286f193: Fixes to naming in the Journal Payment Lookup Tool
+- b0ca960: Add analytics for Journal Search Tool
+- Updated dependencies [b0ca960]
+- Updated dependencies [1596480]
+  - @hhmi/pmc@0.2.2
+
 ## 0.2.1
 
 ### Patch Changes
