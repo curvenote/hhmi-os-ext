@@ -1,4 +1,4 @@
-import type { Context } from '@curvenote/scms-core';
+import { type Context, asPlatformMessageUrl } from '@curvenote/scms-core';
 import { SlackEventType } from '@curvenote/scms-server';
 import { pmcEmailProcessorRegistry, type ProcessingResult } from './types.server.js';
 import { initializeEmailProcessorRegistry, getEmailProcessorConfig } from './registry.server.js';
@@ -43,7 +43,7 @@ async function sendInboundEmailSlackNotification(
 
     const messageLink =
       result.messageId && result.messageId !== 'unknown'
-        ? ctx.asBaseUrl(`/app/platform/messages/${result.messageId}`)
+        ? asPlatformMessageUrl(ctx.asBaseUrl, result.messageId)
         : undefined;
 
     const metadata: Record<string, string> = {

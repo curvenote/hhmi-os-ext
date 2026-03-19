@@ -1,5 +1,8 @@
 import type { Workflow, WorkflowTransition } from '@curvenote/scms-core';
 
+/** Platform site slug for HHMI PMC (URLs, Slack metadata, API paths). */
+export const PMC_WORKSPACE_SITE_NAME = 'pmc';
+
 export const PMC_STATE_NAMES = {
   DRAFT: 'DRAFT',
   PENDING: 'PENDING',

@@ -22,7 +22,7 @@ import type { AAMDepositManifest } from 'pmc-utils';
 import { PubSub } from '@google-cloud/pubsub';
 import JOURNAL_INFO from '../../data/J_Entrez.json';
 import type { JournalInfo, JournalInfoFile } from './types.js';
-import { PMC_STATE_NAMES } from '../../workflows.js';
+import { PMC_STATE_NAMES, PMC_WORKSPACE_SITE_NAME } from '../../workflows.js';
 import type { PMCWorkVersionMetadata } from '../../common/validate.js';
 
 async function getWorkVersionFromSubmissionVersion(submissionVersionId: string) {
@@ -46,7 +46,10 @@ async function getWorkVersionFromSubmissionVersion(submissionVersionId: string) 
     throw new Error(`No work version found for submission version ${submissionVersionId}`);
   }
 
-  return submissionVersion.work_version;
+  return {
+    workVersion: submissionVersion.work_version,
+    submissionId: submissionVersion.submission_id,
+  };
 }
 
 export function getJournalInfo(
@@ -285,8 +288,9 @@ export async function pmcDepositHandler(ctx: Context, data: CreateJob) {
     data: { submission_version_id, agency, user_id },
   });
 
-  // Get the work version
-  const workVersion = await getWorkVersionFromSubmissionVersion(submission_version_id);
+  // Work version + submission id (for Slack on failure without an extra DB round-trip)
+  const { workVersion, submissionId } =
+    await getWorkVersionFromSubmissionVersion(submission_version_id);
   if (!workVersion.metadata) {
     throw new Error(`No metadata found for work version ${workVersion.id}`);
   }
@@ -442,6 +446,8 @@ export async function pmcDepositHandler(ctx: Context, data: CreateJob) {
       user: { id: user_id },
       metadata: {
         status: PMC_STATE_NAMES.DEPOSIT_FAILED,
+        site: PMC_WORKSPACE_SITE_NAME,
+        submissionId,
         submissionVersionId: submission_version_id,
       },
     });
