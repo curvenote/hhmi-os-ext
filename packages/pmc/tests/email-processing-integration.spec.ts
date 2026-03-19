@@ -32,6 +32,9 @@ describe('Email Processing Integration Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
 
     mockContext = {
       $config: {
@@ -45,6 +48,8 @@ describe('Email Processing Integration Tests', () => {
           },
         },
       },
+      sendSlackNotification: vi.fn().mockResolvedValue(undefined),
+      asBaseUrl: vi.fn((path: string) => `https://example.com${path}`),
     } as any;
   });
 

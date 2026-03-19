@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { describe, it, expect } from 'vitest';
-import { validateCrossrefResponse } from './crossref-validation.js';
+import { validateCrossrefResponse } from '../src/backend/metadata/crossref-validation.js';
 
 describe('validateCrossrefResponse', () => {
   describe('Valid responses', () => {

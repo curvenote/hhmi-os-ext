@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   validateEmailSender,
   validateEmailSubject,
@@ -8,6 +8,10 @@ import {
 } from '../src/backend/email/email-validation.server.js';
 
 describe('Email Validation - Sender Validation', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
   describe('validateEmailSender', () => {
     describe('Basic string matching (exact match)', () => {
       it('should accept exact match (case insensitive)', () => {

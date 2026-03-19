@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { validatePMCMetadata, type PMCWorkVersionMetadata } from './validate.js';
+import { validatePMCMetadata, type PMCWorkVersionMetadata } from '../src/common/validate.js';
 
 // Mock console.log to avoid test output noise from the schema
 const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -127,7 +127,7 @@ describe('validatePMCMetadata', () => {
             size: 1024,
             md5: 'abc123def456',
             uploadDate: '2023-01-01T00:00:00.000Z',
-            slot: 'pmc/supplementary', // Not a manuscript file
+            slot: 'pmc/supplementary',
             label: 'Supplementary',
           },
         },
@@ -149,7 +149,6 @@ describe('validatePMCMetadata', () => {
       const result = await validatePMCMetadata(metadata);
 
       expect(result.success).toBeUndefined();
-      // Should have the specific manuscript error
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['files'],
@@ -157,7 +156,6 @@ describe('validatePMCMetadata', () => {
         }),
       );
 
-      // Should NOT have generic "Required" error
       expect(result.validationErrors).not.toContainEqual(
         expect.objectContaining({
           path: ['files'],
@@ -173,7 +171,7 @@ describe('validatePMCMetadata', () => {
       const metadata = createValidMetadata({
         pmc: {
           ...createValidMetadata().pmc,
-          title: '', // Empty title
+          title: '',
         },
       });
 
@@ -289,7 +287,6 @@ describe('validatePMCMetadata', () => {
       const result = await validatePMCMetadata(metadata);
 
       expect(result.success).toBeUndefined();
-      // Returns the custom HHMI-specific error (user-friendly)
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['grants'],
@@ -297,7 +294,6 @@ describe('validatePMCMetadata', () => {
         }),
       );
 
-      // Schema-level grant ID error should be filtered out (UX improvement)
       expect(result.validationErrors).not.toContainEqual(
         expect.objectContaining({
           path: ['grants', 0, 'grantId'],
@@ -323,7 +319,6 @@ describe('validatePMCMetadata', () => {
       const result = await validatePMCMetadata(metadata);
 
       expect(result.success).toBeUndefined();
-      // Now returns the custom HHMI-specific error (independent of schema validation)
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['grants'],
@@ -331,7 +326,6 @@ describe('validatePMCMetadata', () => {
         }),
       );
 
-      // Should also have the schema-level required error
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['grants', 0, 'grantId'],
@@ -353,7 +347,7 @@ describe('validatePMCMetadata', () => {
             {
               id: 'grant-2',
               funderKey: 'nih',
-              grantId: '', // Empty grant ID
+              grantId: '',
             },
           ],
         },
@@ -362,7 +356,6 @@ describe('validatePMCMetadata', () => {
       const result = await validatePMCMetadata(metadata);
 
       expect(result.success).toBeUndefined();
-      // The error message should be improved for subsequent grants
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['grants', 1, 'grantId'],
@@ -378,7 +371,7 @@ describe('validatePMCMetadata', () => {
           grants: [
             {
               id: 'grant-1',
-              funderKey: 'ahrq', // User's specific test case
+              funderKey: 'ahrq',
               grantId: '123',
             },
           ],
@@ -388,7 +381,6 @@ describe('validatePMCMetadata', () => {
       const result = await validatePMCMetadata(metadata);
 
       expect(result.success).toBeUndefined();
-      // Should get the custom HHMI requirement error
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['grants'],
@@ -396,7 +388,6 @@ describe('validatePMCMetadata', () => {
           code: 'custom',
         }),
       );
-      // Should NOT have any schema-level grant errors (since AHRQ grant is valid)
       expect(result.validationErrors).not.toContainEqual(
         expect.objectContaining({
           path: ['grants', 0, 'grantId'],
@@ -412,7 +403,7 @@ describe('validatePMCMetadata', () => {
             {
               id: 'grant-1',
               funderKey: 'hhmi',
-              grantId: '   ', // Whitespace only
+              grantId: '   ',
             },
           ],
         },
@@ -421,7 +412,6 @@ describe('validatePMCMetadata', () => {
       const result = await validatePMCMetadata(metadata);
 
       expect(result.success).toBeUndefined();
-      // Should get the custom HHMI grant ID error (because trim() === '')
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['grants'],
@@ -435,12 +425,12 @@ describe('validatePMCMetadata', () => {
       const metadata = createValidMetadata({
         pmc: {
           ...createValidMetadata().pmc,
-          title: '', // This will cause schema validation to fail
+          title: '',
           grants: [
             {
               id: 'grant-1',
               funderKey: 'cdc',
-              grantId: 'CDC-123', // Valid grant ID to focus on HHMI requirement
+              grantId: 'CDC-123',
             },
           ],
         },
@@ -449,7 +439,6 @@ describe('validatePMCMetadata', () => {
       const result = await validatePMCMetadata(metadata);
 
       expect(result.success).toBeUndefined();
-      // Should have the custom HHMI requirement error EVEN with other validation failures
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['grants'],
@@ -457,14 +446,12 @@ describe('validatePMCMetadata', () => {
           code: 'custom',
         }),
       );
-      // Should also have the title error
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['title'],
           message: 'Article title is required',
         }),
       );
-      // Should NOT have grant ID error since CDC grant is valid
       expect(result.validationErrors).not.toContainEqual(
         expect.objectContaining({
           path: ['grants', 0, 'grantId'],
@@ -482,7 +469,7 @@ describe('validatePMCMetadata', () => {
             {
               id: 'grant-1',
               funderKey: 'hhmi',
-              grantId: '', // This triggers both schema and custom validation errors
+              grantId: '',
             },
           ],
         },
@@ -492,7 +479,6 @@ describe('validatePMCMetadata', () => {
 
       expect(result.success).toBeUndefined();
 
-      // Should show the custom HHMI-specific error (user-friendly)
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['grants'],
@@ -501,7 +487,6 @@ describe('validatePMCMetadata', () => {
         }),
       );
 
-      // Schema-level grant ID error should be filtered out for better UX
       expect(result.validationErrors).not.toContainEqual(
         expect.objectContaining({
           path: ['grants', 0, 'grantId'],
@@ -523,12 +508,12 @@ describe('validatePMCMetadata', () => {
             {
               id: 'grant-2',
               funderKey: 'nih',
-              grantId: '', // Missing grant ID for second grant
+              grantId: '',
             },
             {
               id: 'grant-3',
               funderKey: 'cdc',
-              grantId: '', // Missing grant ID for third grant
+              grantId: '',
             },
           ],
         },
@@ -538,7 +523,6 @@ describe('validatePMCMetadata', () => {
 
       expect(result.success).toBeUndefined();
 
-      // Should have improved error message for grant 2 (NIH)
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['grants', 1, 'grantId'],
@@ -546,7 +530,6 @@ describe('validatePMCMetadata', () => {
         }),
       );
 
-      // Should have improved error message for grant 3 (CDC)
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['grants', 2, 'grantId'],
@@ -562,8 +545,8 @@ describe('validatePMCMetadata', () => {
           grants: [
             {
               id: 'grant-1',
-              funderKey: 'nih', // Not HHMI, so triggers HHMI requirement error
-              grantId: '', // Missing grant ID for first grant
+              funderKey: 'nih',
+              grantId: '',
             },
           ],
         },
@@ -573,7 +556,6 @@ describe('validatePMCMetadata', () => {
 
       expect(result.success).toBeUndefined();
 
-      // Should have the high-level HHMI requirement error
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['grants'],
@@ -581,7 +563,6 @@ describe('validatePMCMetadata', () => {
         }),
       );
 
-      // Should NOT have improved message for grants.0
       expect(result.validationErrors).not.toContainEqual(
         expect.objectContaining({
           message: expect.stringContaining('Grant 1 -'),
@@ -602,7 +583,7 @@ describe('validatePMCMetadata', () => {
             {
               id: 'grant-2',
               funderKey: 'unknown_funder' as any,
-              grantId: '', // Missing grant ID
+              grantId: '',
             },
           ],
         },
@@ -612,7 +593,6 @@ describe('validatePMCMetadata', () => {
 
       expect(result.success).toBeUndefined();
 
-      // Should fallback to uppercase funder key when funder not found in map
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({
           path: ['grants', 1, 'grantId'],
@@ -625,12 +605,12 @@ describe('validatePMCMetadata', () => {
   describe('Complex validation scenarios', () => {
     it('should handle multiple validation errors correctly', async () => {
       const metadata = createValidMetadata({
-        files: {}, // No files
+        files: {},
         pmc: {
           ...createValidMetadata().pmc,
-          title: '', // Missing title
-          ownerEmail: 'invalid-email', // Invalid email
-          grants: [], // No grants
+          title: '',
+          ownerEmail: 'invalid-email',
+          grants: [],
         },
       });
 
@@ -641,7 +621,6 @@ describe('validatePMCMetadata', () => {
       expect(result.error?.message).toBe('Validation failed');
       expect(result.validationErrors?.length).toBeGreaterThan(1);
 
-      // Should include various error types
       expect(result.validationErrors).toContainEqual(
         expect.objectContaining({ message: 'At least one manuscript file is required' }),
       );

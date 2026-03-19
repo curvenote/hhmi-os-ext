@@ -1,8 +1,11 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { load as yamlLoad } from 'js-yaml';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 import { generateTramline, type Activity } from '../src/common/tramstops/tramstops.js';
 import {
   PMC_DEPOSIT_WORKFLOW,
@@ -39,15 +42,12 @@ let completeConfig: TestConfig | null = null;
 
 try {
   // Load minimal test configuration (uses toy workflow)
-  const minimalYamlPath = join(process.cwd(), 'packages/pmc/tests/tramstop-test-cases-minimal.yml');
+  const minimalYamlPath = join(__dirname, 'tramstop-test-cases-minimal.yml');
   const minimalYamlContent = readFileSync(minimalYamlPath, 'utf8');
   minimalConfig = yamlLoad(minimalYamlContent) as TestConfig;
 
   // Load complete test configuration (uses real PMC workflow)
-  const completeYamlPath = join(
-    process.cwd(),
-    'packages/pmc/tests/tramstop-test-cases-complete.yml',
-  );
+  const completeYamlPath = join(__dirname, 'tramstop-test-cases-complete.yml');
   const completeYamlContent = readFileSync(completeYamlPath, 'utf8');
   completeConfig = yamlLoad(completeYamlContent) as TestConfig;
 } catch (error) {

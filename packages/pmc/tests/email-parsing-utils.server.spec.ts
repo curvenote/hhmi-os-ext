@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { describe, it, expect } from 'vitest';
-import { extractManuscriptId } from './email-parsing-utils.server.js';
+import { extractManuscriptId } from '../src/backend/email/handlers/email-parsing-utils.server.js';
 
 describe('email-parsing-utils', () => {
   describe('extractManuscriptId', () => {

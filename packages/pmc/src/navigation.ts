@@ -12,7 +12,7 @@ export function registerNavigation() {
       register: (baseUrl: string) =>
         [
           {
-            sectionName: 'PMC Admin',
+            sectionName: '',
             menus: [
               {
                 name: 'inbox',

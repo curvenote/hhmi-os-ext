@@ -66,6 +66,8 @@ const MERMAID: string | undefined = `graph TD
     PMC_REJECTED -->|request_files| FILES_REQUESTED
     PMC_REJECTED -->|mark_no_action_needed_from_rejected| NO_ACTION
     REVIEWER_APPROVED_INIT -->|request_files| FILES_REQUESTED
+    REVIEWER_APPROVED_INIT -->|request_new_version_from_reviewer_approved| REQUEST_NEW
+    REVIEWER_APPROVED_INIT -->|mark_no_action_needed_from_reviewer_approved| NO_ACTION
     REVIEWER_REJECTED_INIT -->|request_files| FILES_REQUESTED
     REVIEWER_REJECTED_INIT -->|mark_no_action_needed_from_reviewer_rejected| NO_ACTION
     FILES_REQUESTED -->|request_new_version_from_files_requested| REQUEST_NEW
@@ -451,6 +453,34 @@ export const PMC_DEPOSIT_WORKFLOW = {
       },
       userTriggered: false,
       help: 'Request additional files from the submitter after reviewer approval',
+      requiredScopes: ['site:submissions:update'],
+      requiresJob: false,
+    },
+    {
+      version: 1,
+      name: 'request_new_version_from_reviewer_approved',
+      sourceStateName: PMC_STATE_NAMES.REVIEWER_APPROVED_INITIAL,
+      targetStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
+      labels: {
+        button: 'Request New Version',
+        confirmation: REQUEST_NEW_VERSION_CONFIRMATION,
+        success: 'New version requested for this deposit',
+        action: 'Request New Version',
+        inProgress: 'Requesting new version...',
+      },
+      userTriggered: true,
+      help: 'Request a new version of this deposit from the HHMI Support Team.',
+      requiredScopes: ['site:submissions:update'],
+      requiresJob: false,
+    },
+    {
+      version: 1,
+      name: 'mark_no_action_needed_from_reviewer_approved',
+      sourceStateName: PMC_STATE_NAMES.REVIEWER_APPROVED_INITIAL,
+      targetStateName: PMC_STATE_NAMES.NO_ACTION_NEEDED,
+      labels: MARK_NO_ACTION_NEEDED_LABELS,
+      userTriggered: true,
+      help: 'Mark this deposit as no action needed from the reviewer approved state.',
       requiredScopes: ['site:submissions:update'],
       requiresJob: false,
     },

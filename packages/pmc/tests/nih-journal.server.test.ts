@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { NIHJournalList } from './nih-journal.server.js';
+import type { NIHJournalList } from '../src/backend/services/nih-journal.server.js';
 
 // Mock the JSON import
 const mockNIHJournalList: NIHJournalList = {
@@ -49,8 +49,7 @@ const mockNIHJournalList: NIHJournalList = {
   ],
 };
 
-// Mock the JSON import (path must match nih-journal.server.ts: ../../data/J_Entrez.json)
-vi.mock('../../data/J_Entrez.json', () => ({
+vi.mock('../src/data/J_Entrez.json', () => ({
   default: mockNIHJournalList,
 }));
 
@@ -59,7 +58,7 @@ import {
   validateJournalAgainstNIH,
   searchNIHJournals,
   getNIHJournalById,
-} from './nih-journal.server.js';
+} from '../src/backend/services/nih-journal.server.js';
 
 describe('NIH Journal Validation', () => {
   beforeEach(() => {
@@ -76,7 +75,7 @@ describe('NIH Journal Validation', () => {
 
       expect(result.isValid).toBe(true);
       expect(result.journalMatch).toEqual(mockNIHJournalList.items[0]);
-      expect(result.issn).toBe('1476-4687'); // Should prefer electronic ISSN
+      expect(result.issn).toBe('1476-4687');
       expect(result.issnType).toBe('electronic');
     });
 
@@ -94,7 +93,7 @@ describe('NIH Journal Validation', () => {
 
       expect(result.isValid).toBe(true);
       expect(result.journalMatch).toEqual(mockNIHJournalList.items[0]);
-      expect(result.issn).toBe('1476-4687'); // Should still prefer electronic ISSN
+      expect(result.issn).toBe('1476-4687');
       expect(result.issnType).toBe('electronic');
     });
 
@@ -103,7 +102,7 @@ describe('NIH Journal Validation', () => {
 
       expect(result.isValid).toBe(true);
       expect(result.journalMatch).toEqual(mockNIHJournalList.items[1]);
-      expect(result.issn).toBe('1095-9203'); // Should prefer electronic ISSN
+      expect(result.issn).toBe('1095-9203');
       expect(result.issnType).toBe('electronic');
     });
 
@@ -112,7 +111,7 @@ describe('NIH Journal Validation', () => {
 
       expect(result.isValid).toBe(true);
       expect(result.journalMatch).toEqual(mockNIHJournalList.items[4]);
-      expect(result.issn).toBe('1932-6203'); // Should use print ISSN
+      expect(result.issn).toBe('1932-6203');
       expect(result.issnType).toBe('print');
     });
 
@@ -197,7 +196,7 @@ describe('NIH Journal Validation', () => {
     it('should limit results', async () => {
       const results = await searchNIHJournals('Journal', 2);
 
-      expect(results).toHaveLength(1); // Only "Journal of Biological Chemistry" matches
+      expect(results).toHaveLength(1);
     });
   });
 
