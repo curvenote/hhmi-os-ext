@@ -10,9 +10,9 @@ import {
   type SubmissionVersion,
   type AirtableRecord,
   type ActivityStub,
-} from './pmc-workflow-sync.js';
+} from '../src/backend/jobs/pmc-workflow-sync.js';
 import { ActivityType } from '@curvenote/scms-db';
-import { PMC_STATE_NAMES } from '../../workflows.js';
+import { PMC_STATE_NAMES } from '../src/workflows.js';
 
 // Mock uuidv7 to return predictable IDs
 vi.mock('uuidv7', () => ({
@@ -162,10 +162,8 @@ describe('PMC Airtable Functions', () => {
         activities,
       );
 
-      // Should return REVIEWER_APPROVED_FINAL based on final-approval-date (highest date-based status)
-      // PMCID alone doesn't determine status since articles can be withdrawn/removed
       expect(result).toBe(PMC_STATE_NAMES.REVIEWER_APPROVED_FINAL);
-      expect(activities).toHaveLength(0); // No activities for fallback resolution
+      expect(activities).toHaveLength(0);
     });
 
     it('should not change status based on PMCID alone', () => {
@@ -205,8 +203,6 @@ describe('PMC Airtable Functions', () => {
 
       const result = resolveSubmissionStatus(submissionVersion, airtableRecord, []);
 
-      // Should return REVIEWER_APPROVED_FINAL based on date field, not PMCID
-      // PMCID presence doesn't automatically mean AVAILABLE_ON_PMC since article could be withdrawn
       expect(result).toBe(PMC_STATE_NAMES.REVIEWER_APPROVED_FINAL);
     });
   });
@@ -258,8 +254,6 @@ describe('PMC Airtable Functions', () => {
     });
 
     it('should not update status when current is skipped even when resolved equals current', () => {
-      // Edge case: current is CANCELLED, resolved is also CANCELLED (e.g. from date fallback)
-      // We still don't "update" (no-op), and shouldUpdateStatusOnSync is false because status match
       expect(shouldUpdateStatusOnSync(PMC_STATE_NAMES.CANCELLED, PMC_STATE_NAMES.CANCELLED)).toBe(
         false,
       );
@@ -278,7 +272,7 @@ describe('PMC Airtable Functions', () => {
       expect(result).not.toBeNull();
       expect(result!.pmid).toBe('87654321');
       expect(result!.pmcid).toBe('PMC876543');
-      expect(activities).toHaveLength(0); // No new PMCID activity since it already exists
+      expect(activities).toHaveLength(0);
     });
 
     it('should create PMCID activity when PMCID is newly assigned', () => {
@@ -290,7 +284,6 @@ describe('PMC Airtable Functions', () => {
               manuscriptId: 'NIHMS123456',
             },
             pmid: '12345678',
-            // No pmcid
           },
         },
         work_version: {
@@ -301,7 +294,6 @@ describe('PMC Airtable Functions', () => {
                 manuscriptId: 'NIHMS123456',
               },
               pmid: '12345678',
-              // No pmcid
             },
           },
         },
@@ -316,15 +308,15 @@ describe('PMC Airtable Functions', () => {
 
       expect(result).not.toBeNull();
       expect(result!.pmcid).toBe('PMC876543');
-      expect(activities).toHaveLength(0); // No activities for PMCID assignment anymore
+      expect(activities).toHaveLength(0);
     });
 
     it('should not update metadata when values are the same', () => {
       const airtableRecordWithSameValues: AirtableRecord = {
         fields: {
           NIHMSID: 'NIHMS123456',
-          PMID: '12345678', // Same as current
-          PMCID: 'PMC123456', // Same as current
+          PMID: '12345678',
+          PMCID: 'PMC123456',
         },
       };
       const activities: ActivityStub[] = [];
@@ -396,7 +388,6 @@ describe('PMC Airtable Functions', () => {
         fields: {
           NIHMSID: 'NIHMS123456',
           'initial-approval-date': '2024-01-15T00:00:00.000Z',
-          // No final-approval-date
         },
       };
 

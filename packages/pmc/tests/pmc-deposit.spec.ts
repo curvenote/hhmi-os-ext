@@ -1,5 +1,5 @@
-import { getJournalInfo } from './pmc-deposit.js';
-import type { JournalInfo } from './types.js';
+import { getJournalInfo } from '../src/backend/jobs/pmc-deposit.js';
+import type { JournalInfo } from '../src/backend/jobs/types.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { describe, it, expect, vi } from 'vitest';
 

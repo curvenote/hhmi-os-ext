@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { NIHJournalList } from './nih-journal.server.js';
+import type { NIHJournalList } from '../src/backend/services/nih-journal.server.js';
 
 const mockNIHJournalList: NIHJournalList = {
   source: 'test',
@@ -48,11 +48,11 @@ const mockNIHJournalList: NIHJournalList = {
   ],
 };
 
-vi.mock('../../data/J_Entrez.json', () => ({
+vi.mock('../src/data/J_Entrez.json', () => ({
   default: mockNIHJournalList,
 }));
 
-import { getNIHJournalById } from './nih-journal.server.js';
+import { getNIHJournalById } from '../src/backend/services/nih-journal.server.js';
 
 describe('getNIHJournalById', () => {
   beforeEach(() => {

@@ -73,39 +73,45 @@ export function parseFilesRequestEmail(payload: any): FilesRequestParsedResult {
   // Extract manuscript ID from body
   const manuscriptId = extractManuscriptId(content);
 
-  // Parse the message content between markers
+  // Best-effort extraction of the message segment between known markers.
+  // If markers are missing, we fall back to a fixed message rather than exposing raw email content.
+  const FALLBACK_MESSAGE =
+    'We could not determine the reason for this request from the email from NIHMS. For further assistance, please contact the HHMI Workspace Support Team.';
+
   let parsedMessage = '';
   try {
-    const startMarker = 'Dear Howard Hughes Medical Institute,';
-    const startIndex = content.indexOf(startMarker);
+    const startPattern = /[^\n]*Howard Hughes Medical Institute,/i;
+    const startMatch = startPattern.exec(content);
 
-    if (startIndex !== -1) {
+    if (startMatch) {
       const endMarker = 'To access the manuscript record';
-      const endIndex = content.indexOf(endMarker, startIndex);
+      const endIndex = content.indexOf(endMarker, startMatch.index);
 
-      if (endIndex !== -1) {
-        const messageContent = content.substring(startIndex + startMarker.length, endIndex).trim();
+      const messageContent =
+        endIndex !== -1
+          ? content.substring(startMatch.index + startMatch[0].length, endIndex).trim()
+          : content.substring(startMatch.index + startMatch[0].length).trim();
 
-        // Strip HTML tags first, then normalize whitespace
-        const cleanedContent = stripHtmlTags(messageContent);
+      const cleanedContent = stripHtmlTags(messageContent);
 
-        parsedMessage = cleanedContent
-          .replace(/\r\n/g, '\n')
-          .replace(/\r/g, '\n')
-          .replace(/[ \t]+$/gm, '')
-          .replace(/^\s+/, '')
-          .replace(/\s+$/, '')
-          .replace(/\n{3,}/g, '\n\n')
-          .replace(/[ \t]+\n/g, '\n')
-          .replace(/\n[ \t]+/g, '\n')
-          .trim();
-      }
+      parsedMessage = cleanedContent
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .replace(/[ \t]+$/gm, '')
+        .replace(/^\s+/, '')
+        .replace(/\s+$/, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n[ \t]+/g, '\n')
+        .trim();
     }
   } catch (error) {
     console.warn('Error parsing message content:', error);
   }
 
-  const fullMessage = parsedMessage ? `${cleanSubject}\n\n${parsedMessage}`.trim() : cleanSubject;
+  const fullMessage = parsedMessage
+    ? `${cleanSubject}\n\n${parsedMessage}`.trim()
+    : `${cleanSubject}\n\n${FALLBACK_MESSAGE}`;
 
   return {
     from,
@@ -184,25 +190,6 @@ export const nihmsFilesRequestHandler: InboundEmailHandler = {
       return {
         isValid: false,
         reason: 'Email has no content to parse',
-      };
-    }
-
-    // Validate that critical markers are present in the email content (case-insensitive)
-    const contentLower = content.toLowerCase();
-    const startMarker = 'dear howard hughes medical institute,';
-    const endMarker = 'to access the manuscript record';
-
-    if (!contentLower.includes(startMarker)) {
-      return {
-        isValid: false,
-        reason: `Email missing expected start marker: "Dear Howard Hughes Medical Institute,"`,
-      };
-    }
-
-    if (!contentLower.includes(endMarker)) {
-      return {
-        isValid: false,
-        reason: `Email missing expected end marker: "To access the manuscript record"`,
       };
     }
 

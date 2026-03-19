@@ -46,6 +46,8 @@ describe('Email Processor', () => {
           },
         },
       },
+      sendSlackNotification: vi.fn().mockResolvedValue(undefined),
+      asBaseUrl: (path: string) => `https://example.test${path}`,
     } as any;
 
     // Mock handlers

@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { NIHJournalList } from './nih-journal.server.js';
+import type { NIHJournalList } from '../src/backend/services/nih-journal.server.js';
 
 // Mock the JSON import with a larger dataset for better search testing
 const mockNIHJournalList: NIHJournalList = {
@@ -105,13 +105,12 @@ const mockNIHJournalList: NIHJournalList = {
   ],
 };
 
-// Mock the JSON import (path must match nih-journal.server.ts: ../../data/J_Entrez.json)
-vi.mock('../../data/J_Entrez.json', () => ({
+vi.mock('../src/data/J_Entrez.json', () => ({
   default: mockNIHJournalList,
 }));
 
 // Import the function after mocking
-import { searchNIHJournals } from './nih-journal.server.js';
+import { searchNIHJournals } from '../src/backend/services/nih-journal.server.js';
 
 describe('searchNIHJournals', () => {
   beforeEach(() => {
@@ -144,7 +143,6 @@ describe('searchNIHJournals', () => {
     it('should find partial title matches', async () => {
       const results = await searchNIHJournals('Nature Bio');
 
-      // Fuse.js will find multiple matches for "Nature Bio" including "Nature" and "Nature Biotechnology"
       expect(results.length).toBeGreaterThanOrEqual(1);
       expect(results.some((r) => r.journalTitle === 'Nature Biotechnology')).toBe(true);
     });
@@ -152,7 +150,6 @@ describe('searchNIHJournals', () => {
     it('should find partial NLMTA matches', async () => {
       const results = await searchNIHJournals('Nat');
 
-      // "Nat" matches: Nature, Nat Biotechnol, Nat Commun, and also Science (contains 'a')
       expect(results.length).toBeGreaterThanOrEqual(3);
       expect(results.some((r) => r.nlmta === 'Nature')).toBe(true);
       expect(results.some((r) => r.nlmta === 'Nat Biotechnol')).toBe(true);
@@ -224,7 +221,7 @@ describe('searchNIHJournals', () => {
     it('should return all results when limit is higher than matches', async () => {
       const results = await searchNIHJournals('Nature', 10);
 
-      expect(results).toHaveLength(3); // Only 3 matches, so should return all
+      expect(results).toHaveLength(3);
     });
 
     it('should return empty array when limit is 0', async () => {
@@ -256,8 +253,6 @@ describe('searchNIHJournals', () => {
     it('should find matches for very short queries', async () => {
       const results = await searchNIHJournals('a');
 
-      // Fuse.js has minMatchCharLength: 2, so single character queries won't return results
-      // This is expected behavior for fuzzy search
       expect(results.length).toBe(0);
     });
   });
@@ -288,8 +283,8 @@ describe('searchNIHJournals', () => {
       const results = await searchNIHJournals('Cell');
 
       expect(results).toHaveLength(2);
-      expect(results[0].journalTitle).toBe('Cell'); // Exact match first
-      expect(results[1].journalTitle).toBe('Cell Reports'); // Partial match second
+      expect(results[0].journalTitle).toBe('Cell');
+      expect(results[1].journalTitle).toBe('Cell Reports');
     });
   });
 
@@ -297,10 +292,9 @@ describe('searchNIHJournals', () => {
     it('should return results in original order (not sorted)', async () => {
       const results = await searchNIHJournals('Nature');
 
-      // Should maintain the order from the original array
-      expect(results[0].id).toBe(1); // Nature
-      expect(results[1].id).toBe(2); // Nature Biotechnology
-      expect(results[2].id).toBe(3); // Nature Communications
+      expect(results[0].id).toBe(1);
+      expect(results[1].id).toBe(2);
+      expect(results[2].id).toBe(3);
     });
 
     it('should handle large result sets efficiently', async () => {
@@ -308,7 +302,7 @@ describe('searchNIHJournals', () => {
       const results = await searchNIHJournals('Journal', 50);
       const endTime = Date.now();
 
-      expect(endTime - startTime).toBeLessThan(100); // Should complete quickly
+      expect(endTime - startTime).toBeLessThan(100);
       expect(results.length).toBeLessThanOrEqual(50);
     });
   });

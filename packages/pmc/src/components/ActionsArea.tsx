@@ -7,7 +7,7 @@ import { JobStatus } from '@curvenote/scms-db';
 import { zfd } from 'zod-form-data';
 import { z } from 'zod';
 import type { Prisma } from '@curvenote/scms-db';
-import { SplitButton, type SplitButtonOption } from './SplitButton.js';
+import { EllipsisVertical } from 'lucide-react';
 
 interface SubmissionVersionTransitionInfo {
   id: string;
@@ -150,7 +150,8 @@ export function ActionsAreaForm({
     ? transitions.find((t) => t.name === pendingTransitionName)
     : null;
   const confirmMessage =
-    pendingTransition?.labels?.confirmation ?? 'Are you sure you want to continue with this action?';
+    pendingTransition?.labels?.confirmation ??
+    'Are you sure you want to continue with this action?';
   const confirmActionLabel =
     pendingTransition?.labels?.action ?? pendingTransition?.labels?.button ?? 'Confirm';
 
@@ -158,13 +159,6 @@ export function ActionsAreaForm({
     return <span className="text-gray-400">No actions</span>;
   }
 
-  const primary = transitions[0];
-  const otherActions: SplitButtonOption[] = transitions.slice(1).map((t) => ({
-    label: t.labels?.action || t.name,
-    value: t.name,
-  }));
-
-  const busy = fetcher.state !== 'idle' || !!activeTransition;
   const disabled = fetcher.state !== 'idle' || !!activeTransition;
 
   const isHorizontal = layout === 'horizontal';
@@ -174,16 +168,35 @@ export function ActionsAreaForm({
       data-name="actions-area"
       className={`flex flex-col gap-2 ${isHorizontal ? 'flex-row items-center justify-end' : ''}`}
     >
-      <SplitButton
-        primaryLabel={primary.labels?.action || primary.name}
-        primaryValue={primary.name}
-        onPrimaryAction={requestTransition}
-        otherActions={otherActions}
-        onOptionSelect={requestTransition}
-        disabled={disabled}
-        busy={busy}
-        size="sm"
-      />
+      <ui.Menu>
+        <ui.MenuTrigger asChild>
+          <ui.Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            aria-label="Actions"
+            className="px-2 border-stone-400 dark:border-stone-500 text-stone-900 dark:text-white bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800"
+          >
+            <EllipsisVertical className="h-5 w-5" />
+          </ui.Button>
+        </ui.MenuTrigger>
+        <ui.MenuContent align="end" sideOffset={4} className="min-w-[12rem]">
+          {transitions.map((t) => (
+            <ui.MenuItem
+              key={t.name}
+              disabled={disabled}
+              onSelect={(e) => {
+                e.preventDefault();
+                requestTransition(t.name);
+              }}
+              className="px-3 py-2 text-sm cursor-pointer"
+            >
+              {t.labels?.action || t.name}
+            </ui.MenuItem>
+          ))}
+        </ui.MenuContent>
+      </ui.Menu>
       <ui.Dialog
         open={confirmDialogOpen}
         onOpenChange={(open) => {
