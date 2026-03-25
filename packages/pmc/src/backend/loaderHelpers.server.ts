@@ -72,7 +72,7 @@ export async function mapToDepositSubmissionDetails(
       const cdn = workVersion.cdn ?? '';
       const metadataWithFiles = { ...workVersionMetadata, files };
       const signedMetadata = await signFilesInMetadata(metadataWithFiles, cdn, ctx);
-      const filesWithUrls = signedMetadata.files;
+      const filesWithUrls = signedMetadata.files ?? {};
 
       // Manuscript file: first file with slot === 'pmc/manuscript'
       const manuscriptFile = Object.values(filesWithUrls).find(

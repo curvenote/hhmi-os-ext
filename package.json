@@ -15,6 +15,7 @@
     "clean": "turbo run clean",
     "lint": "npm run --workspaces lint",
     "lint:format": "npm run --workspaces lint:format",
+    "lint:format:fix": "npm run --workspaces lint:format:fix",
     "test": "turbo run test"
   },
   "devDependencies": {

@@ -123,7 +123,7 @@ export async function buildAAMDepositManifest(
   storageBackend: StorageBackend,
   sourceBucket: KnownBuckets,
 ): Promise<AAMDepositManifest> {
-  const { pmc, files } = metadata;
+  const { pmc, files = {} } = metadata;
 
   if (!pmc) throw new Error('PMC metadata not found');
   if (!pmc.ownerFirstName || !pmc.ownerLastName) throw new Error('Owner name is required');
