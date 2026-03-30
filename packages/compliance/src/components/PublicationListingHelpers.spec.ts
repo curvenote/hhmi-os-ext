@@ -117,7 +117,7 @@ describe('PublicationListingHelpers', () => {
       expect(allFilters[0].key).toBe('compliance');
       expect(allFilters[0].value).toBe('compliant');
       expect(allFilters[1].key).toBe('compliance');
-      expect(allFilters[1].value).toBe('non-compliant');
+      expect(allFilters[1].value).toBe('with-issues');
 
       // Followed by issue type and status filters
       const issueTypeFilters = allFilters.filter((f) => f.key === 'issueType');
@@ -136,7 +136,7 @@ describe('PublicationListingHelpers', () => {
       expect(filters[0].key).toBe('compliance');
       expect(filters[0].value).toBe('compliant');
       expect(filters[1].key).toBe('compliance');
-      expect(filters[1].value).toBe('non-compliant');
+      expect(filters[1].value).toBe('with-issues');
     });
 
     it('should include issue type and status filters', () => {
@@ -173,9 +173,9 @@ describe('PublicationListingHelpers', () => {
       expect(filtered.every((p) => p.compliant === true)).toBe(true);
     });
 
-    it('should filter by non-compliant status', () => {
+    it('should filter by with-issues status', () => {
       const filters = BASE_COMPLIANCE_FILTERS;
-      const activeFilters = { 'compliance-state': 'non-compliant' };
+      const activeFilters = { 'compliance-state': 'with-issues' };
       const filtered = filterPublications(mockPublications, activeFilters, filters);
       expect(filtered).toHaveLength(1);
       expect(filtered[0].compliant).toBe(false);

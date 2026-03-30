@@ -50,8 +50,8 @@ export interface HHMIClientFilterBarProps {
 export const HHMI_FILTERS: ui.FilterDefinition[] = [
   {
     key: 'compliance',
-    value: 'non-compliant',
-    label: 'Non-Compliant',
+    value: 'has-issues',
+    label: 'Has Issues',
     groupKey: 'compliance-states', // Keep mutual exclusivity for compliance
   },
   {
@@ -87,7 +87,7 @@ const scientistFilterFunctions: Record<string, ScientistFilterFunction> = {
       scientist.preprints.nonCompliant === 0 && scientist.publications.nonCompliant === 0;
 
     switch (value) {
-      case 'non-compliant':
+      case 'has-issues':
         return !isCompliant && totalPublications > 0;
       case 'compliant':
         return isCompliant && totalPublications > 0;
@@ -211,7 +211,7 @@ export function HHMIClientFilterBar({
             scientist.preprints.nonCompliant === 0 && scientist.publications.nonCompliant === 0;
 
           switch (filter.value) {
-            case 'non-compliant':
+            case 'has-issues':
               return !isCompliant && totalPublications > 0;
             case 'compliant':
               return isCompliant && totalPublications > 0;

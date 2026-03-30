@@ -5,12 +5,6 @@ export const BaseQuerySchema = z.object({
   search: z.string().optional(),
 });
 
-// Compliance-specific query schema
-export const ComplianceQuerySchema = BaseQuerySchema.extend({
-  compliance: z.enum(['non-compliant', 'compliant', 'zero']).optional(),
-  orcid: z.boolean().optional(),
-});
-
 /**
  * Parses a URL-encoded query string from a single 'q' parameter using a Zod schema.
  * @param qValue - URL-encoded query string
@@ -85,6 +79,3 @@ export function buildQueryString(query: Record<string, any>): string {
   // Return the query string without additional encoding (URL will handle it)
   return params.toString();
 }
-
-// Type exports
-export type ComplianceQuery = z.infer<typeof ComplianceQuerySchema>;

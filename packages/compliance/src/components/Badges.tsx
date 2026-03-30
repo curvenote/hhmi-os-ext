@@ -558,40 +558,69 @@ export function ComplianceBadge({
   compliant,
   resolved,
   reason,
+  actionRequested,
   size,
   onClick,
   isMajorContributor,
 }: {
   compliant: boolean;
   resolved?: boolean;
+  actionRequested?: boolean;
   reason?: string;
   size?: ui.BadgeSize;
   onClick?: () => void;
   isMajorContributor?: boolean;
 }) {
   const tooltipTitle = reason;
-  const variant = compliant && isMajorContributor ? 'success' : 'outline';
-  const icon = compliant ? (
-    <Check className="w-3 h-3 text-success" />
-  ) : (
-    <X className="w-3 h-3 text-destructive" />
-  );
+
+  //compliant, actionrequested, resolved, no action needed
 
   let text = 'Compliant';
   if (!compliant) {
-    text = 'Non-compliant';
+    if (actionRequested) {
+      text = 'Action Requested';
+    } else {
+      text = 'No Action Needed';
+    }
   } else if (resolved) {
     text = 'Resolved';
   }
+
+  const strongCompliant = compliant && isMajorContributor && !resolved;
+  const resolvedCompliant = compliant && isMajorContributor && resolved;
+  const notMyProblemCompliant = compliant && !isMajorContributor;
+  const noActionRequested = !compliant && !actionRequested;
+
+  let variant: 'outline' | 'success' = 'outline';
+  if (strongCompliant || resolvedCompliant) {
+    variant = 'success';
+  }
+
+  const icon =
+    strongCompliant || resolvedCompliant ? (
+      <Check
+        className={cn('w-3 h-3 stroke-3', {
+          'text-success': !strongCompliant,
+          'text-white': strongCompliant,
+        })}
+      />
+    ) : (
+      <X
+        className={cn('w-3 h-3', {
+          'text-destructive': !noActionRequested,
+        })}
+      />
+    );
 
   const badge = (
     <ui.Badge
       variant={variant}
       size={size}
       className={cn({
-        'bg-red-100': !compliant && isMajorContributor,
-        'bg-gray-50 border-gray-200 text-gray-500': !isMajorContributor,
         'cursor-pointer': onClick,
+        'bg-red-100': !compliant && isMajorContributor,
+        'bg-gray-50 border-gray-200 text-gray-500': notMyProblemCompliant || noActionRequested,
+        'bg-success/80 text-white': strongCompliant,
       })}
       onClick={onClick}
     >

@@ -152,8 +152,8 @@ export const BASE_COMPLIANCE_FILTERS: ui.FilterDefinition[] = [
   },
   {
     key: 'compliance',
-    value: 'non-compliant',
-    label: 'Non-Compliant',
+    value: 'with-issues',
+    label: 'With Issues',
     groupKey: 'compliance-state',
   },
 ];
@@ -219,7 +219,7 @@ const publicationFilterFunctions: Record<string, PublicationFilterFunction> = {
     switch (value) {
       case 'compliant':
         return publication.compliant === true;
-      case 'non-compliant':
+      case 'with-issues':
         // Check for "not true" to catch both false and undefined
         return publication.compliant !== true;
       default:

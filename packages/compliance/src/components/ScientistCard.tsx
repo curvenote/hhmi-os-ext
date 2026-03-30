@@ -17,7 +17,7 @@ export function ScientistCard({ scientist, emptyMessage }: ScientistCardProps) {
     <primitives.Card className="flex flex-col gap-4 p-6 shadow-sm bg-background">
       {scientist && (
         <>
-          <div className="flex flex-col w-full gap-6 md:flex-row">
+          <div className="flex flex-col gap-6 w-full md:flex-row">
             {/* Left Section - Personal and Professional Details */}
             <div className="flex-1">
               <div className="space-y-4">
@@ -32,9 +32,9 @@ export function ScientistCard({ scientist, emptyMessage }: ScientistCardProps) {
                 </div>
 
                 {/* Contact and ID Information */}
-                <div className="grid grid-cols-1 gap-y-2 gap-x-4 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
+                <div className="grid gap-x-4 gap-y-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr))]">
                   {hireDate && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex gap-2 items-center">
                       <Briefcase className="w-4 h-4 text-gray-500" />
                       <span className="text-sm text-gray-600 dark:text-gray-400">
                         Hired: {formatDate(hireDate)}
@@ -43,7 +43,7 @@ export function ScientistCard({ scientist, emptyMessage }: ScientistCardProps) {
                   )}
 
                   {orcid && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex gap-2 items-center">
                       <OrcidIcon className="w-4 h-4 text-gray-500" />
                       <a
                         className="text-sm text-gray-600 dark:text-gray-400 hover:underline"
@@ -57,7 +57,7 @@ export function ScientistCard({ scientist, emptyMessage }: ScientistCardProps) {
                   )}
 
                   {email && (
-                    <div className="flex items-center min-w-0 gap-2">
+                    <div className="flex gap-2 items-center min-w-0">
                       <Mail className="flex-shrink-0 w-4 h-4 text-gray-500" />
                       <a
                         className="min-w-0 text-sm text-gray-600 truncate dark:text-gray-400 hover:underline"
@@ -70,7 +70,7 @@ export function ScientistCard({ scientist, emptyMessage }: ScientistCardProps) {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex gap-2 items-center">
                     <CalendarCheckIcon className="w-4 h-4 text-gray-500" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       Last Review:{' '}
@@ -98,7 +98,7 @@ export function ScientistCard({ scientist, emptyMessage }: ScientistCardProps) {
         </>
       )}
       {!scientist && (
-        <div className="flex items-center justify-center w-full py-8">
+        <div className="flex justify-center items-center py-8 w-full">
           <div className="text-gray-500 dark:text-gray-400">{emptyMessage ?? 'No data found'}</div>
         </div>
       )}

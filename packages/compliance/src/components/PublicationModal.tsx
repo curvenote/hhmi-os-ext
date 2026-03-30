@@ -132,7 +132,7 @@ export function ComplianceStatusBar({
               </div>
             </div>
             <div className="font-light text-medium">
-              Non-compliant with <PolicyLink policy={item.topLevelPolicy} />
+              Action requested for <PolicyLink policy={item.topLevelPolicy} />
             </div>
           </div>
           {item.isLinkedToPrimaryOrcid && (
@@ -187,7 +187,7 @@ export function ComplianceStatusBar({
                 <Check className="w-3 h-3 text-white" />
               </div>
               <div className="font-bold whitespace-nowrap text-medium">
-                Policy issues were resolved
+                Requested action was completed
                 {item.dateResolved ? ` on ${formatDate(item.dateResolved)}` : ''}
               </div>
             </div>

@@ -22,7 +22,7 @@ function formatPublicationInfo(publication: NormalizedArticleRecord): React.Reac
       ? `Compliant (resolved on ${publication.dateResolved || 'unknown date'})`
       : 'Compliant';
   } else {
-    complianceStatus = 'Non-compliant';
+    complianceStatus = 'Action Requested';
   }
   sections.push(
     <Text key="compliance" className="text-[14px] text-black leading-[24px] my-0">

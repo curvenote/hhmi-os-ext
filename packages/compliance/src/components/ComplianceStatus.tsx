@@ -14,7 +14,9 @@ export function ComplianceStatus({ scientist }: { scientist: NormalizedScientist
 
   const handleComplianceIssueClick = () => {
     // Set URL parameter to filter for non-compliant items
-    setSearchParams({ filters: ui.encodeFiltersForURL({ 'compliance-state': 'non-compliant' }) });
+    setSearchParams({
+      filters: ui.encodeFiltersForURL({ 'compliance-state': 'with-issues' }),
+    });
   };
 
   // Check if there are no publications at all
@@ -90,7 +92,7 @@ export function ComplianceStatus({ scientist }: { scientist: NormalizedScientist
       })}
     >
       {!allCompliant ? (
-        <ui.SimpleTooltip title="Click to view non-compliant publications">
+        <ui.SimpleTooltip title="Click to view publications with compliance issues">
           {complianceDiv}
         </ui.SimpleTooltip>
       ) : (
