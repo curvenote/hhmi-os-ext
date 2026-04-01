@@ -8,7 +8,7 @@ List-row compliance status (badge label, flags, and related UI/email copy) is de
 
 - **`compliant`**: publication-level flag; omitted or `undefined` is treated as `false`.
 - **Preprint / journal**: each venue may have `complianceIssueStatus` (from Airtable). Empty cells in the table below mean **no status** for that venue (missing field or `''` after trim—same normalization in code).
-- **Output**: `getComplianceListStatus` always returns `{ label, compliant, resolved, actionRequested }`. If neither a **journal** nor **preprint** object exists on the input, venue statuses normalize to empty: **Compliant** when `compliant` is true, **Action Requested** when false (cases 19–20).
+- **Output**: `getComplianceListStatus` always returns `{ label, compliant, resolved, actionRequested }`. If neither a **journal** nor **preprint** object exists on the input, venue statuses normalize to empty: **Compliant** when `compliant` is true, **Action Requested** when false (CSV cases 19–20).
 
 The product matrix uses **Requested Action Completed** in specs; the UI label is **`Resolved`**.
 
@@ -22,7 +22,7 @@ The same rows are maintained as CSV for spreadsheets and diffing:
 
 | Case | Suite | Compliant | Preprint `complianceIssueStatus` | Journal `complianceIssueStatus` | Status label | Resolved | Action requested | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | matrix | yes | | | Compliant | no | no | Omitted pre/journal = no `complianceIssueStatus` (empty venue object). |
+| 1 | matrix | yes | | | Compliant | no | no | Omitted pre/journal = no complianceIssueStatus (empty venue object). |
 | 2 | matrix | yes | requested action completed | | Resolved | yes | no | |
 | 3 | matrix | yes | | requested action completed | Resolved | yes | no | |
 | 4 | matrix | yes | requested action completed | requested action completed | Resolved | yes | no | |
@@ -34,16 +34,16 @@ The same rows are maintained as CSV for spreadsheets and diffing:
 | 10 | matrix | no | outstanding | | Action Requested | no | yes | |
 | 11 | matrix | no | fix in progress | | Action Requested | no | yes | |
 | 12 | matrix | no | hhmi monitoring | no action needed | No Action Needed | no | no | |
-| 13 | matrix | no | outstanding | no action needed | No Action Needed | no | no | |
-| 14 | matrix | no | fix in progress | no action needed | No Action Needed | no | no | |
+| 13 | matrix | no | outstanding | no action needed | Action Requested | no | yes | |
+| 14 | matrix | no | fix in progress | no action needed | Action Requested | no | yes | |
 | 15 | matrix | no | no action needed | hhmi monitoring | No Action Needed | no | no | |
-| 16 | matrix | no | no action needed | outstanding | No Action Needed | no | no | |
-| 17 | matrix | no | no action needed | fix in progress | No Action Needed | no | no | |
-| 18 | edge | *(omitted)* | | hhmi monitoring | No Action Needed | no | no | `compliant` omitted on input; treated as `false`. Same outputs as matrix row 6. |
-| 19 | edge | yes | *(no venues)* | *(no venues)* | Compliant | no | no | No `journal` / `preprint` on input; same as empty venue objects when compliant. |
-| 20 | edge | no | *(no venues)* | *(no venues)* | Action Requested | no | yes | No `journal` / `preprint` on input; same as matrix row 5. |
-| 21 | edge | no | | Resolved | Action Requested | no | yes | Journal status `Resolved` while non-compliant; preprint venue empty. |
-| 22 | edge | no | requested action completed | | No Action Needed | no | no | Non-compliant, preprint-only requested action completed; journal venue empty. |
-| 23 | edge | yes | Open | Outstanding | Compliant | no | no | Not in product matrix; unrelated statuses when compliant. |
+| 16 | matrix | no | no action needed | outstanding | Action Requested | no | yes | |
+| 17 | matrix | no | no action needed | fix in progress | Action Requested | no | yes | |
+| 18 | edge | (undefined) | | hhmi monitoring | No Action Needed | no | no | compliant omitted on input; treated as false. Same outputs as matrix row 6. |
+| 19 | edge | yes | (no venues) | (no venues) | Compliant | no | no | Neither journal nor preprint object on input; same normalized empty venues as matrix row 1. |
+| 20 | edge | no | (no venues) | (no venues) | Action Requested | no | yes | Neither journal nor preprint object on input; same normalized empty venues as matrix row 5. |
+| 21 | edge | no | | Resolved | Action Requested | no | yes | Journal status 'Resolved' while non-compliant; preprint venue empty (no status). |
+| 22 | edge | no | requested action completed | | No Action Needed | no | no | Non-compliant with preprint-only requested action completed; journal venue empty. |
+| 23 | edge | yes | Open | Outstanding | Compliant | no | no | Not in product matrix; sanity check for unrelated statuses when compliant. |
 
 This table is **not** an exhaustive permutation of every string Airtable could send; it matches the contracted matrix plus explicit edge tests. When rules change, update the CSV, this doc, and `COMPLIANCE_MATRIX` together.

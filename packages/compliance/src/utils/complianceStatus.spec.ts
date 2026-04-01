@@ -170,9 +170,9 @@ const COMPLIANCE_MATRIX: MatrixRow[] = [
     journal: 'no action needed',
     expected: {
       compliant: false,
-      label: 'No Action Needed',
+      label: 'Action Requested',
       resolved: false,
-      actionRequested: false,
+      actionRequested: true,
     },
   },
   {
@@ -181,9 +181,9 @@ const COMPLIANCE_MATRIX: MatrixRow[] = [
     journal: 'no action needed',
     expected: {
       compliant: false,
-      label: 'No Action Needed',
+      label: 'Action Requested',
       resolved: false,
-      actionRequested: false,
+      actionRequested: true,
     },
   },
 
@@ -204,9 +204,9 @@ const COMPLIANCE_MATRIX: MatrixRow[] = [
     journal: 'outstanding',
     expected: {
       compliant: false,
-      label: 'No Action Needed',
+      label: 'Action Requested',
       resolved: false,
-      actionRequested: false,
+      actionRequested: true,
     },
   },
   {
@@ -215,9 +215,9 @@ const COMPLIANCE_MATRIX: MatrixRow[] = [
     journal: 'fix in progress',
     expected: {
       compliant: false,
-      label: 'No Action Needed',
+      label: 'Action Requested',
       resolved: false,
-      actionRequested: false,
+      actionRequested: true,
     },
   },
 ];

@@ -58,8 +58,19 @@ function getCoveredArticleComplianceFlags(item: CoveredArticleComplianceInput): 
   return { resolved, actionRequested };
 }
 
-/** Matches compliance matrix: these venue statuses do not count as "action requested". */
+/**
+ * Venues that still require follow-up: if either side is in this set, do not exempt the row.
+ * (e.g. preprint outstanding + journal "no action needed" → still Action Requested.)
+ */
 function isExemptFromActionRequested(j: string, p: string): boolean {
+  if (
+    j === 'outstanding' ||
+    j === 'fix in progress' ||
+    p === 'outstanding' ||
+    p === 'fix in progress'
+  ) {
+    return false;
+  }
   return j === 'no action needed' || j === 'hhmi monitoring' || p === 'no action needed';
 }
 
