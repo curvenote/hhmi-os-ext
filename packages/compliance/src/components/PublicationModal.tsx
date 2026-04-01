@@ -124,17 +124,12 @@ export function ComplianceStatusBar({ item }: { item: NormalizedArticleRecord })
             </div>
           )}
           {item.isLinkedToPrimaryOrcid && item.journal?.reviewReminder && (
-            <div className="text-sm font-light">
-              <span className="font-semibold">Review Reminder:</span> {item.journal.reviewReminder}
-            </div>
+            <div className="text-sm font-light">{item.journal.reviewReminder}</div>
           )}
           {item.isLinkedToPrimaryOrcid &&
             item.preprint?.reviewReminder &&
             !item.journal?.reviewReminder && (
-              <div className="text-sm font-light">
-                <span className="font-semibold">Review Reminder:</span>{' '}
-                {item.preprint.reviewReminder}
-              </div>
+              <div className="text-sm font-light">{item.preprint.reviewReminder}</div>
             )}
           <>
             {item.preprint?.actionSteps && (
