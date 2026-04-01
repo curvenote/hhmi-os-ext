@@ -3,6 +3,7 @@ import { ui, cn } from '@curvenote/scms-core';
 import { useCompliancePingEvent } from '../utils/analytics.js';
 import { ExternalLink, Check, X, Sparkles } from 'lucide-react';
 import { HHMITrackEvent } from '../analytics/events.js';
+import type { ComplianceListStatus } from '../utils/complianceStatus.js';
 
 // ============================================================================
 // Link Badges
@@ -555,53 +556,39 @@ export function CurvenotePreprintLink({
 // ============================================================================
 
 export function ComplianceBadge({
-  compliant,
-  resolved,
+  status,
   reason,
-  actionRequested,
   size,
   onClick,
   isMajorContributor,
 }: {
-  compliant: boolean;
-  resolved?: boolean;
-  actionRequested?: boolean;
+  status: ComplianceListStatus;
   reason?: string;
   size?: ui.BadgeSize;
   onClick?: () => void;
   isMajorContributor?: boolean;
 }) {
   const tooltipTitle = reason;
+  const { label: text, compliant, resolved, actionRequested } = status;
 
-  //compliant, actionrequested, resolved, no action needed
-
-  let text = 'Compliant';
-  if (!compliant) {
-    if (actionRequested) {
-      text = 'Action Requested';
-    } else {
-      text = 'No Action Needed';
-    }
-  } else if (resolved) {
-    text = 'Resolved';
-  }
-
-  const strongCompliant = compliant && isMajorContributor && !resolved;
-  const resolvedCompliant = compliant && isMajorContributor && resolved;
+  const justCompliant = compliant && !resolved;
+  const majorJustCompliant = justCompliant && isMajorContributor;
+  const resolvedCompliant = compliant && resolved;
+  const majorResolvedCompliant = compliant && isMajorContributor && resolved;
   const notMyProblemCompliant = compliant && !isMajorContributor;
   const noActionRequested = !compliant && !actionRequested;
 
   let variant: 'outline' | 'success' = 'outline';
-  if (strongCompliant || resolvedCompliant) {
+  if (majorJustCompliant || majorResolvedCompliant) {
     variant = 'success';
   }
 
   const icon =
-    strongCompliant || resolvedCompliant ? (
+    justCompliant || resolvedCompliant ? (
       <Check
         className={cn('w-3 h-3 stroke-3', {
-          'text-success': !strongCompliant,
-          'text-white': strongCompliant,
+          'text-success': !majorJustCompliant,
+          'text-white': majorJustCompliant,
         })}
       />
     ) : (
@@ -620,7 +607,7 @@ export function ComplianceBadge({
         'cursor-pointer': onClick,
         'bg-red-100': !compliant && isMajorContributor,
         'bg-gray-50 border-gray-200 text-gray-500': notMyProblemCompliant || noActionRequested,
-        'bg-success/80 text-white': strongCompliant,
+        'bg-success/80 text-white': majorJustCompliant,
       })}
       onClick={onClick}
     >

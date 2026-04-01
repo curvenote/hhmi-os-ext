@@ -1,6 +1,7 @@
 import { Heading, Text, Section, Button } from '@react-email/components';
 import React from 'react';
 import type { NormalizedArticleRecord } from '../types.js';
+import { getComplianceListStatus } from '../../utils/complianceStatus.js';
 
 /**
  * Formats publication information in a structured table-like format for email
@@ -15,18 +16,12 @@ function formatPublicationInfo(publication: NormalizedArticleRecord): React.Reac
     </Text>,
   );
 
-  // Compliance Status
-  let complianceStatus = 'Unknown';
-  if (publication.compliant) {
-    complianceStatus = publication.everNonCompliant
-      ? `Compliant (resolved on ${publication.dateResolved || 'unknown date'})`
-      : 'Compliant';
-  } else {
-    complianceStatus = 'Action Requested';
-  }
+  // Compliance Status (aligned with list badge / modal)
+  const complianceStatus = getComplianceListStatus(publication);
   sections.push(
     <Text key="compliance" className="text-[14px] text-black leading-[24px] my-0">
-      <strong>Compliance Status:</strong> {complianceStatus}
+      <strong>Compliance Status:</strong>{' '}
+      {complianceStatus.label}
     </Text>,
   );
 

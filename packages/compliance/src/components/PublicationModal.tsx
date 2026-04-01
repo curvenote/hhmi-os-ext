@@ -9,6 +9,7 @@ import { RequestHelpDialog, type HelpRequestPublication } from '@curvenote/scms-
 import { useState } from 'react';
 import { formatLicenseForDisplay } from '../utils/licenseFormatting.js';
 import type { ViewContext } from './Badges.js';
+import { getComplianceListStatus } from '../utils/complianceStatus.js';
 
 /*
   2007 Public Access to Publications policy: https://hhmicdn.blob.core.windows.net/policies/Public-Access-to-Publications.pdf
@@ -88,6 +89,8 @@ export function ComplianceStatusBar({
   item: NormalizedArticleRecord;
   scientist: NormalizedScientist | undefined;
 }) {
+  const listStatus = getComplianceListStatus(item);
+
   return (
     <div
       className={cn('flex gap-2 p-2 rounded-sm border flex flex-col gap-2', {
@@ -128,11 +131,15 @@ export function ComplianceStatusBar({
                 <X className="w-3 h-3 text-white" />
               </div>
               <div className="font-bold whitespace-nowrap text-medium">
-                {item.preprint?.complianceIssueStatus ?? item.journal?.complianceIssueStatus}
+                {listStatus?.label ??
+                  item.preprint?.complianceIssueStatus ??
+                  item.journal?.complianceIssueStatus ??
+                  '—'}
               </div>
             </div>
             <div className="font-light text-medium">
-              Action requested for <PolicyLink policy={item.topLevelPolicy} />
+              {listStatus?.actionRequested ? 'Action requested for ' : 'No action needed for '}
+              <PolicyLink policy={item.topLevelPolicy} />
             </div>
           </div>
           {item.isLinkedToPrimaryOrcid && (

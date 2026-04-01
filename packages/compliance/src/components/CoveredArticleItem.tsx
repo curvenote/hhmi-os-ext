@@ -11,7 +11,7 @@ import { summarizeAuthorList } from './ListingHelpers.js';
 import { IssueStatusWithTooltip } from './IssueStatusWithTooltip.js';
 import { HHMITrackEvent } from '../analytics/events.js';
 import { formatLicenseForDisplay } from '../utils/licenseFormatting.js';
-import { getCoveredArticleComplianceFlags } from './coveredArticleComplianceFlags.js';
+import { getComplianceListStatus, type ComplianceListStatus } from '../utils/complianceStatus.js';
 
 export function CoveredArticleItem({
   item,
@@ -38,7 +38,7 @@ export function CoveredArticleItem({
     setIsModalOpen(true);
   };
 
-  const { resolved, actionRequested } = getCoveredArticleComplianceFlags(item);
+  const listCompliance: ComplianceListStatus = getComplianceListStatus(item);
 
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
@@ -81,9 +81,7 @@ export function CoveredArticleItem({
             <div className="flex col-span-12 justify-center items-top md:col-span-3">
               <div>
                 <ComplianceBadge
-                  compliant={item.compliant ?? false}
-                  resolved={resolved}
-                  actionRequested={actionRequested}
+                  status={listCompliance}
                   reason={item.preprint?.complianceIssueType ?? item.journal?.complianceIssueType}
                   isMajorContributor={item.isLinkedToPrimaryOrcid}
                   onClick={handleModalOpen}

@@ -1,0 +1,24 @@
+case_id,suite,compliant_input,preprint_compliance_issue_status,journal_compliance_issue_status,status_label,resolved,action_requested,notes
+1,matrix,yes,,,Compliant,false,false,"Omitted pre/journal = no complianceIssueStatus (empty venue object)."
+2,matrix,yes,requested action completed,,Resolved,true,false,
+3,matrix,yes,,requested action completed,Resolved,true,false,
+4,matrix,yes,requested action completed,requested action completed,Resolved,true,false,
+5,matrix,no,,,Action Requested,false,true,
+6,matrix,no,,hhmi monitoring,No Action Needed,false,false,
+7,matrix,no,,outstanding,Action Requested,false,true,
+8,matrix,no,,fix in progress,Action Requested,false,true,
+9,matrix,no,,no action needed,No Action Needed,false,false,
+10,matrix,no,outstanding,,Action Requested,false,true,
+11,matrix,no,fix in progress,,Action Requested,false,true,
+12,matrix,no,hhmi monitoring,no action needed,No Action Needed,false,false,
+13,matrix,no,outstanding,no action needed,No Action Needed,false,false,
+14,matrix,no,fix in progress,no action needed,No Action Needed,false,false,
+15,matrix,no,no action needed,hhmi monitoring,No Action Needed,false,false,
+16,matrix,no,no action needed,outstanding,No Action Needed,false,false,
+17,matrix,no,no action needed,fix in progress,No Action Needed,false,false,
+18,edge,(undefined),,hhmi monitoring,No Action Needed,false,false,"compliant omitted on input; treated as false. Same outputs as matrix row 6."
+19,edge,yes,(no venues),(no venues),Compliant,false,false,"Neither journal nor preprint object on input; same normalized empty venues as matrix row 1."
+20,edge,no,(no venues),(no venues),Action Requested,false,true,"Neither journal nor preprint object on input; same normalized empty venues as matrix row 5."
+21,edge,no,,Resolved,Action Requested,false,true,"Journal status 'Resolved' while non-compliant; preprint venue empty (no status)."
+22,edge,no,requested action completed,,No Action Needed,false,false,"Non-compliant with preprint-only requested action completed; journal venue empty."
+23,edge,yes,Open,Outstanding,Compliant,false,false,"Not in product matrix; sanity check for unrelated statuses when compliant."
