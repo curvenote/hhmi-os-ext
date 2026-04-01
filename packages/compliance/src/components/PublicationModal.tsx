@@ -82,63 +82,27 @@ function Item({ label, value }: { label: string; value: string | React.ReactNode
   );
 }
 
-export function ComplianceStatusBar({
-  item,
-  scientist,
-}: {
-  item: NormalizedArticleRecord;
-  scientist: NormalizedScientist | undefined;
-}) {
+export function ComplianceStatusBar({ item }: { item: NormalizedArticleRecord }) {
   const listStatus = getComplianceListStatus(item);
 
   return (
     <div
       className={cn('flex gap-2 p-2 rounded-sm border flex flex-col gap-2', {
-        'border-success': item.compliant,
-        'border-warning': !item.compliant,
+        'border-success': listStatus.compliant,
+        'border-warning': !listStatus.compliant,
       })}
     >
-      {item.compliant && !item.everNonCompliant && (
-        <>
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="flex flex-shrink-0 gap-2 items-center">
-              <div className="flex justify-center items-center w-5 h-5 rounded-full bg-success shrink-0">
-                <Check className="w-3 h-3 text-white" />
-              </div>
-              <div className="font-bold whitespace-nowrap text-medium">Compliant</div>
-            </div>
-            <div className="font-light text-medium">
-              (<PolicyLink policy={item.topLevelPolicy} />)
-            </div>
-          </div>
-          {item.isLinkedToPrimaryOrcid && (
-            <div className="text-sm font-light">
-              You are a major contributor on this publication.
-            </div>
-          )}
-          {!item.isLinkedToPrimaryOrcid && (
-            <div className="text-sm font-light">
-              You are not a major contributor on this publication.
-            </div>
-          )}
-        </>
-      )}
-      {!item.compliant && (
+      {!listStatus.compliant && (
         <>
           <div className="flex flex-wrap gap-2 items-center">
             <div className="flex flex-shrink-0 gap-2 items-center">
               <div className="flex justify-center items-center w-5 h-5 rounded-full bg-warning shrink-0">
                 <X className="w-3 h-3 text-white" />
               </div>
-              <div className="font-bold whitespace-nowrap text-medium">
-                {listStatus?.label ??
-                  item.preprint?.complianceIssueStatus ??
-                  item.journal?.complianceIssueStatus ??
-                  '—'}
-              </div>
+              <div className="font-bold whitespace-nowrap text-medium">{listStatus.label}</div>
             </div>
             <div className="font-light text-medium">
-              {listStatus?.actionRequested ? 'Action requested for ' : 'No action needed for '}
+              {listStatus.actionRequested ? 'Action requested for ' : 'No action needed for '}
               <PolicyLink policy={item.topLevelPolicy} />
             </div>
           </div>
@@ -186,20 +150,48 @@ export function ComplianceStatusBar({
           </>
         </>
       )}
-      {item.compliant && item.everNonCompliant && (
+      {listStatus.compliant && item.everNonCompliant && (
         <>
           <div className="flex flex-wrap gap-2 items-center">
             <div className="flex flex-shrink-0 gap-2 items-center">
               <div className="flex justify-center items-center w-5 h-5 rounded-full bg-success shrink-0">
                 <Check className="w-3 h-3 text-white" />
               </div>
-              <div className="font-bold whitespace-nowrap text-medium">
+              <div className="font-bold whitespace-nowrap text-medium">{listStatus.label}</div>
+            </div>
+            {listStatus.label === 'Resolved' && (
+              <div className="w-full text-sm font-light text-medium basis-full">
                 Requested action was completed
                 {item.dateResolved ? ` on ${formatDate(item.dateResolved)}` : ''}
               </div>
-            </div>
+            )}
             <div className="font-light text-medium">
               <PolicyLink policy={item.topLevelPolicy} />
+            </div>
+          </div>
+          {item.isLinkedToPrimaryOrcid && (
+            <div className="text-sm font-light">
+              You are a major contributor on this publication.
+            </div>
+          )}
+          {!item.isLinkedToPrimaryOrcid && (
+            <div className="text-sm font-light">
+              You are not a major contributor on this publication.
+            </div>
+          )}
+        </>
+      )}
+      {listStatus.compliant && !item.everNonCompliant && (
+        <>
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex flex-shrink-0 gap-2 items-center">
+              <div className="flex justify-center items-center w-5 h-5 rounded-full bg-success shrink-0">
+                <Check className="w-3 h-3 text-white" />
+              </div>
+              <div className="font-bold whitespace-nowrap text-medium">{listStatus.label}</div>
+            </div>
+            <div className="font-light text-medium">
+              (<PolicyLink policy={item.topLevelPolicy} />)
             </div>
           </div>
           {item.isLinkedToPrimaryOrcid && (
@@ -325,7 +317,7 @@ export function PublicationModal({
           />
 
           {/* Compliance Status Bar */}
-          {showComplianceStatusBar && <ComplianceStatusBar item={pub} scientist={scientist} />}
+          {showComplianceStatusBar && <ComplianceStatusBar item={pub} />}
 
           {/* Detailed Information List */}
           <div className="space-y-4">
