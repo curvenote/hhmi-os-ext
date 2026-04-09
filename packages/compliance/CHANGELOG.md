@@ -1,5 +1,11 @@
 # @hhmi/compliance
 
+## 0.3.1
+
+### Patch Changes
+
+- 12076be: Align UI on "Requested Action Completed" text
+
 ## 0.3.0
 
 ### Minor Changes

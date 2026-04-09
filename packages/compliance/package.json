@@ -1,6 +1,6 @@
 {
   "name": "@hhmi/compliance",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Compliance extension for the HHMI Workspace - powered by Curvenote.",
   "author": "Curvenote <support@curvenote.com>",
   "homepage": "https://github.com/HHMI-HQ/hhmi-workspace",
