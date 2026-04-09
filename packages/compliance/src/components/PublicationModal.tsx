@@ -154,7 +154,7 @@ export function ComplianceStatusBar({ item }: { item: NormalizedArticleRecord })
               </div>
               <div className="font-bold whitespace-nowrap text-medium">{listStatus.label}</div>
             </div>
-            {listStatus.label === 'Resolved' && (
+            {listStatus.resolved && (
               <div className="w-full text-sm font-light text-medium basis-full">
                 Requested action was completed
                 {item.dateResolved ? ` on ${formatDate(item.dateResolved)}` : ''}

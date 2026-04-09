@@ -56,7 +56,7 @@ const COMPLIANCE_MATRIX: MatrixRow[] = [
     pre: 'requested action completed',
     expected: {
       compliant: true,
-      label: 'Resolved',
+      label: 'Requested Action Completed',
       resolved: true,
       actionRequested: false,
     },
@@ -66,7 +66,7 @@ const COMPLIANCE_MATRIX: MatrixRow[] = [
     journal: 'requested action completed',
     expected: {
       compliant: true,
-      label: 'Resolved',
+      label: 'Requested Action Completed',
       resolved: true,
       actionRequested: false,
     },
@@ -77,7 +77,7 @@ const COMPLIANCE_MATRIX: MatrixRow[] = [
     journal: 'requested action completed',
     expected: {
       compliant: true,
-      label: 'Resolved',
+      label: 'Requested Action Completed',
       resolved: true,
       actionRequested: false,
     },

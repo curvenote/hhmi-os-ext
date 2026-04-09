@@ -8,7 +8,7 @@ export type CoveredArticleComplianceInput = Pick<
 /** Short status label shown on list badges, modal headlines, and help-request email. */
 export type ComplianceListStatusLabel =
   | 'Compliant'
-  | 'Resolved'
+  | 'Requested Action Completed'
   | 'Action Requested'
   | 'No Action Needed';
 
@@ -86,7 +86,7 @@ function getComplianceListStatusLabelFromFlags(
     return actionRequested ? 'Action Requested' : 'No Action Needed';
   }
   if (resolved) {
-    return 'Resolved';
+    return 'Requested Action Completed';
   }
   return 'Compliant';
 }

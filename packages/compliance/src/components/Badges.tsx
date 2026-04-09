@@ -593,7 +593,7 @@ export function ComplianceBadge({
       />
     ) : (
       <X
-        className={cn('w-3 h-3', {
+        className={cn('w-3 h-3 stroke-3', {
           'text-destructive': !noActionRequested,
         })}
       />
@@ -603,7 +603,7 @@ export function ComplianceBadge({
     <ui.Badge
       variant={variant}
       size={size}
-      className={cn({
+      className={cn('max-w-34 whitespace-normal text-center', {
         'cursor-pointer': onClick,
         'bg-red-100': !compliant && isMajorContributor,
         'bg-gray-50 border-gray-200 text-gray-500': notMyProblemCompliant || noActionRequested,

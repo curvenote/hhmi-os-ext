@@ -31,7 +31,9 @@ function nowIso(): string {
 /**
  * Read a cached object by id. Returns the row or null.
  */
-export async function getCached(id: string): Promise<{ data: unknown; date_modified: string } | null> {
+export async function getCached(
+  id: string,
+): Promise<{ data: unknown; date_modified: string } | null> {
   const prisma = await getPrismaClient();
   const row = await prisma.object.findUnique({
     where: { id },
@@ -44,11 +46,7 @@ export async function getCached(id: string): Promise<{ data: unknown; date_modif
 /**
  * Upsert a cache row. Used by webhook (always) and by routes on cold start only.
  */
-export async function setCached(
-  id: string,
-  type: string,
-  data: unknown,
-): Promise<void> {
+export async function setCached(id: string, type: string, data: unknown): Promise<void> {
   const prisma = await getPrismaClient();
   const now = nowIso();
   await prisma.object.upsert({

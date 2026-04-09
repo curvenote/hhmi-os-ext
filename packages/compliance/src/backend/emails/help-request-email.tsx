@@ -20,8 +20,7 @@ function formatPublicationInfo(publication: NormalizedArticleRecord): React.Reac
   const complianceStatus = getComplianceListStatus(publication);
   sections.push(
     <Text key="compliance" className="text-[14px] text-black leading-[24px] my-0">
-      <strong>Compliance Status:</strong>{' '}
-      {complianceStatus.label}
+      <strong>Compliance Status:</strong> {complianceStatus.label}
     </Text>,
   );
 
