@@ -33,7 +33,7 @@
     "baseUrl": ".",
     "skipLibCheck": true,
     "paths": {
-      "@/*": ["../../../../*"]
+      "@/types/app-config.js": ["../../../../types/app-config.d.ts"]
     },
     "outDir": "./dist",
     "rootDir": "./src",
