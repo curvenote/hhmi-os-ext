@@ -1,6 +1,11 @@
-import type { ServerExtension } from '@curvenote/scms-core';
+import type { ScopeTree, ServerExtension } from '@curvenote/scms-core';
 import { registerRoutes } from './routes.js';
 import { extension as clientExtension } from './client.js';
+import { hhmi } from './backend/scopes.js';
+
+function getScopes(): ScopeTree {
+  return { hhmi };
+}
 
 function getSafeAdminConfig(config: Record<string, unknown>): Record<string, unknown> {
   const airtable = config.airtable as Record<string, unknown> | undefined;
@@ -19,4 +24,5 @@ export const extension: ServerExtension = {
   ...clientExtension,
   registerRoutes,
   getSafeAdminConfig,
+  getScopes,
 };
