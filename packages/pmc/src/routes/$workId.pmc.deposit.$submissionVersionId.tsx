@@ -76,7 +76,7 @@ export const meta: MetaFunction<LoaderData> = ({ matches }) => {
 };
 
 export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Response> {
-  const ctx = await withSecureWorkContext(args, [workScopes.submissions.read]);
+  const ctx = await withSecureWorkContext(args, [workScopes.id.submissions.read]);
 
   // Check if PMC extension is enabled in config
   if (!ctx.$config.app.extensions?.pmc) {
@@ -163,7 +163,10 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Res
 }
 
 export async function action(args: ActionFunctionArgs) {
-  const ctx = await withSecureWorkContext(args, [workScopes.submissions.read, workScopes.update]);
+  const ctx = await withSecureWorkContext(args, [
+    workScopes.id.submissions.read,
+    workScopes.id.update,
+  ]);
   let versionDbo: WorkVersionDBO | null = null;
   try {
     versionDbo = await dbGetWorkVersion(ctx, ctx.work.id);

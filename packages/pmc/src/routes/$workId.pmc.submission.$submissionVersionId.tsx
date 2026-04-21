@@ -73,7 +73,7 @@ export const meta: MetaFunction<LoaderData> = ({ matches }) => {
 };
 
 export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Response> {
-  const ctx = await withSecureWorkContext(args, [workScopes.submissions.read]);
+  const ctx = await withSecureWorkContext(args, [workScopes.id.submissions.read]);
   // Check if PMC extension is enabled in config
   if (!ctx.$config.app.extensions?.pmc) {
     return redirect('/app/works');
@@ -180,8 +180,8 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Res
 
 export async function action(args: ActionFunctionArgs) {
   const ctx = await withSecureWorkContext(args, [
-    workScopes.submissions.read,
-    workScopes.submissions.versions.create,
+    workScopes.id.submissions.read,
+    workScopes.id.submissions.versions.create,
   ]);
 
   const schema = zfd.formData({

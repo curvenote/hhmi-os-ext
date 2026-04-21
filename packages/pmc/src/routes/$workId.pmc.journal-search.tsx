@@ -5,7 +5,7 @@ import { work } from '@curvenote/scms-core';
 import { searchNIHJournals } from '../backend/services/nih-journal.server.js';
 
 export async function loader(args: LoaderFunctionArgs) {
-  const ctx = await withSecureWorkContext(args, [work.submissions.read]);
+  const ctx = await withSecureWorkContext(args, [work.id.submissions.read]);
 
   // Check if PMC extension is enabled in config
   if (!ctx.$config.app.extensions?.pmc) {
