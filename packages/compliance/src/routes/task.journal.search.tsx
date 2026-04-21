@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
-import { withAppContext } from '@curvenote/scms-server';
+import { withAppContext, withAppScopedContext } from '@curvenote/scms-server';
 import {
   MainWrapper,
   PageFrame,
@@ -25,6 +25,7 @@ import {
 } from '../features/journal-search/journalSearchAdvice.js';
 import { isUserComplianceManager } from '../utils/analytics.server.js';
 import { useCompliancePingEvent } from '../utils/analytics.js';
+import { hhmi } from '../backend/scopes.js';
 
 interface LoaderData {
   journals: NormalizedJournal[];
@@ -46,7 +47,7 @@ function decodeJournalTitleEntities(title: string): string {
 }
 
 export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
-  const ctx = await withAppContext(args);
+  const ctx = await withAppScopedContext(args, [hhmi.compliance.read], { redirect: true });
   const raw = await getJournalsFromCacheOrFetch();
   const journals = raw
     .map((journal) => ({

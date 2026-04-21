@@ -1,6 +1,6 @@
 import { redirect, data } from 'react-router';
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from 'react-router';
-import { withAppContext, sanitizeUserInput } from '@curvenote/scms-server';
+import { withAppContext, sanitizeUserInput, withAppScopedContext } from '@curvenote/scms-server';
 import {
   MainWrapper,
   PageFrame,
@@ -14,6 +14,7 @@ import { complianceWizardConfig } from '../common/compliance-wizard.config.js';
 import { composeHelpRequestEmailBody } from '../email/compose-help-request-email.js';
 import type { ComplianceUserMetadataSection } from '../backend/types.js';
 import { isUserComplianceManager } from '../utils/analytics.server.js';
+import { hhmi } from '../backend/scopes.js';
 
 interface LoaderData {
   config: ComplianceWizardConfig;
@@ -28,7 +29,7 @@ export const meta: MetaFunction<LoaderData> = ({ matches }) => {
 };
 
 export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Response> {
-  const ctx = await withAppContext(args);
+  const ctx = await withAppScopedContext(args, [hhmi.compliance.read], { redirect: true });
 
   // Check if PMC extension is enabled in config
   if (!ctx.$config.app.extensions?.pmc) {

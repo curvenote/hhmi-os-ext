@@ -3,7 +3,7 @@ import { Outlet, redirect, useLoaderData } from 'react-router';
 import { useState, useEffect, useMemo } from 'react';
 import type { ServerSideMenuContents } from '@curvenote/scms-core';
 import { MainWrapper, SecondaryNav } from '@curvenote/scms-core';
-import { userHasScopes, withAppContext, withAppScopedContext } from '@curvenote/scms-server';
+import { userHasScopes, withAppScopedContext } from '@curvenote/scms-server';
 import { buildComplianceMenu } from './menu.js';
 import myComplianceIcon from '../assets/my-compliance-lock.svg';
 import { getComplianceReportsSharedWith } from '../backend/access.server.js';
@@ -27,7 +27,7 @@ interface LoaderData {
 
 export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
   // ✅ MINIMAL: Get context (required for user data)
-  const ctx = await withAppContext(args);
+  const ctx = await withAppScopedContext(args, [hhmi.compliance.read], { redirect: true });
   const pathname = new URL(args.request.url).pathname;
 
   // ✅ MINIMAL: Extract only what's needed for redirects

@@ -21,6 +21,7 @@ import { WorkspaceInvitationEmailTemplate } from './backend/emails/workspace-inv
 import { registerNavigation } from './navigation.js';
 import { ComplianceWizardTaskCard } from './ComplianceWizardTaskCard.js';
 import { JournalSearchTaskCard } from './JournalSearchTaskCard.js';
+import { hhmi } from './backend/scopes.js';
 
 export const id = 'hhmi-compliance';
 export const name = 'HHMI Compliance';
@@ -39,6 +40,7 @@ export function getTasks(): ExtensionTask[] {
         'Get an up to date review of the compliance of your preprints and journal articles.',
       component: ComplianceReportTaskCard,
       category: 'hhmi policy',
+      scopes: [hhmi.compliance.read],
     },
     {
       id: 'compliance-wizard',
@@ -46,6 +48,7 @@ export function getTasks(): ExtensionTask[] {
       description: 'Answer questions to understand your compliance requirements',
       component: ComplianceWizardTaskCard,
       category: 'hhmi policy',
+      scopes: [hhmi.compliance.read],
     },
     {
       id: 'journal-search',
@@ -54,6 +57,7 @@ export function getTasks(): ExtensionTask[] {
         'Look up a journal to see whether HHMI lab budgets can be used to pay open access or other fees.',
       component: JournalSearchTaskCard,
       category: 'hhmi policy',
+      scopes: [hhmi.compliance.read],
     },
   ];
 }
