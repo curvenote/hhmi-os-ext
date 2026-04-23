@@ -1,5 +1,11 @@
 # @hhmi/compliance
 
+## 0.3.2
+
+### Patch Changes
+
+- 34ca52f: Adding scope checks to all compliance routes
+
 ## 0.3.1
 
 ### Patch Changes
