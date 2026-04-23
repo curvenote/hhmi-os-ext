@@ -21,6 +21,7 @@ interface LoaderData {
   complianceRole?: 'scientist' | 'lab-manager';
   path?: string;
   isComplianceManager?: boolean;
+  noticeToJournalsPdfUrl?: string;
 }
 
 export const meta: MetaFunction<LoaderData> = ({ matches }) => {
@@ -42,11 +43,25 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Res
   const complianceRole = userData.compliance?.role;
   const path = new URL(args.request.url).pathname;
 
+  // Required per extension.schema.yml; treated as an opaque fully qualified URL
+  // (may be hosted on any origin/CDN). If misconfigured, log and skip the card
+  // rather than crashing the wizard.
+  const complianceExtensionConfig = ctx.$config.app.extensions?.['hhmi-compliance'] as
+    | { noticeToJournalsPdfUrl?: string }
+    | undefined;
+  const noticeToJournalsPdfUrl = complianceExtensionConfig?.noticeToJournalsPdfUrl;
+  if (!noticeToJournalsPdfUrl) {
+    console.error(
+      'HHMI Compliance extension: `noticeToJournalsPdfUrl` is not configured; the Notice to Journals card will be hidden.',
+    );
+  }
+
   return {
     config,
     complianceRole,
     path,
     isComplianceManager: isUserComplianceManager(ctx.user),
+    noticeToJournalsPdfUrl,
   };
 }
 
@@ -106,7 +121,7 @@ export const action = async (args: ActionFunctionArgs) => {
 };
 
 export default function ComplianceWizardRoute({ loaderData }: { loaderData: LoaderData }) {
-  const { config } = loaderData;
+  const { config, noticeToJournalsPdfUrl } = loaderData;
 
   const breadcrumbs = [
     { label: 'Home', href: '/app/dashboard' },
@@ -140,7 +155,10 @@ export default function ComplianceWizardRoute({ loaderData }: { loaderData: Load
         }
         breadcrumbs={breadcrumbs}
       >
-        <ComplianceWizard config={config as ComplianceWizardConfig} />
+        <ComplianceWizard
+          config={config as ComplianceWizardConfig}
+          noticeToJournalsPdfUrl={noticeToJournalsPdfUrl}
+        />
       </PageFrame>
     </MainWrapper>
   );

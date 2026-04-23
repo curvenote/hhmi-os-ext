@@ -36,6 +36,7 @@ export enum HHMITrackEvent {
   COMPLIANCE_WIZARD_OUTCOME_VIEWED = 'PMC Compliance Wizard Outcome Viewed',
   COMPLIANCE_WIZARD_BIORXIV_CLICKED = 'PMC Compliance Wizard BioRxiv Link Clicked',
   COMPLIANCE_WIZARD_PMC_DEPOSIT_CLICKED = 'PMC Compliance Wizard PMC Deposit Clicked',
+  COMPLIANCE_WIZARD_NOTICE_TO_JOURNALS_CLICKED = 'PMC Compliance Wizard Notice to Journals Clicked',
   COMPLIANCE_WIZARD_HELP_LINK_CLICKED = 'PMC Compliance Wizard Help Link Clicked',
 
   COMPLIANCE_WIZARD_CONFIRM_USEFUL = 'PMC Compliance Wizard Confirmed Useful',
@@ -99,6 +100,8 @@ export const HHMITrackEventDescriptions: Record<HHMITrackEvent, string> = {
     'User viewed compliance outcomes; fires every time outcomes change during the wizard session',
   [HHMITrackEvent.COMPLIANCE_WIZARD_BIORXIV_CLICKED]: 'User clicked on BioRxiv submission link',
   [HHMITrackEvent.COMPLIANCE_WIZARD_PMC_DEPOSIT_CLICKED]: 'User clicked on PMC deposit task card',
+  [HHMITrackEvent.COMPLIANCE_WIZARD_NOTICE_TO_JOURNALS_CLICKED]:
+    'User clicked the Notice to Journals task card to open the standard submission notice PDF',
   [HHMITrackEvent.COMPLIANCE_WIZARD_HELP_LINK_CLICKED]: 'User clicked on help link',
 
   [HHMITrackEvent.COMPLIANCE_WIZARD_CONFIRM_USEFUL]:

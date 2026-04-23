@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 
 interface ComplianceWizardProps {
   config: ComplianceWizardConfig;
+  noticeToJournalsPdfUrl?: string;
 }
 
 /**
@@ -19,7 +20,7 @@ interface ComplianceWizardProps {
  * Provides compliance-specific question rendering, outcome display, and business logic
  * while leveraging the generic wizard orchestration for consistent behavior.
  */
-export function ComplianceWizard({ config }: ComplianceWizardProps) {
+export function ComplianceWizard({ config, noticeToJournalsPdfUrl }: ComplianceWizardProps) {
   const navigate = useNavigate();
   const pingEvent = usePingEvent();
   const fetcher = useFetcher();
@@ -98,7 +99,10 @@ export function ComplianceWizard({ config }: ComplianceWizardProps) {
       className="min-h-[100vh] flex flex-col justify-center"
     >
       <div data-name="compliance-wizard-outcome-display" className="py-8">
-        <ComplianceOutcomeDisplay outcomes={outcomes} />
+        <ComplianceOutcomeDisplay
+          outcomes={outcomes}
+          noticeToJournalsPdfUrl={noticeToJournalsPdfUrl}
+        />
       </div>
     </SectionWithHeading>
   );
