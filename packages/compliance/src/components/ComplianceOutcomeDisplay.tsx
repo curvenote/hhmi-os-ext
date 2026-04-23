@@ -2,6 +2,7 @@ import { ComplianceTextRenderer } from './ComplianceTextRenderer.js';
 import type { WizardOutcome } from '../common/complianceTypes.js';
 import { ui, cn, usePingEvent } from '@curvenote/scms-core';
 import { BioRxivTaskCard } from '../BioRxivTaskCard.js';
+import { NoticeToJournalsTaskCard } from '../NoticeToJournalsTaskCard.js';
 import { getTasks } from '@hhmi/pmc/client';
 import { HHMITrackEvent } from '../analytics/events.js';
 import { useEffect, useRef } from 'react';
@@ -9,6 +10,7 @@ import { useEffect, useRef } from 'react';
 interface OutcomeDisplayProps {
   outcomes: WizardOutcome[];
   className?: string;
+  noticeToJournalsPdfUrl?: string;
 }
 
 function DisplayAdvice({ outcome, index }: { outcome: WizardOutcome; index?: number }) {
@@ -95,7 +97,11 @@ function DisplayPMCDepositAction({ outcome, index }: { outcome: WizardOutcome; i
   );
 }
 
-export function ComplianceOutcomeDisplay({ outcomes, className }: OutcomeDisplayProps) {
+export function ComplianceOutcomeDisplay({
+  outcomes,
+  className,
+  noticeToJournalsPdfUrl,
+}: OutcomeDisplayProps) {
   const pingEvent = usePingEvent();
   const hasTrackedOutcomeView = useRef(false);
   const previousOutcomesRef = useRef<string>('');
@@ -176,6 +182,13 @@ export function ComplianceOutcomeDisplay({ outcomes, className }: OutcomeDisplay
       {outcomes.map((outcome, idx) => (
         <div key={outcome.id}>{renderOutcome(outcome, outcomes.length > 1 ? idx : undefined)}</div>
       ))}
+      {noticeToJournalsPdfUrl && (
+        <div className="max-w-4xl">
+          <div className="flex justify-center pt-8 not-prose">
+            <NoticeToJournalsTaskCard pdfUrl={noticeToJournalsPdfUrl} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

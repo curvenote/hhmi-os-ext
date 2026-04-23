@@ -2,6 +2,8 @@
 title: 'HHMI Compliance Extension Module'
 description: 'HHMI Compliance Extension Module Configuration'
 type: 'object'
+required:
+  - noticeToJournalsPdfUrl
 properties:
   task:
     type: boolean
@@ -33,3 +35,9 @@ properties:
     type: boolean
     description: This flag will enable the enhanced article rendering functionality when true
     default: false
+  noticeToJournalsPdfUrl:
+    type: string
+    format: uri
+    description: >
+      Fully qualified URL of the "Notice to Journals" PDF shown on the compliance
+      wizard outcome screen. Opened in a new tab; may be hosted on any origin.
