@@ -1,5 +1,11 @@
 # @hhmi/compliance
 
+## 0.4.0
+
+### Minor Changes
+
+- c166f29: Adding a new outcome section for Notice to Journals documentation to all end states within the Compliance Wizard
+
 ## 0.3.2
 
 ### Patch Changes
