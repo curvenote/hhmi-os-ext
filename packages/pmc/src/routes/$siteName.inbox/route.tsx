@@ -50,9 +50,10 @@ export async function action(args: ActionFunctionArgs) {
     async (data) => {
       const { intent, submissionVersionId, transition } = data;
 
-      const submissionVersion = await sites.submissions.versions.dbGetSubmissionVersion({
-        id: submissionVersionId,
-      });
+      const submissionVersion =
+        await sites.submissions.versions.dbGetSubmissionVersionForTransition({
+          id: submissionVersionId,
+        });
 
       if (!submissionVersion) {
         return dataResponse(
