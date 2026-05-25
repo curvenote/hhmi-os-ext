@@ -63,6 +63,7 @@ export async function setCached(id: string, type: string, data: unknown): Promis
       date_modified: now,
       data: data as object,
     },
+    select: { id: true },
   });
 }
 

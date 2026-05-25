@@ -501,6 +501,7 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
               await tx.submissionVersion.update({
                 where: { id: latestVersion.id },
                 data: { status, date_modified: new Date().toISOString() },
+                select: { id: true },
               });
             }
 
@@ -518,6 +519,7 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
               await tx.submissionVersion.update({
                 where: { id: latestVersion.id },
                 data: { metadata: updatedMetadata, date_modified: new Date().toISOString() },
+                select: { id: true },
               });
             }
 
@@ -534,6 +536,7 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
                   activity_by_id:
                     ctx.user.id ?? ctx.$config?.api?.submissionsServiceAccount?.id ?? undefined,
                 },
+                select: { id: true },
               });
             }
           });

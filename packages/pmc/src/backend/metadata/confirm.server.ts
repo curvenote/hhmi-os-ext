@@ -66,6 +66,7 @@ export async function confirmPMC(
         doi: pmc.doiUrl,
         date_modified: new Date().toISOString(),
       },
+      select: { id: true },
     });
 
     // First check how many submission versions exist
@@ -129,6 +130,7 @@ export async function confirmPMC(
         date_published: currentDate,
         date_modified: new Date().toISOString(),
       },
+      select: { id: true },
     });
 
     // Update the parent submission
@@ -138,6 +140,7 @@ export async function confirmPMC(
         date_published: currentDate,
         date_modified: new Date().toISOString(),
       },
+      select: { id: true },
     });
 
     return {

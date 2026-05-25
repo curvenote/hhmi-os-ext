@@ -38,6 +38,7 @@ export async function updateUserComplianceMetadata(
     await prisma.user.update({
       where: { id: userId },
       data: { data: updatedData },
+      select: { id: true },
     });
   } catch (error) {
     console.error(`Failed to update user compliance metadata for user ${userId}:`, error);

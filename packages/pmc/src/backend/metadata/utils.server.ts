@@ -64,6 +64,7 @@ export async function safelyPatchPMCMetadata(
           title: metadataPatch.title || 'New PMC Deposit', // Use default title if title is cleared
           date_modified: new Date().toISOString(),
         },
+        select: { id: true },
       });
     }
 
@@ -125,6 +126,7 @@ export async function safelyUpdatePMCMetadata(
           title: newTitle || 'New PMC Deposit', // Use default title if title is cleared
           date_modified: new Date().toISOString(),
         },
+        select: { id: true },
       });
     }
 

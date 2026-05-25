@@ -85,6 +85,7 @@ export async function action(args: ActionFunctionArgs) {
         },
         date_modified: new Date().toISOString(),
       },
+      select: { id: true },
     });
 
     return { success: true, cancelled: true };

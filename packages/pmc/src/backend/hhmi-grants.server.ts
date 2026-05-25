@@ -115,6 +115,7 @@ export async function updateHHMIScientists(
         } as HHMIGrantsData,
         occ: 0,
       },
+      select: { id: true },
     });
     return;
   }

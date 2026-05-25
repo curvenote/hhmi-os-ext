@@ -121,6 +121,7 @@ async function createNewVersions(
         date_modified: timestamp,
         activity_by_id: userId,
       },
+      select: { id: true },
     });
 
     await tx.activity.create({
@@ -134,6 +135,7 @@ async function createNewVersions(
         date_modified: timestamp,
         activity_by_id: userId,
       },
+      select: { id: true },
     });
 
     return { newWorkVersion: nwv, newSubmissionVersion: nsv };
