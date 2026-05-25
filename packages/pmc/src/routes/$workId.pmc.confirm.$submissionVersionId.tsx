@@ -83,7 +83,8 @@ export const loader = async (args: LoaderFunctionArgs): Promise<LoaderData | Res
     return redirect(`/app/works/${ctx.work.id}`);
   }
 
-  const { id, cdn_key, metadata, cdn } = ctx.work.versions?.[0] || {};
+  const workVersion = submissionVersion.work_version;
+  const { id, cdn_key, metadata, cdn } = workVersion;
   const typedMetadata = metadata as PMCWorkVersionMetadata;
   const result = await validatePMCMetadata(typedMetadata);
 

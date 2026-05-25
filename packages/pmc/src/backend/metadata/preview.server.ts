@@ -7,16 +7,18 @@ import { PMCTrackEvent } from '../../analytics/events.js';
  * Sets the preview flag for a PMC deposit and tracks analytics.
  * @param ctx - Work context
  * @param workVersionId - The work version ID
+ * @param metadata - Full work version metadata (not available on WorkContext after slim dbGetWork)
  * @returns Success response or error response
  */
-export async function setPreviewDeposit(ctx: WorkContext, workVersionId: string) {
+export async function setPreviewDeposit(
+  ctx: WorkContext,
+  workVersionId: string,
+  metadata?: PMCWorkVersionMetadata,
+) {
   const result = await safelyPatchPMCMetadata(workVersionId, {
     previewed: true,
   });
 
-  const metadata = ctx.work.versions?.find((version) => version.id === workVersionId)?.metadata as
-    | PMCWorkVersionMetadata
-    | undefined;
   const pmc = metadata?.pmc;
 
   await ctx.trackEvent(PMCTrackEvent.PMC_DEPOSIT_PREVIEWED, {
