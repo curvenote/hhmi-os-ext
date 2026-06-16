@@ -356,9 +356,8 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
   await invalidateOldRunningJobs();
 
   try {
-    job = await jobs.dbCreateJob({
-      ...data,
-      status: JobStatus.RUNNING,
+    job = await jobs.dbStartJob({ ...data, status: JobStatus.RUNNING });
+    await jobs.dbUpdateJob(job.id, {
       message: 'Finding submissions to update from Airtable',
     });
 

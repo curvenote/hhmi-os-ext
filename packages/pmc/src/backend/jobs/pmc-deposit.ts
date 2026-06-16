@@ -273,7 +273,7 @@ export async function pmcDepositHandler(ctx: Context, data: CreateJob) {
   const rollingLog: { message: string; data: any }[] = [];
 
   console.log('pmcDepositHandler', data);
-  const job = await jobs.dbCreateJob({
+  const job = await jobs.dbStartJob({
     ...data,
     status: JobStatus.RUNNING,
     results: { ...data.results },

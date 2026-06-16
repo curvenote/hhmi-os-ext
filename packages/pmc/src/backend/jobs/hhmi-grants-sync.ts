@@ -175,10 +175,8 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
   let job;
 
   try {
-    // Create the job record
-    job = await jobs.dbCreateJob({
-      ...data,
-      status: JobStatus.RUNNING,
+    job = await jobs.dbStartJob({ ...data, status: JobStatus.RUNNING });
+    await jobs.dbUpdateJob(job.id, {
       message: 'Starting funding identifiers sync from Airtable',
     });
 
