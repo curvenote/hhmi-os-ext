@@ -26,15 +26,12 @@ import {
   getHHMIScientistsStats,
   type HHMIScientist,
 } from '../backend/hhmi-grants.server.js';
-import { jobs, getPrismaClient } from '@curvenote/scms-server';
+import { jobs, getPrismaClient, enqueueAndDispatchJob } from '@curvenote/scms-server';
 import {
   getAirtableApiKey,
   getAirtableBaseId,
   getAirtableScientistsTableId,
 } from '../backend/airtable-config.server.js';
-import { getJobs } from '../server.js';
-// Note: Using hardcoded string to avoid client/server boundary issues
-// This matches the constant HHMI_GRANTS_SYNC from the job handler
 
 type JobResults = {
   startTime?: string;
@@ -117,18 +114,15 @@ export async function action(args: ActionFunctionArgs) {
     const jobId = formData.get('jobId') as string;
 
     // Create a new HHMI_GRANTS_SYNC job
-    await jobs.invoke(
-      ctx,
-      {
-        id: jobId,
-        job_type: 'HHMI_GRANTS_SYNC',
-        payload: {
-          site_id: ctx.site.id,
-          sync_type: 'hhmi-scientists',
-        },
+    await enqueueAndDispatchJob({
+      job_id: jobId,
+      job_type: 'HHMI_GRANTS_SYNC',
+      payload: {
+        site_id: ctx.site.id,
+        sync_type: 'hhmi-scientists',
       },
-      getJobs(),
-    );
+      invoked_by_id: ctx.user?.id,
+    });
 
     return { success: true, jobId };
   }

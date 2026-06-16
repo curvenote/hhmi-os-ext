@@ -1,9 +1,8 @@
 import type { LoaderFunction } from 'react-router';
 import { data } from 'react-router';
-import { withContext, jobs, sites, getUserById } from '@curvenote/scms-server';
+import { withContext, sites, getUserById, enqueueAndDispatchJob } from '@curvenote/scms-server';
 import { error404, error405, httpError } from '@curvenote/scms-core';
 import { uuidv7 } from 'uuidv7';
-import { getJobs } from '../server.js';
 
 export const loader: LoaderFunction = async (args) => {
   const ctx = await withContext(args, { noTokens: true });
@@ -37,20 +36,16 @@ export const loader: LoaderFunction = async (args) => {
     throw error404();
   }
 
-  // Create a new PMC_WORKFLOW_SYNC job for this site (triggered by webhook/cron)
-  await jobs.invoke(
-    ctx,
-    {
-      id: uuidv7(),
-      job_type: 'PMC_WORKFLOW_SYNC',
-      payload: {
-        site_id: site.id,
-        triggered_by_user_id: serviceAccountId,
-        triggered_by_user_name: 'PMC workflow sync (automated)',
-      },
+  await enqueueAndDispatchJob({
+    job_id: uuidv7(),
+    job_type: 'PMC_WORKFLOW_SYNC',
+    payload: {
+      site_id: site.id,
+      triggered_by_user_id: serviceAccountId,
+      triggered_by_user_name: 'PMC workflow sync (automated)',
     },
-    getJobs(),
-  );
+    invoked_by_id: serviceAccountId,
+  });
 
   return { ok: true };
 };

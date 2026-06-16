@@ -18,9 +18,8 @@ import {
 } from '@curvenote/scms-core';
 import { withAppPMCContext } from '../backend/context.server.js';
 import { JobStatus } from '@curvenote/scms-db';
-import { jobs, getPrismaClient } from '@curvenote/scms-server';
+import { jobs, getPrismaClient, enqueueAndDispatchJob } from '@curvenote/scms-server';
 import type { JobDTO } from '@curvenote/common';
-import { getJobs } from '../server.js';
 
 type JobResults = {
   totalSubmissions?: number;
@@ -97,19 +96,16 @@ export async function action(args: ActionFunctionArgs) {
     // Create a new PMC_WORKFLOW_SYNC job for this site (triggered by current user)
     const triggeredByUserName =
       ctx.user?.display_name ?? ctx.user?.email ?? ctx.user?.username ?? 'User';
-    await jobs.invoke(
-      ctx,
-      {
-        id: jobId,
-        job_type: 'PMC_WORKFLOW_SYNC',
-        payload: {
-          site_id: ctx.site.id,
-          triggered_by_user_id: ctx.user?.id,
-          triggered_by_user_name: triggeredByUserName,
-        },
+    await enqueueAndDispatchJob({
+      job_id: jobId,
+      job_type: 'PMC_WORKFLOW_SYNC',
+      payload: {
+        site_id: ctx.site.id,
+        triggered_by_user_id: ctx.user?.id,
+        triggered_by_user_name: triggeredByUserName,
       },
-      getJobs(),
-    );
+      invoked_by_id: ctx.user?.id,
+    });
     // Return success response instead of redirect to trigger revalidation
     return { success: true, jobId };
   }
