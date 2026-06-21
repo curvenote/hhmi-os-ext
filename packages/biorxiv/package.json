@@ -1,0 +1,94 @@
+{
+  "name": "@hhmi/biorxiv",
+  "version": "0.1.0",
+  "description": "bioRxiv extension for the HHMI Workspace - powered by Curvenote.",
+  "author": "Curvenote <support@curvenote.com>",
+  "homepage": "https://github.com/HHMI-HQ/hhmi-workspace",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "browser": false,
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "node": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "development": "./src/client.ts",
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "require": "./dist/client.js",
+      "default": "./dist/client.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HHMI-HQ/hhmi-workspace.git"
+  },
+  "scripts": {
+    "prepush": "npm run lint:format:fix; npm run lint:circular; npm run lint; npm run compile; npm run test:ci; npm run test:unit",
+    "pp": "npm run prepush",
+    "clean": "rimraf dist _build api && find . -name '.turbo' -type d -prune -exec rm -rf '{}' +",
+    "lint": "npx eslint \"src/**/*.{ts,tsx}\"",
+    "lint:format": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "lint:format:fix": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "lint:circular": "npx madge --circular --extensions ts,tsx src",
+    "config": "npx @app-config/cli@2 generate",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "tsc --project tsconfig.json",
+    "build:client": "tsup",
+    "dev": "tsc -w",
+    "compile": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "test:ci": "vitest run --reporter=verbose",
+    "changeset": "changeset",
+    "version": "changeset version && npm install"
+  },
+  "bugs": {
+    "url": "https://github.com/curvenote/journals/issues"
+  },
+  "dependencies": {
+    "@curvenote/scms-core": "*",
+    "lucide-react": "^0.552.0",
+    "react": "^18.3.1",
+    "react-router": "7.9.5"
+  },
+  "optionalDependencies": {
+    "@esbuild/linux-x64": "^0.25.1",
+    "@rollup/rollup-linux-x64-gnu": "^4.35.0"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.7",
+    "@react-router/serve": "7.9.5",
+    "@tailwindcss/postcss": "^4.0.14",
+    "@types/node": "^22.19.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "eslint-config-curvenote": "^0.0.4",
+    "madge": "^8.0.0",
+    "prettier": "^3.5.3",
+    "rimraf": "^3.0.2",
+    "tsup": "^8.5.1",
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.6"
+  },
+  "engines": {
+    "npm": ">=10.0.0",
+    "node": ">=22.21.0"
+  },
+  "packageManager": "npm@10.9.2"
+}
