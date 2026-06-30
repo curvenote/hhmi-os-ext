@@ -7,8 +7,31 @@ export type PmcLauncherActionData =
       drafts?: DraftPMCDeposit[];
       intent?: string;
       success?: boolean;
+      workId?: string;
+      submissionVersionId?: string;
     }
   | undefined;
+
+export const PMC_CREATE_DEPOSIT_INTENT = 'create-deposit';
+
+export function pmcDepositPath(workId: string, submissionVersionId: string): string {
+  return `/app/works/${workId}/site/pmc/deposit/${submissionVersionId}`;
+}
+
+export function shouldNavigateToCreatedDeposit(data: PmcLauncherActionData): {
+  workId: string;
+  submissionVersionId: string;
+} | null {
+  if (
+    data?.intent === PMC_CREATE_DEPOSIT_INTENT &&
+    data.success &&
+    data.workId &&
+    data.submissionVersionId
+  ) {
+    return { workId: data.workId, submissionVersionId: data.submissionVersionId };
+  }
+  return null;
+}
 
 export function getPmcLauncherErrorMessage(data: PmcLauncherActionData): string | null {
   if (!data?.error) return null;

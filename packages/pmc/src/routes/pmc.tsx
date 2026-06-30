@@ -178,5 +178,11 @@ export async function action(args: ActionFunctionArgs) {
     );
   }
 
-  return redirect(`/app/works/${work.id}/site/pmc/deposit/${submission.versions[0].id}`);
+  // Return JSON for fetcher.submit — server redirects are not followed as browser navigation.
+  return {
+    success: true,
+    intent: 'create-deposit',
+    workId: work.id,
+    submissionVersionId: submission.versions[0].id,
+  };
 }

@@ -5,7 +5,9 @@ import type { DraftPMCDeposit } from './backend/db.server.js';
 import { PMCTrackEvent } from './analytics/events.js';
 import {
   getPmcLauncherErrorMessage,
+  pmcDepositPath,
   shouldAutoCreateDeposit,
+  shouldNavigateToCreatedDeposit,
   shouldOpenDraftDialog,
   type PmcLauncherActionData,
 } from './pmcDepositLauncherState.js';
@@ -58,6 +60,14 @@ export function PMCDepositLauncher() {
   useEffect(() => {
     if (fetcher.state !== 'idle' || !fetcher.data) return;
 
+    const createdDeposit = shouldNavigateToCreatedDeposit(fetcher.data);
+    if (createdDeposit) {
+      navigate(pmcDepositPath(createdDeposit.workId, createdDeposit.submissionVersionId), {
+        replace: true,
+      });
+      return;
+    }
+
     if (shouldOpenDraftDialog(fetcher.data)) {
       setDialogOpen(true);
       return;
@@ -67,7 +77,7 @@ export function PMCDepositLauncher() {
       hasSubmittedCreate.current = true;
       fetcher.submit(new FormData(), { method: 'post', action: '/app/works/pmc' });
     }
-  }, [fetcher.state, fetcher.data, fetcher]);
+  }, [fetcher.state, fetcher.data, fetcher, navigate]);
 
   const createNewDeposit = () => {
     hasSubmittedCreate.current = true;
@@ -75,9 +85,7 @@ export function PMCDepositLauncher() {
   };
 
   const handleResume = (draft: DraftPMCDeposit) => {
-    navigate(`/app/works/${draft.workId}/site/pmc/deposit/${draft.submissionVersionId}`, {
-      replace: true,
-    });
+    navigate(pmcDepositPath(draft.workId, draft.submissionVersionId), { replace: true });
   };
 
   const loadingMessage = (

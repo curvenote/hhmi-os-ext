@@ -2,7 +2,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   getPmcLauncherErrorMessage,
+  pmcDepositPath,
   shouldAutoCreateDeposit,
+  shouldNavigateToCreatedDeposit,
   shouldOpenDraftDialog,
   isPmcRoutesEnabled,
 } from './pmcDepositLauncherState.js';
@@ -52,6 +54,30 @@ describe('shouldAutoCreateDeposit', () => {
     expect(shouldAutoCreateDeposit({ error: { type: 'general', message: 'Failed' } }, false)).toBe(
       false,
     );
+  });
+});
+
+describe('shouldNavigateToCreatedDeposit', () => {
+  it('returns ids when create-deposit succeeded', () => {
+    expect(
+      shouldNavigateToCreatedDeposit({
+        intent: 'create-deposit',
+        success: true,
+        workId: 'w1',
+        submissionVersionId: 'sv1',
+      }),
+    ).toEqual({ workId: 'w1', submissionVersionId: 'sv1' });
+  });
+
+  it('returns null for get-drafts or incomplete create responses', () => {
+    expect(shouldNavigateToCreatedDeposit({ drafts: [] })).toBeNull();
+    expect(shouldNavigateToCreatedDeposit({ intent: 'create-deposit', success: false })).toBeNull();
+  });
+});
+
+describe('pmcDepositPath', () => {
+  it('builds the PMC deposit route', () => {
+    expect(pmcDepositPath('w1', 'sv1')).toBe('/app/works/w1/site/pmc/deposit/sv1');
   });
 });
 
