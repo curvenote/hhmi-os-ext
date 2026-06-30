@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs } from 'react-router';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { redirect, data } from 'react-router';
 import {
   withAppContext,
@@ -11,9 +11,18 @@ import {
   dbGetPMCSite,
   dbGetUserDraftPMCDeposits,
 } from '../backend/db.server.js';
+import { PMCDepositLauncher } from '../PMCDepositLauncher.js';
 
-export async function loader() {
-  return redirect('/app/works');
+export async function loader(args: LoaderFunctionArgs) {
+  const ctx = await withAppContext(args);
+  if (!ctx.$config.app.extensions?.pmc?.routes) {
+    return redirect('/app/works');
+  }
+  return {};
+}
+
+export default function PMCDepositLauncherRoute() {
+  return <PMCDepositLauncher />;
 }
 
 export async function action(args: ActionFunctionArgs) {
