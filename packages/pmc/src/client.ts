@@ -54,7 +54,8 @@ export function getWorkCreateOptions(): WorkCreateOption[] {
     {
       id: 'pmc-deposit',
       label: 'PMC Deposit',
-      description: 'Submit a manuscript to PubMed Central via HHMI',
+      description: 'upload an author accepted manuscript and send to NIHMS',
+      icon: PMCIcon,
       metadataKey: 'pmc',
       startPath: '/app/works/pmc',
       mode: 'standalone',
