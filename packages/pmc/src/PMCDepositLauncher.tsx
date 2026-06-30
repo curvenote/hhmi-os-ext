@@ -3,10 +3,12 @@ import { useFetcher, useNavigate, useNavigation } from 'react-router';
 import { LoadingSpinner, MainWrapper, PageFrame, ui, usePingEvent } from '@curvenote/scms-core';
 import type { DraftPMCDeposit } from './backend/db.server.js';
 import { PMCTrackEvent } from './analytics/events.js';
-
-type PmcLauncherActionData =
-  | { error?: string; drafts?: DraftPMCDeposit[]; intent?: string }
-  | undefined;
+import {
+  getPmcLauncherErrorMessage,
+  shouldAutoCreateDeposit,
+  shouldOpenDraftDialog,
+  type PmcLauncherActionData,
+} from './pmcDepositLauncherState.js';
 
 const INITIAL_PAUSE_MS = 500;
 
@@ -22,6 +24,20 @@ export function PMCDepositLauncher() {
 
   const isIdle = navigation.state === 'idle';
   const isCheckingDrafts = fetcher.state !== 'idle' && !hasSubmittedCreate.current;
+  const actionError = fetcher.state === 'idle' ? getPmcLauncherErrorMessage(fetcher.data) : null;
+
+  const submitGetDrafts = () => {
+    const formData = new FormData();
+    formData.append('intent', 'get-drafts');
+    fetcher.submit(formData, { method: 'post', action: '/app/works/pmc' });
+  };
+
+  const retry = () => {
+    hasCheckedDrafts.current = false;
+    hasSubmittedCreate.current = false;
+    setDialogOpen(false);
+    submitGetDrafts();
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setIsReady(true), INITIAL_PAUSE_MS);
@@ -36,21 +52,18 @@ export function PMCDepositLauncher() {
       {},
       { anonymous: true, ignoreAdmin: true },
     );
-    const formData = new FormData();
-    formData.append('intent', 'get-drafts');
-    fetcher.submit(formData, { method: 'post', action: '/app/works/pmc' });
-  }, [isReady, isIdle, fetcher, pingEvent]);
+    submitGetDrafts();
+  }, [isReady, isIdle, pingEvent]);
 
   useEffect(() => {
     if (fetcher.state !== 'idle' || !fetcher.data) return;
 
-    if (fetcher.data.drafts && fetcher.data.drafts.length > 0) {
+    if (shouldOpenDraftDialog(fetcher.data)) {
       setDialogOpen(true);
       return;
     }
 
-    if (hasSubmittedCreate.current) return;
-    if ('drafts' in fetcher.data && Array.isArray(fetcher.data.drafts)) {
+    if (shouldAutoCreateDeposit(fetcher.data, hasSubmittedCreate.current)) {
       hasSubmittedCreate.current = true;
       fetcher.submit(new FormData(), { method: 'post', action: '/app/works/pmc' });
     }
@@ -71,11 +84,27 @@ export function PMCDepositLauncher() {
     <div className="flex flex-col gap-6 justify-center items-center text-center">
       <LoadingSpinner size={40} color="text-blue-600" thickness={4} />
       <p className="text-lg font-medium text-muted-foreground">Preparing</p>
-      <p className="text-sm text-muted-foreground text-mono">
+      <p className="text-sm text-muted-foreground font-mono">
         You should be taken to the PMC deposit form in a moment.
       </p>
     </div>
   );
+
+  if (actionError) {
+    return (
+      <MainWrapper>
+        <PageFrame className="flex flex-col gap-6 justify-center items-center mx-auto max-w-lg h-screen text-center">
+          <ui.SimpleAlert type="error" message={actionError} />
+          <div className="flex flex-wrap gap-3 justify-center">
+            <ui.Button onClick={retry}>Try again</ui.Button>
+            <ui.Button variant="outline" onClick={() => navigate('/app/works')}>
+              Back to My Works
+            </ui.Button>
+          </div>
+        </PageFrame>
+      </MainWrapper>
+    );
+  }
 
   if (!isReady || !isIdle || isCheckingDrafts) {
     return (

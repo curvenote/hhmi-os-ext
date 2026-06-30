@@ -12,10 +12,11 @@ import {
   dbGetUserDraftPMCDeposits,
 } from '../backend/db.server.js';
 import { PMCDepositLauncher } from '../PMCDepositLauncher.js';
+import { isPmcRoutesEnabled } from '../pmcDepositLauncherState.js';
 
 export async function loader(args: LoaderFunctionArgs) {
   const ctx = await withAppContext(args);
-  if (!ctx.$config.app.extensions?.pmc?.routes) {
+  if (!isPmcRoutesEnabled(ctx.$config)) {
     return redirect('/app/works');
   }
   return {};
@@ -30,8 +31,7 @@ export async function action(args: ActionFunctionArgs) {
 
   if (args.request.method !== 'POST') throw httpError(405, 'Method not allowed');
 
-  // Check if PMC extension is enabled in config
-  if (!ctx.$config.app.extensions?.pmc) {
+  if (!isPmcRoutesEnabled(ctx.$config)) {
     return data({ error: 'Endpoint not found' }, { status: 404 });
   }
 

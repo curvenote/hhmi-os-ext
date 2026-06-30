@@ -55,52 +55,68 @@ export async function createPMCWorkVersion(
   }
 
   const versionMetadata = seedPmcMetadataFromSource(sourceVersionMetadata);
-  const { workVersionId } = await dbCreateDraftWorkVersion(
-    ctx,
-    workId,
-    'work-details',
-    defaultTitle,
-    versionMetadata,
-  );
+  let workVersionId: string | undefined;
 
-  const date_created = new Date().toISOString();
-  const submissionVersionId = uuidv7();
+  try {
+    ({ workVersionId } = await dbCreateDraftWorkVersion(
+      ctx,
+      workId,
+      'work-details',
+      defaultTitle,
+      versionMetadata,
+    ));
+    const createdWorkVersionId = workVersionId;
 
-  await prisma.$transaction(async (tx) => {
-    await tx.submissionVersion.create({
-      data: {
-        id: submissionVersionId,
-        date_created,
-        date_modified: date_created,
-        status: PMC_STATE_NAMES.DRAFT,
-        submitted_by: { connect: { id: ctx.user.id } },
-        work_version: { connect: { id: workVersionId } },
-        submission: { connect: { id: submission.id } },
-      },
+    const date_created = new Date().toISOString();
+    const submissionVersionId = uuidv7();
+
+    await prisma.$transaction(async (tx) => {
+      await tx.submissionVersion.create({
+        data: {
+          id: submissionVersionId,
+          date_created,
+          date_modified: date_created,
+          status: PMC_STATE_NAMES.DRAFT,
+          submitted_by: { connect: { id: ctx.user.id } },
+          work_version: { connect: { id: createdWorkVersionId } },
+          submission: { connect: { id: submission.id } },
+        },
+      });
+
+      await tx.activity.create({
+        data: {
+          id: uuidv7(),
+          date_created,
+          date_modified: date_created,
+          activity_by: { connect: { id: ctx.user.id } },
+          activity_type: ActivityType.SUBMISSION_VERSION_ADDED,
+          status: PMC_STATE_NAMES.DRAFT,
+          submission: { connect: { id: submission.id } },
+          submission_version: { connect: { id: submissionVersionId } },
+          work_version: { connect: { id: createdWorkVersionId } },
+          work: { connect: { id: workId } },
+        },
+        select: { id: true },
+      });
     });
 
-    await tx.activity.create({
-      data: {
-        id: uuidv7(),
-        date_created,
-        date_modified: date_created,
-        activity_by: { connect: { id: ctx.user.id } },
-        activity_type: ActivityType.SUBMISSION_VERSION_ADDED,
-        status: PMC_STATE_NAMES.DRAFT,
-        submission: { connect: { id: submission.id } },
-        submission_version: { connect: { id: submissionVersionId } },
-        work_version: { connect: { id: workVersionId } },
-        work: { connect: { id: workId } },
-      },
-      select: { id: true },
-    });
-  });
-
-  return {
-    success: true,
-    workVersionId,
-    redirectPath: `/app/works/${workId}/site/pmc/deposit/${submissionVersionId}`,
-  };
+    return {
+      success: true,
+      workVersionId: createdWorkVersionId,
+      redirectPath: `/app/works/${workId}/site/pmc/deposit/${submissionVersionId}`,
+    };
+  } catch (error) {
+    if (workVersionId) {
+      await prisma.workVersion
+        .deleteMany({ where: { id: workVersionId, draft: true } })
+        .catch(() => undefined);
+    }
+    console.error('Failed to create PMC work version:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create a new PMC deposit version.',
+    };
+  }
 }
 
 export function isPMCWorkMetadata(
