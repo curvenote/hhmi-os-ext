@@ -6,6 +6,7 @@ import {
   shouldAutoCreateDeposit,
   shouldNavigateToCreatedDeposit,
   shouldOpenDraftDialog,
+  shouldShowPreparingSpinner,
   isPmcRoutesEnabled,
 } from './pmcDepositLauncherState.js';
 
@@ -54,6 +55,73 @@ describe('shouldAutoCreateDeposit', () => {
     expect(shouldAutoCreateDeposit({ error: { type: 'general', message: 'Failed' } }, false)).toBe(
       false,
     );
+  });
+});
+
+describe('shouldShowPreparingSpinner', () => {
+  it('shows spinner while get-drafts or create fetcher requests are in flight', () => {
+    expect(
+      shouldShowPreparingSpinner({
+        fetcherState: 'submitting',
+        data: undefined,
+        hasSubmittedCreate: false,
+        dialogOpen: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldShowPreparingSpinner({
+        fetcherState: 'loading',
+        data: { drafts: [] },
+        hasSubmittedCreate: true,
+        dialogOpen: false,
+      }),
+    ).toBe(true);
+  });
+
+  it('shows spinner after empty get-drafts before create auto-submit runs', () => {
+    expect(
+      shouldShowPreparingSpinner({
+        fetcherState: 'idle',
+        data: { drafts: [] },
+        hasSubmittedCreate: false,
+        dialogOpen: false,
+      }),
+    ).toBe(true);
+  });
+
+  it('shows spinner after create auto-submit until navigation target is ready', () => {
+    expect(
+      shouldShowPreparingSpinner({
+        fetcherState: 'idle',
+        data: { drafts: [] },
+        hasSubmittedCreate: true,
+        dialogOpen: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldShowPreparingSpinner({
+        fetcherState: 'idle',
+        data: {
+          intent: 'create-deposit',
+          success: true,
+          workId: 'w1',
+          submissionVersionId: 'sv1',
+        },
+        hasSubmittedCreate: true,
+        dialogOpen: false,
+      }),
+    ).toBe(true);
+  });
+
+  it('shows the draft dialog shell when drafts exist and no work is in flight', () => {
+    expect(
+      shouldShowPreparingSpinner({
+        fetcherState: 'idle',
+        data: { drafts: [{ workId: 'w1', submissionVersionId: 'sv1' } as never] },
+        hasSubmittedCreate: false,
+        dialogOpen: true,
+      }),
+    ).toBe(false);
   });
 });
 

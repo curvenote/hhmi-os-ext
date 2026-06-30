@@ -60,6 +60,29 @@ export function shouldAutoCreateDeposit(
   return Array.isArray(data?.drafts) && data.drafts.length === 0;
 }
 
+/** True while the launcher should show the preparing spinner instead of the draft dialog shell. */
+export function shouldShowPreparingSpinner(opts: {
+  fetcherState: 'idle' | 'submitting' | 'loading';
+  data: PmcLauncherActionData;
+  hasSubmittedCreate: boolean;
+  dialogOpen: boolean;
+}): boolean {
+  const { fetcherState, data, hasSubmittedCreate, dialogOpen } = opts;
+
+  if (fetcherState !== 'idle') return true;
+  if (shouldNavigateToCreatedDeposit(data)) return true;
+  if (shouldAutoCreateDeposit(data, hasSubmittedCreate)) return true;
+  if (
+    hasSubmittedCreate &&
+    !dialogOpen &&
+    !getPmcLauncherErrorMessage(data) &&
+    !shouldNavigateToCreatedDeposit(data)
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function isPmcRoutesEnabled(config: {
   app?: { extensions?: { pmc?: { routes?: boolean } } };
 }): boolean {

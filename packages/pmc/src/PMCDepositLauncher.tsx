@@ -9,6 +9,7 @@ import {
   shouldAutoCreateDeposit,
   shouldNavigateToCreatedDeposit,
   shouldOpenDraftDialog,
+  shouldShowPreparingSpinner,
   type PmcLauncherActionData,
 } from './pmcDepositLauncherState.js';
 
@@ -25,8 +26,16 @@ export function PMCDepositLauncher() {
   const hasCheckedDrafts = useRef(false);
 
   const isIdle = navigation.state === 'idle';
-  const isCheckingDrafts = fetcher.state !== 'idle' && !hasSubmittedCreate.current;
   const actionError = fetcher.state === 'idle' ? getPmcLauncherErrorMessage(fetcher.data) : null;
+  const showPreparing =
+    !isReady ||
+    !isIdle ||
+    shouldShowPreparingSpinner({
+      fetcherState: fetcher.state,
+      data: fetcher.data,
+      hasSubmittedCreate: hasSubmittedCreate.current,
+      dialogOpen,
+    });
 
   const submitGetDrafts = () => {
     const formData = new FormData();
@@ -114,7 +123,7 @@ export function PMCDepositLauncher() {
     );
   }
 
-  if (!isReady || !isIdle || isCheckingDrafts) {
+  if (showPreparing) {
     return (
       <MainWrapper>
         <PageFrame className="flex flex-col justify-center items-center mx-auto max-w-3xl h-screen">
