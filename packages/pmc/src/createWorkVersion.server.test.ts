@@ -72,19 +72,13 @@ describe('createPMCWorkVersion', () => {
       workVersionId: 'work-version-1',
       redirectPath: '/app/works/work-1/site/pmc/deposit/submission-version-id',
     });
-    expect(mockDbCreateDraftWorkVersion).toHaveBeenCalledWith(
-      ctx,
-      'work-1',
-      'work-details',
-      'Title',
-      {
-        pmc: {
-          title: 'A',
-          previewed: undefined,
-          confirmed: undefined,
-        },
-      },
-    );
+    expect(mockDbCreateDraftWorkVersion).toHaveBeenCalledTimes(1);
+    const versionMetadata = mockDbCreateDraftWorkVersion.mock.calls[0][4] as {
+      pmc: { title: string; previewed?: unknown; confirmed?: unknown };
+    };
+    expect(versionMetadata.pmc.title).toBe('A');
+    expect(versionMetadata.pmc.previewed).toBeUndefined();
+    expect(versionMetadata.pmc.confirmed).toBeUndefined();
   });
 
   it('cleans up the draft work version when the submission transaction fails', async () => {

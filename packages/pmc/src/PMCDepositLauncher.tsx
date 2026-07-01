@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFetcher, useNavigate, useNavigation } from 'react-router';
 import { LoadingSpinner, MainWrapper, PageFrame, ui, usePingEvent } from '@curvenote/scms-core';
 import type { DraftPMCDeposit } from './backend/db.server.js';
 import { PMCTrackEvent } from './analytics/events.js';
 import {
-  getPmcLauncherErrorMessage,
+  getPmcLauncherDisplayErrorMessage,
   pmcDepositPath,
   shouldAutoCreateDeposit,
   shouldNavigateToCreatedDeposit,
@@ -26,7 +26,10 @@ export function PMCDepositLauncher() {
   const hasCheckedDrafts = useRef(false);
 
   const isIdle = navigation.state === 'idle';
-  const actionError = fetcher.state === 'idle' ? getPmcLauncherErrorMessage(fetcher.data) : null;
+  const actionError =
+    fetcher.state === 'idle'
+      ? getPmcLauncherDisplayErrorMessage(fetcher.data, hasSubmittedCreate.current)
+      : null;
   const showPreparing =
     !isReady ||
     !isIdle ||
@@ -37,11 +40,11 @@ export function PMCDepositLauncher() {
       dialogOpen,
     });
 
-  const submitGetDrafts = () => {
+  const submitGetDrafts = useCallback(() => {
     const formData = new FormData();
     formData.append('intent', 'get-drafts');
     fetcher.submit(formData, { method: 'post', action: '/app/works/pmc' });
-  };
+  }, [fetcher]);
 
   const retry = () => {
     hasCheckedDrafts.current = false;
@@ -64,7 +67,7 @@ export function PMCDepositLauncher() {
       { anonymous: true, ignoreAdmin: true },
     );
     submitGetDrafts();
-  }, [isReady, isIdle, pingEvent]);
+  }, [isReady, isIdle, pingEvent, submitGetDrafts]);
 
   useEffect(() => {
     if (fetcher.state !== 'idle' || !fetcher.data) return;

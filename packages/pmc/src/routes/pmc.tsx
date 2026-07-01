@@ -12,7 +12,10 @@ import {
   dbGetUserDraftPMCDeposits,
 } from '../backend/db.server.js';
 import { PMCDepositLauncher } from '../PMCDepositLauncher.js';
-import { isPmcRoutesEnabled } from '../pmcDepositLauncherState.js';
+import {
+  isPmcRoutesEnabled,
+  buildPmcCreateDepositSuccessActionData,
+} from '../pmcDepositLauncherState.js';
 
 export async function loader(args: LoaderFunctionArgs) {
   const ctx = await withAppContext(args);
@@ -179,10 +182,5 @@ export async function action(args: ActionFunctionArgs) {
   }
 
   // Return JSON for fetcher.submit — server redirects are not followed as browser navigation.
-  return {
-    success: true,
-    intent: 'create-deposit',
-    workId: work.id,
-    submissionVersionId: submission.versions[0].id,
-  };
+  return buildPmcCreateDepositSuccessActionData(work.id, submission.versions[0].id);
 }

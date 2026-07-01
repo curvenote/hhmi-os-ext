@@ -2,12 +2,17 @@
 import { describe, expect, it } from 'vitest';
 import {
   getPmcLauncherErrorMessage,
+  getPmcIncompleteCreateErrorMessage,
+  getPmcLauncherDisplayErrorMessage,
   pmcDepositPath,
+  buildPmcCreateDepositSuccessActionData,
+  PMC_CREATE_DEPOSIT_INTENT,
   shouldAutoCreateDeposit,
   shouldNavigateToCreatedDeposit,
   shouldOpenDraftDialog,
   shouldShowPreparingSpinner,
   isPmcRoutesEnabled,
+  type PmcLauncherActionData,
 } from './pmcDepositLauncherState.js';
 
 describe('getPmcLauncherErrorMessage', () => {
@@ -26,6 +31,27 @@ describe('getPmcLauncherErrorMessage', () => {
         error: { type: 'general', message: 'PMC site not found.' },
       }),
     ).toBe('PMC site not found.');
+  });
+
+  it('falls back when GeneralError message is empty or falsy', () => {
+    expect(
+      getPmcLauncherErrorMessage({
+        error: { type: 'general', message: '' },
+      }),
+    ).toBe('Something went wrong. Please try again.');
+    expect(
+      getPmcLauncherErrorMessage({
+        error: { type: 'general', message: 0 as unknown as string },
+      }),
+    ).toBe('Something went wrong. Please try again.');
+  });
+
+  it('falls back for structured errors without a message field', () => {
+    expect(
+      getPmcLauncherErrorMessage({
+        error: { type: 'general' },
+      } as PmcLauncherActionData),
+    ).toBe('Something went wrong. Please try again.');
   });
 });
 
@@ -101,16 +127,22 @@ describe('shouldShowPreparingSpinner', () => {
     expect(
       shouldShowPreparingSpinner({
         fetcherState: 'idle',
-        data: {
-          intent: 'create-deposit',
-          success: true,
-          workId: 'w1',
-          submissionVersionId: 'sv1',
-        },
+        data: buildPmcCreateDepositSuccessActionData('w1', 'sv1'),
         hasSubmittedCreate: true,
         dialogOpen: false,
       }),
     ).toBe(true);
+  });
+
+  it('does not spin forever when create-deposit settled without navigation ids', () => {
+    expect(
+      shouldShowPreparingSpinner({
+        fetcherState: 'idle',
+        data: { intent: PMC_CREATE_DEPOSIT_INTENT, success: true },
+        hasSubmittedCreate: true,
+        dialogOpen: false,
+      }),
+    ).toBe(false);
   });
 
   it('shows the draft dialog shell when drafts exist and no work is in flight', () => {
@@ -125,15 +157,42 @@ describe('shouldShowPreparingSpinner', () => {
   });
 });
 
+describe('getPmcIncompleteCreateErrorMessage', () => {
+  it('returns a fallback when create-deposit settled without navigable ids', () => {
+    expect(
+      getPmcIncompleteCreateErrorMessage(
+        { intent: PMC_CREATE_DEPOSIT_INTENT, success: true },
+        true,
+      ),
+    ).toBe('Something went wrong. Please try again.');
+  });
+
+  it('returns null while still waiting on get-drafts data', () => {
+    expect(getPmcIncompleteCreateErrorMessage({ drafts: [] }, true)).toBeNull();
+  });
+
+  it('returns null when create-deposit succeeded with ids', () => {
+    expect(
+      getPmcIncompleteCreateErrorMessage(buildPmcCreateDepositSuccessActionData('w1', 'sv1'), true),
+    ).toBeNull();
+  });
+});
+
+describe('getPmcLauncherDisplayErrorMessage', () => {
+  it('prefers explicit action errors over incomplete-create detection', () => {
+    expect(
+      getPmcLauncherDisplayErrorMessage(
+        { intent: PMC_CREATE_DEPOSIT_INTENT, error: 'Endpoint not found' },
+        true,
+      ),
+    ).toBe('Endpoint not found');
+  });
+});
+
 describe('shouldNavigateToCreatedDeposit', () => {
   it('returns ids when create-deposit succeeded', () => {
     expect(
-      shouldNavigateToCreatedDeposit({
-        intent: 'create-deposit',
-        success: true,
-        workId: 'w1',
-        submissionVersionId: 'sv1',
-      }),
+      shouldNavigateToCreatedDeposit(buildPmcCreateDepositSuccessActionData('w1', 'sv1')),
     ).toEqual({ workId: 'w1', submissionVersionId: 'sv1' });
   });
 

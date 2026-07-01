@@ -14,6 +14,25 @@ export type PmcLauncherActionData =
 
 export const PMC_CREATE_DEPOSIT_INTENT = 'create-deposit';
 
+export type PmcCreateDepositSuccessActionData = {
+  success: true;
+  intent: typeof PMC_CREATE_DEPOSIT_INTENT;
+  workId: string;
+  submissionVersionId: string;
+};
+
+export function buildPmcCreateDepositSuccessActionData(
+  workId: string,
+  submissionVersionId: string,
+): PmcCreateDepositSuccessActionData {
+  return {
+    success: true,
+    intent: PMC_CREATE_DEPOSIT_INTENT,
+    workId,
+    submissionVersionId,
+  };
+}
+
 export function pmcDepositPath(workId: string, submissionVersionId: string): string {
   return `/app/works/${workId}/site/pmc/deposit/${submissionVersionId}`;
 }
@@ -37,9 +56,29 @@ export function getPmcLauncherErrorMessage(data: PmcLauncherActionData): string 
   if (!data?.error) return null;
   if (typeof data.error === 'string') return data.error;
   if (typeof data.error === 'object' && 'message' in data.error) {
-    return data.error.message;
+    return data.error.message || 'Something went wrong. Please try again.';
   }
   return 'Something went wrong. Please try again.';
+}
+
+/** Error when create-deposit settled without a navigable target (e.g. missing ids). */
+export function getPmcIncompleteCreateErrorMessage(
+  data: PmcLauncherActionData,
+  hasSubmittedCreate: boolean,
+): string | null {
+  if (!hasSubmittedCreate || !data) return null;
+  if (data.intent !== PMC_CREATE_DEPOSIT_INTENT) return null;
+  if (shouldNavigateToCreatedDeposit(data)) return null;
+  return 'Something went wrong. Please try again.';
+}
+
+export function getPmcLauncherDisplayErrorMessage(
+  data: PmcLauncherActionData,
+  hasSubmittedCreate: boolean,
+): string | null {
+  return (
+    getPmcLauncherErrorMessage(data) ?? getPmcIncompleteCreateErrorMessage(data, hasSubmittedCreate)
+  );
 }
 
 /** True when the user has draft deposits to choose from. */
@@ -75,8 +114,8 @@ export function shouldShowPreparingSpinner(opts: {
   if (
     hasSubmittedCreate &&
     !dialogOpen &&
-    !getPmcLauncherErrorMessage(data) &&
-    !shouldNavigateToCreatedDeposit(data)
+    !getPmcLauncherDisplayErrorMessage(data, hasSubmittedCreate) &&
+    data?.intent !== PMC_CREATE_DEPOSIT_INTENT
   ) {
     return true;
   }

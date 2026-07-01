@@ -54,7 +54,7 @@ export function getWorkCreateOptions(): WorkCreateOption[] {
     {
       id: 'pmc-deposit',
       label: 'PMC Deposit',
-      description: 'upload an author accepted manuscript and send to NIHMS',
+      description: 'Upload an author accepted manuscript and send to NIHMS',
       icon: PMCIcon,
       metadataKey: 'pmc',
       startPath: '/app/works/pmc',
