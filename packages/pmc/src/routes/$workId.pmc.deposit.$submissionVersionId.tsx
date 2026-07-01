@@ -253,11 +253,7 @@ export async function action(args: ActionFunctionArgs) {
             { status: 400 },
           );
         }
-        return setPreviewDeposit(
-          ctx,
-          versionDbo.id,
-          versionDbo.metadata as PMCWorkVersionMetadata,
-        );
+        return setPreviewDeposit(ctx, versionDbo.id, versionDbo.metadata as PMCWorkVersionMetadata);
       }
       case 'edit-label': {
         const slot = formData.get('slot') as string;

@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs } from 'react-router';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { redirect, data } from 'react-router';
 import {
   withAppContext,
@@ -11,9 +11,19 @@ import {
   dbGetPMCSite,
   dbGetUserDraftPMCDeposits,
 } from '../backend/db.server.js';
+import { PMCDepositLauncher } from '../PMCDepositLauncher.js';
+import { isPmcRoutesEnabled } from '../pmcDepositLauncherState.js';
 
-export async function loader() {
-  return redirect('/app/works');
+export async function loader(args: LoaderFunctionArgs) {
+  const ctx = await withAppContext(args);
+  if (!isPmcRoutesEnabled(ctx.$config)) {
+    return redirect('/app/works');
+  }
+  return {};
+}
+
+export default function PMCDepositLauncherRoute() {
+  return <PMCDepositLauncher />;
 }
 
 export async function action(args: ActionFunctionArgs) {
@@ -21,8 +31,7 @@ export async function action(args: ActionFunctionArgs) {
 
   if (args.request.method !== 'POST') throw httpError(405, 'Method not allowed');
 
-  // Check if PMC extension is enabled in config
-  if (!ctx.$config.app.extensions?.pmc) {
+  if (!isPmcRoutesEnabled(ctx.$config)) {
     return data({ error: 'Endpoint not found' }, { status: 404 });
   }
 
@@ -169,5 +178,11 @@ export async function action(args: ActionFunctionArgs) {
     );
   }
 
-  return redirect(`/app/works/${work.id}/site/pmc/deposit/${submission.versions[0].id}`);
+  // Return JSON for fetcher.submit — server redirects are not followed as browser navigation.
+  return {
+    success: true,
+    intent: 'create-deposit',
+    workId: work.id,
+    submissionVersionId: submission.versions[0].id,
+  };
 }

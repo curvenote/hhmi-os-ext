@@ -1,7 +1,9 @@
 import type { JobRegistration, ServerExtension } from '@curvenote/scms-core';
 import { obfuscateSecret } from '@curvenote/scms-core';
+import type { SecureContext } from '@curvenote/scms-server';
 import { registerRoutes } from './routes.js';
 import { extension as clientExtension } from './client.js';
+import { createPMCWorkVersion, isPMCWorkMetadata } from './createWorkVersion.server.js';
 import { PMC_DEPOSIT_FTP, pmcDepositHandler } from './backend/jobs/pmc-deposit.js';
 import { PMC_WORKFLOW_SYNC, pmcWorkflowSyncHandler } from './backend/jobs/pmc-workflow-sync.js';
 import { HHMI_GRANTS_SYNC, hhmiGrantsSyncHandler } from './backend/jobs/hhmi-grants-sync.js';
@@ -57,4 +59,8 @@ export const extension: ServerExtension = {
   getJobs,
   registerRoutes,
   getSafeAdminConfig,
+  createWorkVersion: async ({ ctx, workId, sourceVersionMetadata, defaultTitle }) => {
+    if (!isPMCWorkMetadata(sourceVersionMetadata)) return null;
+    return createPMCWorkVersion(ctx as SecureContext, workId, sourceVersionMetadata, defaultTitle);
+  },
 };

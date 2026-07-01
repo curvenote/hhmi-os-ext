@@ -8,6 +8,7 @@ import type {
   ExtensionEmailTemplate,
   ExtensionIcon,
   ExtensionTask,
+  WorkCreateOption,
   WorkflowRegistration,
 } from '@curvenote/scms-core';
 import { registerNavigation } from './navigation.js';
@@ -44,6 +45,21 @@ export function getTasks(): ExtensionTask[] {
       description: 'Submit to PubMed Central',
       component: PMCDepositTaskCard,
       category: 'publish',
+    },
+  ];
+}
+
+export function getWorkCreateOptions(): WorkCreateOption[] {
+  return [
+    {
+      id: 'pmc-deposit',
+      label: 'PMC Deposit',
+      description: 'upload an author accepted manuscript and send to NIHMS',
+      icon: PMCIcon,
+      metadataKey: 'pmc',
+      startPath: '/app/works/pmc',
+      mode: 'standalone',
+      order: 10,
     },
   ];
 }
@@ -187,6 +203,7 @@ export const extension: ClientExtension = {
   name,
   description,
   getTasks,
+  getWorkCreateOptions,
   getIcons,
   getAnalyticsEvents,
   getEmailTemplates,

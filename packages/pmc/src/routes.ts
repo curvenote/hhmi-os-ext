@@ -15,7 +15,7 @@ export async function registerRoutes(appConfig: Config): Promise<RouteRegistrati
       attachTo: 'app/works',
       register: () =>
         [
-          route('pmc', resolveRoutePath(import.meta.url, 'routes/pmc.ts')),
+          route('pmc', resolveRoutePath(import.meta.url, 'routes/pmc.tsx')),
         ] satisfies RouteConfigEntry[],
     },
 
