@@ -9,6 +9,7 @@ import {
   $updateSubmissionVersion,
   SlackEventType,
   createHandshakeToken,
+  workerJobUrl,
 } from '@curvenote/scms-server';
 import {
   coerceToObject,
@@ -379,10 +380,11 @@ export async function pmcDepositHandler(ctx: Context, data: CreateJob) {
       userId: user_id,
       successState: targetState,
       failureState: PMC_STATE_NAMES.DEPOSIT_FAILED,
-      statusUrl: ctx.asApiUrl(
+      statusUrl: workerJobUrl(
+        ctx,
         `/sites/${submissionVersion.submission.site.name}/submissions/${submissionVersion.submission.id}/status`,
       ),
-      jobUrl: ctx.asApiUrl(`/jobs/${job.id}`),
+      jobUrl: workerJobUrl(ctx, `/jobs/${job.id}`),
       handshake,
     };
 
