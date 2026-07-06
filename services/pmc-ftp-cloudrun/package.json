@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "node index.js",
-    "build:service": "cd ../.. && npm install && npm run build && cp packages/pmc-ftp-service/dist/* services/pmc-ftp-cloudrun && cd services/pmc-ftp-cloudrun",
+    "build:service": "cd ../../packages/pmc-ftp-service && npm run build && cd ../.. && cp packages/pmc-ftp-service/dist/* services/pmc-ftp-cloudrun && cd services/pmc-ftp-cloudrun",
     "build": "npm run build:service && ./build.sh",
     "deploy": "./deploy.sh",
     "build:local": "npm run build:service && docker build --tag pmc-ftp .",

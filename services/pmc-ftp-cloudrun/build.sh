@@ -1,11 +1,10 @@
 #!/bin/bash
 
-# deploy-env.sh - Deploy PMC FTP service using environment variables from .env file
-# This script loads configuration from .env and deploys to Google Cloud Run
+# build.sh - Build PMC FTP service Docker image remotely (GCP Cloud Build)
+# Runs build:service first so the bundled index.js is in this directory.
 
-set -e  # Exit on any error
+set -e
 
-# Check if .env file exists
 if [ ! -f ".env" ]; then
     echo "❌ Error: .env file not found!"
     echo ""
@@ -22,7 +21,6 @@ fi
 echo "📋 Loading environment variables from .env file..."
 source .env
 
-# Validate required variables
 if [ -z "$GCP_PROJECT" ]; then
     echo "❌ Error: Missing required environment variables!"
     echo "Please ensure these variables are set in your .env file:"
@@ -30,10 +28,17 @@ if [ -z "$GCP_PROJECT" ]; then
     exit 1
 fi
 
-echo "🚀 Deploying PMC FTP service to Google Cloud Run..."
+echo "🚀 Building PMC FTP service remotely on Google Cloud Build..."
 echo "Project: $GCP_PROJECT"
 echo "Region: ${GCP_REGION:-us-central1}"
 
+echo "Running build:service (pmc-ftp-service esbuild bundle → index.js)..."
+npm run build:service
+
+if [ ! -f "index.js" ]; then
+    echo "❌ Error: index.js not found after build:service"
+    exit 1
+fi
 
 gcloud builds submit \
   --project "$GCP_PROJECT" \

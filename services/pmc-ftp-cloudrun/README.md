@@ -65,19 +65,21 @@ Features:
 
 **Production Remote Build with Environment Variables**
 
-Builds Cloud Run Docker container remotely:
+Builds the esbuild bundle locally, then builds the Cloud Run Docker image remotely:
 
 ```bash
 ./build.sh
 ```
 
-This does _not_ rebuild the latest FTP service code. If you need to rebuild the
-service and build the Docker container remotely, use `npm run build`.
+Runs `npm run build:service` first (same bundle step as `./local.sh`), then submits
+this directory to Google Cloud Build. Native SFTP bindings come from `npm install`
+in the image (`ssh2-sftp-client` in `package.json`), not from separate `.node` files.
 
 Features:
 
 - Automatically loads environment variables from `.env`
-- Builds remote Docker image on google, based on commit hash
+- Bundles latest `packages/pmc-ftp-service` before remote image build
+- Builds remote Docker image on Google Cloud, tagged with the current git commit
 - Includes helpful setup instructions if `.env` is missing
 
 ### `./deploy.sh`
@@ -113,14 +115,14 @@ Features:
 ### Build and Deploy For Staging
 
 1. Ensure `.env` is configured with staging values
-2. Build: `npm run build` - this will rebuild the service locally then run `./build.sh` to build the Docker container remotely
-3. Deploy: `npm run deploy` - this will run `./deploy.sh`
+2. Build: `./build.sh` (or `npm run build`, which runs the same steps)
+3. Deploy: `./deploy.sh` (or `npm run deploy`)
 
 ### Build and Deploy For Production
 
 1. Ensure `.env` is configured with production values - notably the correct FTP host/username/password
-2. Build: `npm run build` - this will build the Docker container remotely in the production Google Cloud project
-3. Deploy: `npm run deploy` - this will deploy the container with production .env values
+2. Build: `./build.sh` (or `npm run build`)
+3. Deploy: `./deploy.sh` (or `npm run deploy`)
 
 ## Security Notes
 
