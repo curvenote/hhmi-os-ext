@@ -17,6 +17,7 @@ import { GrantsInfo } from '../components/GrantsInfo.js';
 import type { UserWithRolesDBO, WorkVersionDBO } from '@curvenote/scms-server';
 import {
   resetPublicationMetadata,
+  clearDoiLookupPublicationMetadata,
   updatePublicationJournalName,
   updatePublicationMetadataByDoi,
   updatePublicationTitle,
@@ -43,10 +44,12 @@ import { setPreviewDeposit } from '../backend/metadata/preview.server.js';
 import type { PMCWorkVersionMetadata } from '../common/validate.js';
 import { validatePMCMetadata } from '../common/validate.js';
 import {
+  dbGetLatestNonDraftSubmissionVersionId,
   dbGetNumSubmissionVersions,
   dbGetSubmissionVersion,
   dbGetWorkVersion,
 } from '../backend/db.server.js';
+import { buildPmcDepositFormBreadcrumbs } from '../common/depositBreadcrumbs.js';
 import { signFilesInMetadata } from '../backend/metadata/utils.server.js';
 import { validateJournalAgainstNIH } from '../backend/services/nih-journal.server.js';
 import { ValidationReport } from '../components/ValidationReport.js';
@@ -62,6 +65,7 @@ interface LoaderData {
   submissionVersionId: string;
   submissionStatus: string;
   numSubmissionVersions: number;
+  parentSubmissionVersionId: string | null;
   cdnKey: string | null;
   metadata: PMCWorkVersionMetadata;
   user: UserWithRolesDBO;
@@ -145,6 +149,13 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Res
   const grantOptions = await getHHMIGrantOptions();
 
   const numSubmissionVersions = await dbGetNumSubmissionVersions(submissionVersion.submission_id);
+  const parentSubmissionVersionId =
+    numSubmissionVersions > 1
+      ? await dbGetLatestNonDraftSubmissionVersionId(
+          submissionVersion.submission_id,
+          submissionVersionId,
+        )
+      : null;
 
   return {
     work: ctx.workDTO,
@@ -152,6 +163,7 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Res
     submissionVersionId,
     submissionStatus: submissionVersion?.status,
     numSubmissionVersions,
+    parentSubmissionVersionId,
     cdnKey: cdn_key,
     metadata: metadataWithSigned,
     user: ctx.user,
@@ -214,6 +226,8 @@ export async function action(args: ActionFunctionArgs) {
         return updatePublicationMetadataByDoi(ctx, formData, versionDbo.id);
       case 'publication-reset':
         return resetPublicationMetadata(formData, versionDbo.id);
+      case 'publication-clear-doi-lookup':
+        return clearDoiLookupPublicationMetadata(formData, versionDbo.id);
       case 'publication-title-update':
         return updatePublicationTitle(formData, versionDbo.id);
       case 'publication-journal-name-update':
@@ -338,7 +352,7 @@ export async function action(args: ActionFunctionArgs) {
 }
 
 export default function PMCDeposit({ loaderData }: { loaderData: LoaderData }) {
-  const { work, cdnKey, metadata, numSubmissionVersions } = loaderData;
+  const { work, cdnKey, metadata, numSubmissionVersions, parentSubmissionVersionId } = loaderData;
   const validationFetcher = useFetcher<{
     success?: boolean;
     error?: GeneralError;
@@ -354,10 +368,12 @@ export default function PMCDeposit({ loaderData }: { loaderData: LoaderData }) {
   const lastName = metadata.pmc?.ownerLastName ?? '';
   const email = metadata.pmc?.ownerEmail ?? '';
 
-  const breadcrumbs = [
-    { label: 'Home', href: '/app/dashboard' },
-    { label: 'Deposit Form', isCurrentPage: true },
-  ];
+  const breadcrumbs = buildPmcDepositFormBreadcrumbs({
+    workId: work.id,
+    workTitle: work.title,
+    isNewVersion: numSubmissionVersions > 1,
+    parentSubmissionVersionId,
+  });
 
   return (
     <PageFrame

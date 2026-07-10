@@ -153,17 +153,10 @@ export function PMCDepositLauncher() {
         objectLabel="deposit"
         resumeButtonLabel="Resume depositing"
         renderItemDetails={(draft) => (
-          <>
-            <div>
-              {draft.completionStatus.completed} out of {draft.completionStatus.total} tasks
-              completed
-            </div>
-            {draft.versionNumber > 1 && (
-              <span className="block mt-1 text-xs text-muted-foreground">
-                This is version {draft.versionNumber} of this deposit.
-              </span>
-            )}
-          </>
+          <div>
+            {draft.completionStatus.completed} out of {draft.completionStatus.total} tasks
+            completed
+          </div>
         )}
       />
     </MainWrapper>

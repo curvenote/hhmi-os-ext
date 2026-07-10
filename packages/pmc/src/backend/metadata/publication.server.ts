@@ -17,6 +17,33 @@ const journalNameSchema = z
   .string()
   .max(255, { message: 'Journal name must be at most 255 characters' }); // Allow empty for clearing
 
+/** PMC fields populated by DOI lookup — cleared when switching to manual entry without wiping inherited title/journal. */
+export const clearDoiLookupPublicationMetadataPatch = {
+  doiUrl: undefined,
+  doiSuccess: undefined,
+  doiTitle: undefined,
+  doiPublishedDate: undefined,
+  doiContainerTitle: undefined,
+  doiShortContainerTitle: undefined,
+  doiAuthors: undefined,
+  doiType: undefined,
+  doiVolume: undefined,
+  doiIssue: undefined,
+  doiPage: undefined,
+  doiSource: undefined,
+  doiPublisher: undefined,
+  issn: undefined,
+  issnType: undefined,
+} as const;
+
+/**
+ * Clears DOI-lookup-derived publication fields while preserving manual title/journal entry.
+ */
+export async function clearDoiLookupPublicationMetadata(formData: FormData, workVersionId: string) {
+  void formData;
+  return safelyPatchPMCMetadata(workVersionId, { ...clearDoiLookupPublicationMetadataPatch });
+}
+
 /**
  * Resets all publication metadata fields to undefined.
  * @param formData - Form data (unused, kept for API consistency)
@@ -24,24 +51,11 @@ const journalNameSchema = z
  * @returns Success response or error response
  */
 export async function resetPublicationMetadata(formData: FormData, workVersionId: string) {
+  void formData;
   return safelyPatchPMCMetadata(workVersionId, {
     title: undefined,
     journalName: undefined,
-    doiUrl: undefined,
-    doiSuccess: undefined,
-    doiPublishedDate: undefined,
-    doiContainerTitle: undefined,
-    doiShortContainerTitle: undefined,
-    doiAuthors: undefined,
-    doiType: undefined,
-    doiVolume: undefined,
-    doiIssue: undefined,
-    doiPage: undefined,
-    doiSource: undefined,
-    doiPublisher: undefined,
-    // Clear ISSN fields when resetting
-    issn: undefined,
-    issnType: undefined,
+    ...clearDoiLookupPublicationMetadataPatch,
   });
 }
 

@@ -2,17 +2,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPMCWorkVersion, isPMCWorkMetadata } from './createWorkVersion.server.js';
 
-const mockFindFirst = vi.fn();
+const mockSubmissionFindFirst = vi.fn();
+const mockWorkVersionFindFirst = vi.fn();
 const mockTransaction = vi.fn();
 const mockDeleteMany = vi.fn();
-const mockDbCreateDraftWorkVersion = vi.fn();
+const mockCloneDraftWorkVersionFromSource = vi.fn();
 
 vi.mock('@curvenote/scms-server', () => ({
-  dbCreateDraftWorkVersion: (...args: unknown[]) => mockDbCreateDraftWorkVersion(...args),
+  cloneDraftWorkVersionFromSource: (...args: unknown[]) =>
+    mockCloneDraftWorkVersionFromSource(...args),
   getPrismaClient: async () => ({
-    submission: { findFirst: mockFindFirst },
+    submission: { findFirst: mockSubmissionFindFirst },
+    workVersion: { findFirst: mockWorkVersionFindFirst, deleteMany: mockDeleteMany },
     $transaction: mockTransaction,
-    workVersion: { deleteMany: mockDeleteMany },
   }),
 }));
 
@@ -39,7 +41,7 @@ describe('createPMCWorkVersion', () => {
   });
 
   it('returns an error when no PMC submission exists for the work', async () => {
-    mockFindFirst.mockResolvedValue(null);
+    mockSubmissionFindFirst.mockResolvedValue(null);
 
     const result = await createPMCWorkVersion(ctx, 'work-1', { pmc: { title: 'A' } }, 'Title');
 
@@ -47,12 +49,26 @@ describe('createPMCWorkVersion', () => {
       success: false,
       error: 'PMC submission not found for this work',
     });
-    expect(mockDbCreateDraftWorkVersion).not.toHaveBeenCalled();
+    expect(mockCloneDraftWorkVersionFromSource).not.toHaveBeenCalled();
   });
 
-  it('creates a draft work version and submission version on success', async () => {
-    mockFindFirst.mockResolvedValue({ id: 'submission-1' });
-    mockDbCreateDraftWorkVersion.mockResolvedValue({ workVersionId: 'work-version-1' });
+  it('returns an error when no finalized work version exists', async () => {
+    mockSubmissionFindFirst.mockResolvedValue({ id: 'submission-1' });
+    mockWorkVersionFindFirst.mockResolvedValue(null);
+
+    const result = await createPMCWorkVersion(ctx, 'work-1', { pmc: { title: 'A' } }, 'Title');
+
+    expect(result).toEqual({
+      success: false,
+      error: 'No finalized work version found to clone from',
+    });
+    expect(mockCloneDraftWorkVersionFromSource).not.toHaveBeenCalled();
+  });
+
+  it('clones a draft work version and creates a submission version on success', async () => {
+    mockSubmissionFindFirst.mockResolvedValue({ id: 'submission-1' });
+    mockWorkVersionFindFirst.mockResolvedValue({ id: 'source-version-1' });
+    mockCloneDraftWorkVersionFromSource.mockResolvedValue({ workVersionId: 'work-version-1' });
     mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<void>) => {
       await fn({
         submissionVersion: { create: vi.fn().mockResolvedValue({}) },
@@ -72,18 +88,17 @@ describe('createPMCWorkVersion', () => {
       workVersionId: 'work-version-1',
       redirectPath: '/app/works/work-1/site/pmc/deposit/submission-version-id',
     });
-    expect(mockDbCreateDraftWorkVersion).toHaveBeenCalledTimes(1);
-    const versionMetadata = mockDbCreateDraftWorkVersion.mock.calls[0][4] as {
-      pmc: { title: string; previewed?: unknown; confirmed?: unknown };
-    };
-    expect(versionMetadata.pmc.title).toBe('A');
-    expect(versionMetadata.pmc.previewed).toBeUndefined();
-    expect(versionMetadata.pmc.confirmed).toBeUndefined();
+    expect(mockCloneDraftWorkVersionFromSource).toHaveBeenCalledWith(ctx, {
+      workId: 'work-1',
+      sourceWorkVersionId: 'source-version-1',
+      source: 'work-details',
+    });
   });
 
   it('cleans up the draft work version when the submission transaction fails', async () => {
-    mockFindFirst.mockResolvedValue({ id: 'submission-1' });
-    mockDbCreateDraftWorkVersion.mockResolvedValue({ workVersionId: 'work-version-1' });
+    mockSubmissionFindFirst.mockResolvedValue({ id: 'submission-1' });
+    mockWorkVersionFindFirst.mockResolvedValue({ id: 'source-version-1' });
+    mockCloneDraftWorkVersionFromSource.mockResolvedValue({ workVersionId: 'work-version-1' });
     mockTransaction.mockRejectedValue(new Error('transaction failed'));
 
     const result = await createPMCWorkVersion(ctx, 'work-1', { pmc: {} }, 'Title');

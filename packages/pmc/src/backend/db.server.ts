@@ -4,6 +4,7 @@ import { formatOwnerAsAuthor } from './metadata/utils.server.js';
 import type { SecureContext, WorkContext } from '@curvenote/scms-server';
 import { uuidv7 } from 'uuidv7';
 import { PMCTrackEvent } from '../analytics/events.js';
+import { PMC_STATE_NAMES } from '../workflows.js';
 
 /**
  * Retrieves the PMC site from the database
@@ -122,6 +123,26 @@ export async function dbGetSubmissionVersion(submissionVersionId: string) {
 export async function dbGetNumSubmissionVersions(submissionId: string) {
   const prisma = await getPrismaClient();
   return prisma.submissionVersion.count({ where: { submission_id: submissionId } });
+}
+
+/**
+ * Latest non-draft submission version for breadcrumb navigation back to the deposit status page.
+ */
+export async function dbGetLatestNonDraftSubmissionVersionId(
+  submissionId: string,
+  excludeSubmissionVersionId?: string,
+) {
+  const prisma = await getPrismaClient();
+  const version = await prisma.submissionVersion.findFirst({
+    where: {
+      submission_id: submissionId,
+      status: { not: PMC_STATE_NAMES.DRAFT },
+      ...(excludeSubmissionVersionId ? { id: { not: excludeSubmissionVersionId } } : {}),
+    },
+    orderBy: { date_created: 'desc' },
+    select: { id: true },
+  });
+  return version?.id ?? null;
 }
 
 export async function dbGetSubmissionVersions(ctx: WorkContext) {

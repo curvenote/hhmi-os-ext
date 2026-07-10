@@ -159,8 +159,7 @@ function DoiBasedLookup({
           type="button"
           variant="secondary"
           onClick={() => {
-            setDoiError(undefined); // Clear DOI error
-            resetFetcher.submit({ intent: 'publication-reset' }, { method: 'post' });
+            setDoiError(undefined);
             onNoDoiClick();
           }}
         >
@@ -189,12 +188,17 @@ export function PublicationInfoForm() {
     metadata: PMCCombinedMetadataSection;
     journalValidationError?: GeneralError;
   }>();
-  const resetFetcher = useFetcher();
+  const clearDoiFetcher = useFetcher();
   const { doiSuccess, title, journalName } = metadata.pmc ?? {};
   const doiFormRef = useRef<HTMLFormElement>(null);
   const [showManualEntry, setShowManualEntry] = useState(
     !doiSuccess && Boolean(title || journalName),
   );
+
+  const switchToManualEntry = () => {
+    clearDoiFetcher.submit({ intent: 'publication-clear-doi-lookup' }, { method: 'post' });
+    setShowManualEntry(true);
+  };
 
   return (
     <div id="publication-info" className="space-y-4">
@@ -202,13 +206,7 @@ export function PublicationInfoForm() {
       {!showManualEntry && (
         <label htmlFor="doi" className="block mb-1 text-base">
           Do you have a <span className="font-medium">DOI</span> from a journal?{' '}
-          <ui.Button
-            variant="link"
-            onClick={() => {
-              resetFetcher.submit({ intent: 'publication-reset' }, { method: 'post' });
-              setShowManualEntry(true);
-            }}
-          >
+          <ui.Button variant="link" onClick={switchToManualEntry}>
             Enter information manually
           </ui.Button>
         </label>
@@ -232,7 +230,7 @@ export function PublicationInfoForm() {
             formRef={doiFormRef}
             onNoDoiClick={() => {
               doiFormRef.current?.reset();
-              setShowManualEntry(true);
+              switchToManualEntry();
             }}
           />
         </div>

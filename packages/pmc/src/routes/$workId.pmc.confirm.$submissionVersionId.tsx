@@ -18,10 +18,12 @@ import { confirmPMC } from '../backend/metadata/confirm.server.js';
 import { getWorkflows } from '../client.js';
 import { unsetPreviewDeposit } from '../backend/metadata/preview.server.js';
 import {
+  dbGetLatestNonDraftSubmissionVersionId,
   dbGetNumSubmissionVersions,
   dbGetSubmissionVersion,
   dbGetWorkVersion,
 } from '../backend/db.server.js';
+import { buildPmcDepositFormBreadcrumbs, truncateWorkTitle } from '../common/depositBreadcrumbs.js';
 import { CertificationStatement } from '../components/CertificationStatement.js';
 import { useState } from 'react';
 import { GrantsInfo } from '../components/GrantsInfo.js';
@@ -40,6 +42,7 @@ interface LoaderData {
   submissionVersionId: string;
   submissionStatus: string;
   numSubmissionVersions: number;
+  parentSubmissionVersionId: string | null;
   cdnKey: string | null;
   metadata: PMCWorkVersionMetadata;
   user: UserWithRolesDBO;
@@ -123,6 +126,13 @@ export const loader = async (args: LoaderFunctionArgs): Promise<LoaderData | Res
   const grantOptions = await getHHMIGrantOptions();
 
   const numSubmissionVersions = await dbGetNumSubmissionVersions(submissionVersion.submission_id);
+  const parentSubmissionVersionId =
+    numSubmissionVersions > 1
+      ? await dbGetLatestNonDraftSubmissionVersionId(
+          submissionVersion.submission_id,
+          submissionVersionId,
+        )
+      : null;
 
   return {
     work: ctx.workDTO,
@@ -130,6 +140,7 @@ export const loader = async (args: LoaderFunctionArgs): Promise<LoaderData | Res
     submissionVersionId,
     submissionStatus: submissionVersion?.status,
     numSubmissionVersions,
+    parentSubmissionVersionId,
     cdnKey: cdn_key,
     metadata: metadataWithSigned,
     user: ctx.user,
@@ -282,20 +293,23 @@ function GoBackButton({ onError }: { onError: (error: GeneralError | null) => vo
 }
 
 export default function PMCConfirm({ loaderData }: { loaderData: LoaderData }) {
-  const { work, cdnKey, numSubmissionVersions } = loaderData;
+  const { work, cdnKey, numSubmissionVersions, parentSubmissionVersionId } = loaderData;
   const [error, setError] = useState<GeneralError | null>(null);
 
-  const truncatedTitle = work.title
-    ? work.title.length > 32
-      ? work.title.substring(0, 32) + '...'
-      : work.title
-    : 'Untitled Work';
-
-  const breadcrumbs = [
-    { label: 'Home', href: '/app/dashboard' },
-    { label: truncatedTitle, href: `/app/works/${work.id}` },
-    { label: 'Confirm', isCurrentPage: true },
-  ];
+  const breadcrumbs =
+    numSubmissionVersions > 1
+      ? buildPmcDepositFormBreadcrumbs({
+          workId: work.id,
+          workTitle: work.title,
+          isNewVersion: true,
+          parentSubmissionVersionId,
+          newVersionCurrentPageLabel: 'Confirm',
+        })
+      : [
+          { label: 'Home', href: '/app/dashboard' },
+          { label: truncateWorkTitle(work.title), href: `/app/works/${work.id}` },
+          { label: 'Confirm', isCurrentPage: true },
+        ];
 
   return (
     <PageFrame

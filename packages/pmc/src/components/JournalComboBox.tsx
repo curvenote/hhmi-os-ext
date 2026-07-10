@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useParams } from 'react-router';
 import { ui } from '@curvenote/scms-core';
 
@@ -30,6 +30,11 @@ export function JournalComboBox({
 }: JournalComboBoxProps) {
   const params = useParams();
   const workId = params.workId;
+
+  const inheritedOption = useMemo(
+    () => (value ? [{ value, label: value }] : []),
+    [value],
+  );
 
   const searchJournals = useCallback(
     async (query: string): Promise<ui.ComboBoxOption[]> => {
@@ -67,6 +72,8 @@ export function JournalComboBox({
     <ui.AsyncComboBox
       boxed
       value={value}
+      selectedLabel={value}
+      initialOptions={inheritedOption}
       onValueChange={onValueChange}
       onSearch={searchJournals}
       placeholder={placeholder}

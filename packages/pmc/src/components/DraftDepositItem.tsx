@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useFetcher } from 'react-router';
-import { Trash2 } from 'lucide-react';
+import { Trash2, GitBranch } from 'lucide-react';
 import { ui } from '@curvenote/scms-core';
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog.js';
 import type { DraftPMCDeposit } from '../backend/db.server.js';
@@ -44,22 +44,20 @@ export function DraftDepositItem({ deposit, onDeleted, onResume }: DraftDepositI
               <Trash2 className="w-4 h-4" />
             </ui.Button>
           </div>
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex gap-2 items-center mb-1 min-w-0">
             <h3 className="text-base font-medium text-gray-900 truncate">{deposit.workTitle}</h3>
-            {deposit.versionNumber > 1 && (
-              <div className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-md whitespace-nowrap">
-                Version {deposit.versionNumber}
-              </div>
-            )}
+            {deposit.versionNumber > 0 ? (
+              <ui.VersionTagBadge
+                tag={`v${deposit.versionNumber}`}
+                titlePrefix="Version"
+                icon={GitBranch}
+                className="shrink-0"
+              />
+            ) : null}
           </div>
           <div className="mb-1 text-sm text-muted-foreground">
             {deposit.completionStatus.completed} out of {deposit.completionStatus.total} tasks
             completed
-            {deposit.versionNumber > 1 && (
-              <span className="block mt-1 text-xs text-muted-foreground">
-                This is version {deposit.versionNumber} of this deposit.
-              </span>
-            )}
           </div>
           <ui.Button
             onClick={handleResume}

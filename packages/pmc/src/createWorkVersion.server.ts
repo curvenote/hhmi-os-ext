@@ -1,5 +1,5 @@
 import {
-  dbCreateDraftWorkVersion,
+  cloneDraftWorkVersionFromSource,
   getPrismaClient,
   type SecureContext,
 } from '@curvenote/scms-server';
@@ -9,35 +9,16 @@ import type { ExtensionCreateWorkVersionResult } from '@curvenote/scms-core';
 import type { PMCWorkVersionMetadata } from './common/validate.js';
 import { PMC_STATE_NAMES } from './workflows.js';
 
-function seedPmcMetadataFromSource(
-  sourceMetadata: Record<string, unknown>,
-): Record<string, unknown> {
-  const sourcePmc = (sourceMetadata.pmc ?? {}) as Record<string, unknown>;
-  const { previewed, confirmed, ...restPmc } = sourcePmc as {
-    previewed?: unknown;
-    confirmed?: unknown;
-  };
-  void previewed;
-  void confirmed;
-
-  return {
-    pmc: {
-      ...restPmc,
-      previewed: undefined,
-      confirmed: undefined,
-    },
-  };
-}
-
 /**
  * Creates a new draft PMC work version on an existing work, plus a draft submission version.
  */
 export async function createPMCWorkVersion(
   ctx: SecureContext,
   workId: string,
-  sourceVersionMetadata: Record<string, unknown>,
+  _sourceVersionMetadata: Record<string, unknown>,
   defaultTitle: string,
 ): Promise<ExtensionCreateWorkVersionResult> {
+  void defaultTitle;
   const prisma = await getPrismaClient();
   const submission = await prisma.submission.findFirst({
     where: {
@@ -54,17 +35,27 @@ export async function createPMCWorkVersion(
     };
   }
 
-  const versionMetadata = seedPmcMetadataFromSource(sourceVersionMetadata);
+  const sourceVersion = await prisma.workVersion.findFirst({
+    where: { work_id: workId, draft: false },
+    orderBy: { date_created: 'desc' },
+    select: { id: true },
+  });
+
+  if (!sourceVersion) {
+    return {
+      success: false,
+      error: 'No finalized work version found to clone from',
+    };
+  }
+
   let workVersionId: string | undefined;
 
   try {
-    ({ workVersionId } = await dbCreateDraftWorkVersion(
-      ctx,
+    ({ workVersionId } = await cloneDraftWorkVersionFromSource(ctx, {
       workId,
-      'work-details',
-      defaultTitle,
-      versionMetadata,
-    ));
+      sourceWorkVersionId: sourceVersion.id,
+      source: 'work-details',
+    }));
     const createdWorkVersionId = workVersionId;
 
     const date_created = new Date().toISOString();
@@ -80,6 +71,7 @@ export async function createPMCWorkVersion(
           submitted_by: { connect: { id: ctx.user.id } },
           work_version: { connect: { id: createdWorkVersionId } },
           submission: { connect: { id: submission.id } },
+          metadata: { pmc: {} },
         },
       });
 
