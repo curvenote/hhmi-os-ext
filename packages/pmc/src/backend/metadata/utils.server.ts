@@ -11,6 +11,11 @@ import { coerceToObject, ensureTrailingSlash } from '@curvenote/scms-core';
 import type { PMCWorkVersionMetadata, DoiAuthor } from '../../common/metadata.schema.js';
 import type { Context, WorkVersionMetadata } from '@curvenote/scms-server';
 import { data } from 'react-router';
+import {
+  augmentMetadataWithMappedFiles,
+  type PmcFileMetadataSection,
+} from '../../common/fileMappings.js';
+import type { WorkVersionMetadataWithFilesAndPMC } from '../../common/metadata.schema.js';
 
 /**
  * Safely patches PMC metadata fields with optimistic concurrency control.
@@ -220,9 +225,10 @@ export async function signFilesInMetadata(
   const filesWithSignedUrls: Record<string, FileMetadataSectionItem & { signedUrl: string }> = {};
   await Promise.all(
     Object.entries(metadata.files).map(async ([key, file]: [string, FileMetadataSectionItem]) => {
-      const fileId = file.path;
+      const storagePath =
+        (file as FileMetadataSectionItem & { storagePath?: string }).storagePath ?? file.path;
       const bucket = isPrivateCdn ? KnownBuckets.prv : KnownBuckets.pub;
-      const fileInstance = new File(backend, fileId, bucket);
+      const fileInstance = new File(backend, storagePath, bucket);
       let signedUrl: string;
       if (isPrivateCdn) {
         signedUrl = await fileInstance.sign();
@@ -233,4 +239,18 @@ export async function signFilesInMetadata(
     }),
   );
   return { ...metadata, files: filesWithSignedUrls };
+}
+
+/**
+ * Augments PMC file mappings for display, then signs storage paths (including mapped sources).
+ */
+export async function signPmcDisplayMetadata(
+  metadata: WorkVersionMetadataWithFilesAndPMC,
+  cdn: string,
+  ctx: Context,
+): Promise<PmcFileMetadataSection & WorkVersionMetadataWithFilesAndPMC> {
+  const augmented = augmentMetadataWithMappedFiles(metadata);
+  return signFilesInMetadata(augmented, cdn, ctx) as Promise<
+    PmcFileMetadataSection & WorkVersionMetadataWithFilesAndPMC
+  >;
 }

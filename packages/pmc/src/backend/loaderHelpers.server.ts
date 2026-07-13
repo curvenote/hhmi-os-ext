@@ -3,7 +3,8 @@ import type {
   PMCCombinedMetadataSection,
   WorkVersionMetadataWithFilesAndPMC,
 } from '../common/metadata.schema.js';
-import { signFilesInMetadata } from './metadata/utils.server.js';
+import { signPmcDisplayMetadata } from './metadata/utils.server.js';
+import { PMC_MANUSCRIPT_SLOT } from '../common/fileMappings.js';
 import type { WorkflowTransition } from '@curvenote/scms-core';
 
 export type DepositSubmissionDetails = {
@@ -71,17 +72,21 @@ export async function mapToDepositSubmissionDetails(
       const workVersion = sv.work_version;
       const cdn = workVersion.cdn ?? '';
       const metadataWithFiles = { ...workVersionMetadata, files };
-      const signedMetadata = await signFilesInMetadata(metadataWithFiles, cdn, ctx);
+      const signedMetadata = await signPmcDisplayMetadata(
+        metadataWithFiles as WorkVersionMetadataWithFilesAndPMC,
+        cdn,
+        ctx,
+      );
       const filesWithUrls = signedMetadata.files ?? {};
 
-      // Manuscript file: first file with slot === 'pmc/manuscript'
+      // Manuscript file: first native or mapped pmc/manuscript entry
       const manuscriptFile = Object.values(filesWithUrls).find(
-        (file: any) => file && file.slot === 'pmc/manuscript',
+        (file: any) => file && file.slot === PMC_MANUSCRIPT_SLOT,
       );
       // Count files in each slot (excluding 'pmc/manuscript')
       const slotCounts: Record<string, number> = {};
       Object.values(filesWithUrls).forEach((file: any) => {
-        if (file && file.slot !== 'pmc/manuscript') {
+        if (file && file.slot !== PMC_MANUSCRIPT_SLOT) {
           slotCounts[file.slot] = (slotCounts[file.slot] || 0) + 1;
         }
       });

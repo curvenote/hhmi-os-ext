@@ -50,7 +50,16 @@ import {
   dbGetWorkVersion,
 } from '../backend/db.server.js';
 import { buildPmcDepositFormBreadcrumbs } from '../common/depositBreadcrumbs.js';
-import { signFilesInMetadata } from '../backend/metadata/utils.server.js';
+import { signPmcDisplayMetadata } from '../backend/metadata/utils.server.js';
+import {
+  syncManuscriptFileMappings,
+  updateMappedFileLabel,
+} from '../backend/fileMappings.server.js';
+import {
+  assertUniqueNativeFileLabel,
+  DuplicateSlotLabelError,
+  isMappingPath,
+} from '../common/fileMappings.js';
 import { validateJournalAgainstNIH } from '../backend/services/nih-journal.server.js';
 import { ValidationReport } from '../components/ValidationReport.js';
 import type { ZodIssue } from 'zod';
@@ -143,7 +152,7 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Res
     }
   }
 
-  const metadataWithSigned = await signFilesInMetadata(typedMetadata, cdn ?? '', ctx);
+  const metadataWithSigned = await signPmcDisplayMetadata(typedMetadata, cdn ?? '', ctx);
 
   // Get HHMI grant options for the UI
   const grantOptions = await getHHMIGrantOptions();
@@ -197,12 +206,6 @@ export async function action(args: ActionFunctionArgs) {
         { status: 400 },
       );
     }
-    if (!versionDbo.draft) {
-      throw data(
-        { error: { type: 'general', message: 'Work version is not a draft' } },
-        { status: 422 },
-      );
-    }
   } catch (error) {
     return error; // return for errors, otherwise ErrorBoundary will catch
   }
@@ -253,9 +256,13 @@ export async function action(args: ActionFunctionArgs) {
       case 'certify-manuscript':
         return updateCertifyManuscript(formData, versionDbo.id);
       case 'preview-deposit': {
+        await syncManuscriptFileMappings(versionDbo.id);
+        const refreshedVersion = await dbGetWorkVersion(ctx, ctx.work.id);
+        const metadataForPreview = (refreshedVersion?.metadata ??
+          versionDbo.metadata) as PMCWorkVersionMetadata;
         // UI will be pre validation using the same schemasin a friendly way
         // repeated validation here is secondary but to cover independent POSTs
-        const result = await validatePMCMetadata(versionDbo.metadata as PMCWorkVersionMetadata);
+        const result = await validatePMCMetadata(metadataForPreview);
         if (result.error) {
           // Return comprehensive validation errors for better UX
           return data(
@@ -267,17 +274,13 @@ export async function action(args: ActionFunctionArgs) {
             { status: 400 },
           );
         }
-        return setPreviewDeposit(ctx, versionDbo.id, versionDbo.metadata as PMCWorkVersionMetadata);
+        return setPreviewDeposit(ctx, versionDbo.id, metadataForPreview);
       }
       case 'edit-label': {
-        const slot = formData.get('slot') as string;
         const path = formData.get('path') as string;
         let value = (formData.get('value') as string) || '';
-        if (!slot || !path) {
-          return data(
-            { error: { type: 'general', message: 'Missing slot or path' } },
-            { status: 400 },
-          );
+        if (!path) {
+          return data({ error: { type: 'general', message: 'Missing path' } }, { status: 400 });
         }
 
         // Validate label
@@ -308,18 +311,29 @@ export async function action(args: ActionFunctionArgs) {
 
         // OCC-safe update
         try {
+          if (isMappingPath(path)) {
+            try {
+              const mappingResult = await updateMappedFileLabel(versionDbo.id, path, value);
+              if ('error' in mappingResult) {
+                return data(
+                  { error: { type: 'validation', message: mappingResult.error } },
+                  { status: 400 },
+                );
+              }
+              return { success: true };
+            } catch (error) {
+              console.error('Failed to update mapped file label:', error);
+              return data(
+                { error: { type: 'general', message: 'Failed to update label' } },
+                { status: 500 },
+              );
+            }
+          }
+
           await safeWorkVersionJsonUpdate(versionDbo.id, (metadata: any) => {
             const updatedMeta = coerceToObject(metadata);
-            if (!updatedMeta.files || !updatedMeta.files[path]) return updatedMeta;
-
-            // Uniqueness check - only within the same slot
-            const slotLabels = Object.values(updatedMeta.files)
-              .filter((f: any) => f.slot === slot && f.path !== path) // Same slot, exclude current file
-              .map((f: any) => f.label)
-              .filter(Boolean);
-            if (slotLabels.includes(value)) {
-              throw new Error('Each label must be unique within this slot.');
-            }
+            assertUniqueNativeFileLabel(path, value, updatedMeta);
+            if (!updatedMeta.files?.[path]) return updatedMeta;
 
             updatedMeta.files[path].label = value;
             return updatedMeta;
@@ -327,9 +341,10 @@ export async function action(args: ActionFunctionArgs) {
 
           return { success: true };
         } catch (error) {
-          if (error instanceof Error) {
+          if (error instanceof DuplicateSlotLabelError) {
             return data({ error: { type: 'validation', message: error.message } }, { status: 400 });
           }
+          console.error('Failed to update native file label:', error);
           return data(
             { error: { type: 'general', message: 'Failed to update label' } },
             { status: 500 },

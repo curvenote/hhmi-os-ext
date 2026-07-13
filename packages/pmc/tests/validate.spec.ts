@@ -144,6 +144,41 @@ describe('validatePMCMetadata', () => {
       );
     });
 
+    it('should accept mapped article manuscript files without native pmc/manuscript entries', async () => {
+      const metadata = createValidMetadata({
+        files: {
+          'cdn/manuscript/paper.docx': {
+            path: 'cdn/manuscript/paper.docx',
+            name: 'paper.docx',
+            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            size: 1024,
+            md5: 'abc123def456',
+            uploadDate: '2023-01-01T00:00:00.000Z',
+            slot: 'manuscript',
+            label: 'paper',
+          },
+        },
+        pmc: {
+          ...createValidMetadata().pmc,
+          fileMappings: {
+            'pmc/manuscript': [
+              {
+                id: 'map-1',
+                targetSlot: 'pmc/manuscript',
+                sourceMetadataKey: 'cdn/manuscript/paper.docx',
+                sourcePath: 'cdn/manuscript/paper.docx',
+                sourceSlot: 'manuscript',
+                label: 'paper',
+              },
+            ],
+          },
+        },
+      });
+
+      const result = await validatePMCMetadata(metadata);
+      expect(result.success).toBe(true);
+    });
+
     it('should filter out generic files error when manuscript-specific error exists', async () => {
       const metadata = createValidMetadata({ files: undefined as any });
       const result = await validatePMCMetadata(metadata);

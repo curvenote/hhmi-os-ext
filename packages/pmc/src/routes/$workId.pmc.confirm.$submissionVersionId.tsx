@@ -15,6 +15,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from 'react
 import { withSecureWorkContext, sites, SiteContextWithUser } from '@curvenote/scms-server';
 import type { UserWithRolesDBO, WorkVersionDBO } from '@curvenote/scms-server';
 import { confirmPMC } from '../backend/metadata/confirm.server.js';
+import { syncManuscriptFileMappings } from '../backend/fileMappings.server.js';
 import { getWorkflows } from '../client.js';
 import { unsetPreviewDeposit } from '../backend/metadata/preview.server.js';
 import {
@@ -32,7 +33,7 @@ import { PMC_STATE_NAMES } from '../workflows.js';
 import type { PMCWorkVersionMetadata } from '../common/validate.js';
 import { validatePMCMetadata } from '../common/validate.js';
 import { validateJournalAgainstNIH } from '../backend/services/nih-journal.server.js';
-import { signFilesInMetadata } from '../backend/metadata/utils.server.js';
+import { signPmcDisplayMetadata } from '../backend/metadata/utils.server.js';
 import { getHHMIGrantOptions } from '../backend/hhmi-grants.server.js';
 import type { WorkDTO } from '@curvenote/common';
 
@@ -120,7 +121,7 @@ export const loader = async (args: LoaderFunctionArgs): Promise<LoaderData | Res
     }
   }
 
-  const metadataWithSigned = await signFilesInMetadata(typedMetadata, cdn ?? '', ctx);
+  const metadataWithSigned = await signPmcDisplayMetadata(typedMetadata, cdn ?? '', ctx);
 
   // Get HHMI grant options for the UI
   const grantOptions = await getHHMIGrantOptions();
@@ -175,12 +176,6 @@ export async function action(args: ActionFunctionArgs) {
         { status: 400 },
       );
     }
-    if (!versionDbo.draft) {
-      throw data(
-        { error: { type: 'general', message: 'Work version is not a draft' } },
-        { status: 400 },
-      );
-    }
   } catch (error) {
     return data({ error: { type: 'general', message: String(error) } }, { status: 500 });
   }
@@ -192,6 +187,7 @@ export async function action(args: ActionFunctionArgs) {
       if (!ctx.user) {
         return data({ error: { type: 'general', message: 'User not found' } }, { status: 500 });
       }
+      await syncManuscriptFileMappings(versionDbo.id);
       const confirmResult = await confirmPMC(ctx, versionDbo.id);
       if ('error' in confirmResult) {
         return data(

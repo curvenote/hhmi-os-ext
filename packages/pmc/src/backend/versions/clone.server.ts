@@ -3,9 +3,7 @@ import { cloneDraftWorkVersionFromSource, getPrismaClient } from '@curvenote/scm
 import { uuidv7 } from 'uuidv7';
 import type { SubmissionVersion, WorkVersion } from '@curvenote/scms-db';
 import { PMC_STATE_NAMES } from '../../workflows.js';
-import type {
-  SubmissionVersionMetadataWithPMC,
-} from '../../common/metadata.schema.js';
+import type { SubmissionVersionMetadataWithPMC } from '../../common/metadata.schema.js';
 
 /**
  * Gets a submission version from the database with related submission and work version data.
@@ -116,16 +114,23 @@ export async function clonePMCVersion(
     activityType: 'WORK_VERSION_ADDED',
   });
 
-  const newSubmissionVersion = await createSubmissionVersionForClonedWork(
-    submissionVersion,
-    newWorkVersionId,
-    ctx.user.id,
-  );
+  try {
+    const newSubmissionVersion = await createSubmissionVersionForClonedWork(
+      submissionVersion,
+      newWorkVersionId,
+      ctx.user.id,
+    );
 
-  return {
-    newWorkVersionId,
-    newSubmissionVersionId: newSubmissionVersion.id,
-  };
+    return {
+      newWorkVersionId,
+      newSubmissionVersionId: newSubmissionVersion.id,
+    };
+  } catch (error) {
+    await prisma.workVersion
+      .deleteMany({ where: { id: newWorkVersionId, draft: true } })
+      .catch(() => undefined);
+    throw error;
+  }
 }
 
 /**

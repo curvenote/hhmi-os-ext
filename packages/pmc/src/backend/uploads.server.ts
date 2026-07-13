@@ -6,6 +6,7 @@ import {
 import { FILE_UPLOAD_CONFIGURATION } from '../common/fileUploadConfiguration.js';
 import type { WorkContext } from '@curvenote/scms-server';
 import { data as dataResponse } from 'react-router';
+import { isMappedFileRemovePath, removeFileMapping } from './fileMappings.server.js';
 
 export async function validateAndHandleUploads(
   ctx: WorkContext,
@@ -43,8 +44,17 @@ export async function validateAndHandleUploads(
       return workVersionUploadsStage(ctx, uploadConfig, formData, workVersionId);
     case 'complete':
       return workVersionUploadsComplete(ctx, formData, workVersionId, cdn);
-    case 'remove':
+    case 'remove': {
+      const path = formData.get('path') as string;
+      if (path && isMappedFileRemovePath(path)) {
+        const result = await removeFileMapping(workVersionId, path);
+        if ('error' in result) {
+          return dataResponse({ error: result.error }, { status: 400 });
+        }
+        return { success: true };
+      }
       return workVersionUploadRemove(ctx, formData, workVersionId, cdn);
+    }
     default:
       return dataResponse(
         { error: { type: 'general', message: `Invalid intent ${intent}` } },

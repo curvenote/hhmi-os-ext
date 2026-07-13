@@ -5,6 +5,7 @@ import { clonePMCVersion } from './clone.server.js';
 const mockFindUnique = vi.fn();
 const mockFindFirst = vi.fn();
 const mockTransaction = vi.fn();
+const mockDeleteMany = vi.fn();
 const mockCloneDraftWorkVersionFromSource = vi.fn();
 
 vi.mock('@curvenote/scms-server', () => ({
@@ -15,6 +16,7 @@ vi.mock('@curvenote/scms-server', () => ({
       findUnique: mockFindUnique,
       findFirst: mockFindFirst,
     },
+    workVersion: { deleteMany: mockDeleteMany },
     $transaction: mockTransaction,
   }),
 }));
@@ -42,6 +44,7 @@ describe('clonePMCVersion', () => {
     vi.clearAllMocks();
     mockFindUnique.mockResolvedValue(referenceSubmissionVersion);
     mockFindFirst.mockResolvedValue(null);
+    mockDeleteMany.mockResolvedValue({ count: 1 });
     mockCloneDraftWorkVersionFromSource.mockResolvedValue({ workVersionId: 'wv-cloned' });
     mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
       const activityCreate = vi.fn().mockResolvedValue({});
@@ -115,5 +118,14 @@ describe('clonePMCVersion', () => {
       'A version is already being cloned for this work',
     );
     expect(mockCloneDraftWorkVersionFromSource).not.toHaveBeenCalled();
+  });
+
+  it('cleans up the draft work version when the submission transaction fails', async () => {
+    mockTransaction.mockRejectedValue(new Error('transaction failed'));
+
+    await expect(clonePMCVersion(ctx, 'sv-ref')).rejects.toThrow('transaction failed');
+    expect(mockDeleteMany).toHaveBeenCalledWith({
+      where: { id: 'wv-cloned', draft: true },
+    });
   });
 });

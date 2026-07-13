@@ -31,10 +31,7 @@ export function JournalComboBox({
   const params = useParams();
   const workId = params.workId;
 
-  const inheritedOption = useMemo(
-    () => (value ? [{ value, label: value }] : []),
-    [value],
-  );
+  const inheritedOption = useMemo(() => (value ? [{ value, label: value }] : []), [value]);
 
   const searchJournals = useCallback(
     async (query: string): Promise<ui.ComboBoxOption[]> => {

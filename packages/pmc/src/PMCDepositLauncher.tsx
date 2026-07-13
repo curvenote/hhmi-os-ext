@@ -154,8 +154,7 @@ export function PMCDepositLauncher() {
         resumeButtonLabel="Resume depositing"
         renderItemDetails={(draft) => (
           <div>
-            {draft.completionStatus.completed} out of {draft.completionStatus.total} tasks
-            completed
+            {draft.completionStatus.completed} out of {draft.completionStatus.total} tasks completed
           </div>
         )}
       />

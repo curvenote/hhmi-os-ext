@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { WorkVersionMetadata } from '@curvenote/scms-server';
 import type { FileMetadataSection } from '@curvenote/scms-core';
+import { pmcFileMappingEntrySchema } from './fileMappings.js';
 // hasValidGrantId moved to manual validation in validate.ts
 
 // Enums used in the metadata
@@ -159,6 +160,15 @@ export const pmcMetadataSchema = requiredPMCMetadataSchema
 
     // Backward compatibility: keep funders field optional during transition
     funders: z.array(funderType).optional(),
+
+    /** Maps PMC slots to existing work-version file entries (e.g. article manuscript → pmc/manuscript). */
+    fileMappings: z
+      .object({
+        'pmc/manuscript': z.array(pmcFileMappingEntrySchema).optional(),
+      })
+      .optional(),
+    /** Article manuscript source paths the user explicitly removed from the PMC deposit (one-way until re-upload). */
+    excludedManuscriptSourcePaths: z.array(z.string()).optional(),
   })
   .partial();
 

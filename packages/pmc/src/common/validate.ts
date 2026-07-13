@@ -8,6 +8,7 @@ import type { GeneralError, FileMetadataSection } from '@curvenote/scms-core';
 import { FileMetadataSectionSchema } from '@curvenote/scms-core';
 import type { ZodIssue } from 'zod';
 import { PMC_FUNDERS_MAP } from '../components/funders.js';
+import { countPmcManuscriptFiles } from './fileMappings.js';
 
 export type PMCWorkVersionMetadata = WorkVersionMetadata &
   PMCWorkVersionMetadataSection &
@@ -44,11 +45,9 @@ export async function validatePMCMetadata(
   // These run regardless of whether basic validation passes
 
   // Check for minimum required files
-  // there must be at least one file in the 'manuscript' slot
-  const manuscriptFiles = Object.values(files || {}).filter(
-    (file) => file.slot === 'pmc/manuscript',
-  );
-  if (!manuscriptFiles || manuscriptFiles.length === 0) {
+  // there must be at least one file in the 'manuscript' slot (native pmc/manuscript or mapped)
+  const manuscriptCount = countPmcManuscriptFiles(files, pmc?.fileMappings);
+  if (manuscriptCount === 0) {
     // Add a custom error for missing manuscript files
     allErrors.push({
       code: 'custom',

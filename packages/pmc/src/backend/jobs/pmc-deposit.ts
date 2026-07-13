@@ -26,6 +26,7 @@ import JOURNAL_INFO from '../../data/J_Entrez.json';
 import type { JournalInfo, JournalInfoFile } from './types.js';
 import { PMC_STATE_NAMES, PMC_WORKSPACE_SITE_NAME } from '../../workflows.js';
 import type { PMCWorkVersionMetadata } from '../../common/validate.js';
+import { collectPmcDepositFiles } from '../../common/fileMappings.js';
 
 async function getWorkVersionFromSubmissionVersion(submissionVersionId: string) {
   const prisma = await getPrismaClient();
@@ -134,9 +135,14 @@ export async function buildAAMDepositManifest(
     throw new Error('Journal name is required');
   }
 
+  const depositFiles = collectPmcDepositFiles(files, pmc.fileMappings);
+  if (depositFiles.length === 0) {
+    throw new Error('No PMC deposit files found');
+  }
+
   // Collect all existing labels for uniqueness checking
   const existingLabels = new Set<string>();
-  Object.values(files).forEach((file) => {
+  depositFiles.forEach((file) => {
     if (file.label) {
       existingLabels.add(file.label);
     }
@@ -144,8 +150,7 @@ export async function buildAAMDepositManifest(
 
   // Map files to manifest format
   const manifestFiles = await Promise.all(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    Object.entries(files).map(async ([_, file]) => {
+    depositFiles.map(async (file) => {
       let type: 'manuscript' | 'figure' | 'table' | 'supplement';
       switch (file.slot) {
         case 'pmc/manuscript':
