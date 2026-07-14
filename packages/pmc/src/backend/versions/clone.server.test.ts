@@ -1,6 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { clonePMCVersion } from './clone.server.js';
+import { seedPMCDraftMetadataFromSource } from '../../seedPMCDraftMetadata.server.js';
 
 const mockFindUnique = vi.fn();
 const mockFindFirst = vi.fn();
@@ -85,6 +86,7 @@ describe('clonePMCVersion', () => {
       sourceWorkVersionId: 'wv-source',
       source: 'pmc-submission-clone',
       activityType: 'WORK_VERSION_ADDED',
+      seedMetadataFromSource: seedPMCDraftMetadataFromSource,
     });
     expect(activityCreate).toHaveBeenCalledTimes(1);
     expect(activityCreate).toHaveBeenCalledWith(

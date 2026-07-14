@@ -7,6 +7,7 @@ import { ActivityType } from '@curvenote/scms-db';
 import { uuidv7 } from 'uuidv7';
 import type { ExtensionCreateWorkVersionResult } from '@curvenote/scms-core';
 import type { PMCWorkVersionMetadata } from './common/validate.js';
+import { seedPMCDraftMetadataFromSource } from './seedPMCDraftMetadata.server.js';
 import { PMC_STATE_NAMES } from './workflows.js';
 
 /**
@@ -55,6 +56,7 @@ export async function createPMCWorkVersion(
       workId,
       sourceWorkVersionId: sourceVersion.id,
       source: 'work-details',
+      seedMetadataFromSource: seedPMCDraftMetadataFromSource,
     }));
     const createdWorkVersionId = workVersionId;
 

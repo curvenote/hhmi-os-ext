@@ -2,6 +2,7 @@ import type { WorkContext } from '@curvenote/scms-server';
 import { cloneDraftWorkVersionFromSource, getPrismaClient } from '@curvenote/scms-server';
 import { uuidv7 } from 'uuidv7';
 import type { SubmissionVersion, WorkVersion } from '@curvenote/scms-db';
+import { seedPMCDraftMetadataFromSource } from '../../seedPMCDraftMetadata.server.js';
 import { PMC_STATE_NAMES } from '../../workflows.js';
 import type { SubmissionVersionMetadataWithPMC } from '../../common/metadata.schema.js';
 
@@ -112,6 +113,7 @@ export async function clonePMCVersion(
     sourceWorkVersionId,
     source: 'pmc-submission-clone',
     activityType: 'WORK_VERSION_ADDED',
+    seedMetadataFromSource: seedPMCDraftMetadataFromSource,
   });
 
   try {

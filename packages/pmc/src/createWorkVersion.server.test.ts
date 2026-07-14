@@ -1,6 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPMCWorkVersion, isPMCWorkMetadata } from './createWorkVersion.server.js';
+import { seedPMCDraftMetadataFromSource } from './seedPMCDraftMetadata.server.js';
 
 const mockSubmissionFindFirst = vi.fn();
 const mockWorkVersionFindFirst = vi.fn();
@@ -92,6 +93,7 @@ describe('createPMCWorkVersion', () => {
       workId: 'work-1',
       sourceWorkVersionId: 'source-version-1',
       source: 'work-details',
+      seedMetadataFromSource: seedPMCDraftMetadataFromSource,
     });
   });
 
