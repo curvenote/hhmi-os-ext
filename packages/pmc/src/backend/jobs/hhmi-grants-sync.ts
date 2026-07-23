@@ -17,6 +17,7 @@ import {
 } from '../airtable-config.server.js';
 import { updateHHMIScientists, type HHMIScientist } from '../hhmi-grants.server.js';
 import { plural } from 'myst-common';
+import { parseSyncStrategy, type FundingSyncStrategy } from '../../common/grants-sync-strategy.js';
 
 // Job type constant
 export const HHMI_GRANTS_SYNC = 'HHMI_GRANTS_SYNC';
@@ -32,6 +33,8 @@ const AIRTABLE_PAGE_SIZE = 100; // Airtable's maximum page size
 export interface HHMIGrantsSyncJobPayload {
   site_id: string;
   sync_type: 'hhmi-scientists';
+  sync_strategy?: 'merge' | 'replace';
+  /** @deprecated Compatibility for jobs queued before sync_strategy was introduced. */
   syncStrategy?: 'merge' | 'replace';
 }
 
@@ -57,10 +60,6 @@ export interface JobResults {
   errorCount: number;
   errors: Array<{ recordId?: string; error: string }>;
   syncStrategy: 'merge' | 'replace';
-}
-
-export function resolveHhmiGrantsSyncStrategy(value: unknown): 'merge' | 'replace' {
-  return value === 'replace' ? 'replace' : 'merge';
 }
 
 // ==============================
@@ -278,7 +277,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
   const startTime = formatDate();
   const payload = data.payload as unknown as HHMIGrantsSyncJobPayload;
   const { site_id: siteId } = payload;
-  const syncStrategy = resolveHhmiGrantsSyncStrategy(payload.syncStrategy);
+  let syncStrategy: FundingSyncStrategy = 'merge';
 
   let totalRecords: number | undefined;
   let processedCount = 0;
@@ -296,6 +295,10 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
 
   try {
     job = await jobs.dbStartJob({ ...data, status: JobStatus.RUNNING });
+    const parsedSyncStrategy = parseSyncStrategy(payload.sync_strategy ?? payload.syncStrategy);
+    if (!parsedSyncStrategy) throw new Error('Invalid sync strategy');
+    syncStrategy = parsedSyncStrategy;
+
     await jobs.dbUpdateJob(job.id, {
       status: JobStatus.RUNNING,
       message: 'Starting funding identifiers sync from Airtable',
@@ -355,6 +358,10 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
         `Skipping database update for HHMI grants sync job ${job.id}: status is ${terminalJobBeforeUpdate.status}`,
       );
       return jobs.formatJobDTO(ctx, terminalJobBeforeUpdate);
+    }
+
+    if (syncStrategy === 'replace' && validCount === 0) {
+      throw new Error('Refusing to replace all funding data with an empty result set');
     }
 
     await jobs.dbUpdateJob(job.id, {

@@ -7,7 +7,7 @@ import type {
 } from 'react-router';
 import { useFetcher, data } from 'react-router';
 import { RefreshCw, List, User, Database } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { StatCardData } from '@curvenote/scms-core';
 import {
   PageFrame,
@@ -40,7 +40,8 @@ import {
   isSyncControlDisabled,
   partitionSyncJobsForDisplay,
 } from './grants-job-display.js';
-import { resolveFundingSyncStrategy } from './grants-sync-strategy.js';
+import { parseSyncStrategy } from '../common/grants-sync-strategy.js';
+import { shouldResetReplaceExistingData } from './sync-button-state.js';
 
 type JobResults = {
   startTime?: string;
@@ -132,7 +133,7 @@ export async function action(args: ActionFunctionArgs) {
 
   if (intent === 'sync') {
     const jobId = formData.get('jobId') as string;
-    const syncStrategy = resolveFundingSyncStrategy(formData.get('syncStrategy'));
+    const syncStrategy = parseSyncStrategy(formData.get('syncStrategy'));
     if (!syncStrategy) {
       return data({ error: 'Invalid sync strategy' }, { status: 400 });
     }
@@ -144,7 +145,7 @@ export async function action(args: ActionFunctionArgs) {
       payload: {
         site_id: ctx.site.id,
         sync_type: 'hhmi-scientists',
-        syncStrategy,
+        sync_strategy: syncStrategy,
       },
       invoked_by_id: ctx.user?.id,
     });
@@ -206,6 +207,14 @@ function SyncButton({
 }) {
   const isUpdating = fetcher.state === 'submitting' || fetcher.state === 'loading';
   const [replaceExistingData, setReplaceExistingData] = useState(false);
+  const hasSubmitted = useRef(false);
+
+  useEffect(() => {
+    if (shouldResetReplaceExistingData(hasSubmitted.current, fetcher.state)) {
+      setReplaceExistingData(false);
+      hasSubmitted.current = false;
+    }
+  }, [fetcher.state]);
 
   const handleSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
@@ -215,6 +224,7 @@ function SyncButton({
       formData.append('intent', 'sync');
       formData.append('jobId', jobId);
       formData.append('syncStrategy', replaceExistingData ? 'replace' : 'merge');
+      hasSubmitted.current = true;
       fetcher.submit(formData, { method: 'post' });
     },
     [fetcher, replaceExistingData],
@@ -593,7 +603,7 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
         job_type: 'HHMI_GRANTS_SYNC',
         status: 'RUNNING' as const,
         date_created: new Date().toISOString(),
-        payload: { site_id: '', sync_type: 'hhmi-scientists', syncStrategy },
+        payload: { site_id: '', sync_type: 'hhmi-scientists', sync_strategy: syncStrategy },
         messages: [],
         links: { self: '' },
         results: {
