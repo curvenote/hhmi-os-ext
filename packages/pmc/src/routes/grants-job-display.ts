@@ -5,6 +5,14 @@ export function isActiveSyncJob(job: JobDTO): boolean {
   return job.status === JobStatus.QUEUED || job.status === JobStatus.RUNNING;
 }
 
+export function isSyncControlDisabled(
+  activeJobs: JobDTO[],
+  fetcherState: string,
+  optimisticJobId: string | null,
+): boolean {
+  return activeJobs.length > 0 || fetcherState !== 'idle' || optimisticJobId != null;
+}
+
 function sortNewestFirst(jobs: JobDTO[]): JobDTO[] {
   return [...jobs].sort((a, b) => b.date_created.localeCompare(a.date_created));
 }

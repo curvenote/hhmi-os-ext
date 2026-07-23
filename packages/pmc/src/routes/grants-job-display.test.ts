@@ -2,7 +2,11 @@
 import { describe, expect, it } from 'vitest';
 import { JobStatus } from '@curvenote/scms-db';
 import type { JobDTO } from '@curvenote/common';
-import { getNextLatchedJobIds, partitionSyncJobsForDisplay } from './grants-job-display.js';
+import {
+  getNextLatchedJobIds,
+  isSyncControlDisabled,
+  partitionSyncJobsForDisplay,
+} from './grants-job-display.js';
 
 function makeJob(id: string, status: JobStatus, dateCreated: string): JobDTO {
   return {
@@ -48,5 +52,25 @@ describe('funding sync job display', () => {
     ];
 
     expect(getNextLatchedJobIds(jobs, ['previous'], 1)).toEqual(['active-new']);
+  });
+
+  it('enables sync after the featured job completes', () => {
+    const completed = makeJob('completed', JobStatus.COMPLETED, '2026-07-23T12:00:00.000Z');
+    const { activeJobs, featuredJobs } = partitionSyncJobsForDisplay(
+      [completed],
+      ['completed'],
+      10,
+    );
+
+    expect(featuredJobs).toEqual([completed]);
+    expect(isSyncControlDisabled(activeJobs, 'idle', null)).toBe(false);
+  });
+
+  it('keeps sync disabled while work is active or being submitted', () => {
+    const running = makeJob('running', JobStatus.RUNNING, '2026-07-23T12:00:00.000Z');
+
+    expect(isSyncControlDisabled([running], 'idle', null)).toBe(true);
+    expect(isSyncControlDisabled([], 'submitting', null)).toBe(true);
+    expect(isSyncControlDisabled([], 'idle', 'optimistic-job')).toBe(true);
   });
 });

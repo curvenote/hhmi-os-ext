@@ -37,6 +37,7 @@ import { invalidateOldHhmiSyncJobs, isHhmiSyncJobStale } from '../backend/jobs/h
 import {
   getNextLatchedJobIds,
   isActiveSyncJob,
+  isSyncControlDisabled,
   partitionSyncJobsForDisplay,
 } from './grants-job-display.js';
 import { resolveFundingSyncStrategy } from './grants-sync-strategy.js';
@@ -59,7 +60,6 @@ interface LoaderData {
     lastUpdated: string | null;
   };
   jobs: JobDTO[];
-  hasRunningJobs: boolean;
 }
 
 export const meta: MetaFunction<LoaderData> = () => {
@@ -98,15 +98,10 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
     items = refreshedJobList.items;
   }
 
-  const hasRunningJobs = items.some(
-    (job) => job.status === JobStatus.RUNNING || job.status === JobStatus.QUEUED,
-  );
-
   return {
     scientists,
     stats,
     jobs: items,
-    hasRunningJobs,
   };
 }
 
@@ -556,7 +551,7 @@ function SyncJobCard({ job }: { job: JobDTO }) {
 }
 
 export default function GrantsManagementPage({ loaderData }: { loaderData: LoaderData }) {
-  const { scientists: initialScientists, stats, jobs: initialJobs, hasRunningJobs } = loaderData;
+  const { scientists: initialScientists, stats, jobs: initialJobs } = loaderData;
 
   const syncFetcher = useFetcher({ key: 'sync' });
   const [jobsState, setJobs] = useState(initialJobs);
@@ -645,11 +640,11 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
   } = partitionSyncJobsForDisplay(displayedJobs, latchedJobIds, HISTORY_LIMIT);
   const hasFeaturedCompletedJob = featuredJobs.some((job) => !isActiveSyncJob(job));
 
-  const hasActiveSyncJobs =
-    hasRunningJobs ||
-    trulyActiveJobs.length > 0 ||
-    syncFetcher.state !== 'idle' ||
-    !!optimisticJobId;
+  const hasActiveSyncJobs = isSyncControlDisabled(
+    trulyActiveJobs,
+    syncFetcher.state,
+    optimisticJobId,
+  );
   const syncDisabled = hasActiveSyncJobs;
 
   // Revalidate the page while a sync job is queued/running (same pattern as submissions polling)
