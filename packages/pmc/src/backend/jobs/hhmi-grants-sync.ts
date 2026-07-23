@@ -340,7 +340,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
 // ==============================
 
 /**
- * Check if there are any old running HHMI sync jobs and mark them as failed
+ * Check if there are any old queued/running HHMI sync jobs and mark them as failed
  */
 export async function invalidateOldHhmiSyncJobs(): Promise<void> {
   const prisma = await getPrismaClient();
@@ -351,7 +351,9 @@ export async function invalidateOldHhmiSyncJobs(): Promise<void> {
     const oldJobs = await prisma.job.findMany({
       where: {
         job_type: HHMI_GRANTS_SYNC,
-        status: JobStatus.RUNNING,
+        status: {
+          in: [JobStatus.QUEUED, JobStatus.RUNNING],
+        },
         date_created: {
           lt: timeoutAgo,
         },

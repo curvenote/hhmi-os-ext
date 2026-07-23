@@ -21,10 +21,10 @@ interface PMCAirtableConfig {
         grantId: string;
         orcid: string;
         fullName: string;
-        firstNamePreferred: string;
-        firstNamePrimary: string;
-        lastNamePreferred: string;
-        email: string;
+        firstNamePreferred?: string;
+        firstNamePrimary?: string;
+        lastNamePreferred?: string;
+        email?: string;
       };
     };
   };
@@ -87,31 +87,16 @@ async function getPMCAirtableConfig(): Promise<PMCAirtableConfig> {
     );
   }
 
-  if (!airtableConfig.tables?.scientists?.fields?.firstNamePreferred) {
-    throw new Error(
-      'PMC Airtable scientists first name (preferred) field ID is missing. Please update the app-config.',
-    );
-  }
-
-  if (!airtableConfig.tables?.scientists?.fields?.firstNamePrimary) {
-    throw new Error(
-      'PMC Airtable scientists first name (primary) field ID is missing. Please update the app-config.',
-    );
-  }
-
-  if (!airtableConfig.tables?.scientists?.fields?.lastNamePreferred) {
-    throw new Error(
-      'PMC Airtable scientists last name (preferred) field ID is missing. Please update the app-config.',
-    );
-  }
-
-  if (!airtableConfig.tables?.scientists?.fields?.email) {
-    throw new Error(
-      'PMC Airtable scientists email field ID is missing. Please update the app-config.',
-    );
-  }
-
   return airtableConfig as PMCAirtableConfig;
+}
+
+function requireScientistFieldId(fieldId: string | undefined, fieldName: string): string {
+  if (!fieldId) {
+    throw new Error(
+      `PMC Airtable scientists ${fieldName} field ID is missing. Please update the app-config.`,
+    );
+  }
+  return fieldId;
 }
 
 // ==============================
@@ -160,22 +145,31 @@ export async function getAirtableScientistsFullNameFieldId(): Promise<string> {
 
 export async function getAirtableScientistsFirstNamePreferredFieldId(): Promise<string> {
   const config = await getPMCAirtableConfig();
-  return config.tables.scientists.fields.firstNamePreferred;
+  return requireScientistFieldId(
+    config.tables.scientists.fields.firstNamePreferred,
+    'first name (preferred)',
+  );
 }
 
 export async function getAirtableScientistsFirstNamePrimaryFieldId(): Promise<string> {
   const config = await getPMCAirtableConfig();
-  return config.tables.scientists.fields.firstNamePrimary;
+  return requireScientistFieldId(
+    config.tables.scientists.fields.firstNamePrimary,
+    'first name (primary)',
+  );
 }
 
 export async function getAirtableScientistsLastNamePreferredFieldId(): Promise<string> {
   const config = await getPMCAirtableConfig();
-  return config.tables.scientists.fields.lastNamePreferred;
+  return requireScientistFieldId(
+    config.tables.scientists.fields.lastNamePreferred,
+    'last name (preferred)',
+  );
 }
 
 export async function getAirtableScientistsEmailFieldId(): Promise<string> {
   const config = await getPMCAirtableConfig();
-  return config.tables.scientists.fields.email;
+  return requireScientistFieldId(config.tables.scientists.fields.email, 'email');
 }
 
 export async function getAirtableScientistsViewId(): Promise<string | undefined> {

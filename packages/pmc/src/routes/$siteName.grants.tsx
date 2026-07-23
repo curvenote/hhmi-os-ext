@@ -33,6 +33,7 @@ import {
   getAirtableBaseId,
   getAirtableScientistsTableId,
 } from '../backend/airtable-config.server.js';
+import { invalidateOldHhmiSyncJobs } from '../backend/jobs/hhmi-grants-sync.js';
 
 type JobResults = {
   startTime?: string;
@@ -68,6 +69,9 @@ const JOBS_FETCH_LIMIT = HISTORY_LIMIT + 5;
 
 export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
   const ctx = await withAppPMCContext(args, [scopes.site.submissions.update]);
+
+  // Resolve stale queued/running jobs before deciding whether polling and sync should be enabled.
+  await invalidateOldHhmiSyncJobs();
 
   // Get grants data and stats
   const [scientists, stats] = await Promise.all([getHHMIScientists(), getHHMIScientistsStats()]);
@@ -622,7 +626,7 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
   const syncDisabled = hasActiveSyncJobs;
 
   // Revalidate the page while a sync job is queued/running (same pattern as submissions polling)
-  useRevalidateOnInterval({ enabled: hasActiveSyncJobs, interval: 1500 });
+  useRevalidateOnInterval({ enabled: hasActiveSyncJobs, interval: 2000 });
 
   return (
     <PageFrame title="NIHMS Funding Identifiers">
