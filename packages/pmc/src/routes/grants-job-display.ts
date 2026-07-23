@@ -1,21 +1,6 @@
 import type { JobDTO } from '@curvenote/common';
 import { JobStatus } from '@curvenote/scms-db';
 
-export interface CancellationActionData {
-  success: boolean;
-  cancelled: boolean;
-}
-
-export function getCancellationOutcome(
-  fetcherState: string,
-  actionData: CancellationActionData | undefined,
-): string | null {
-  if (fetcherState === 'idle' && actionData?.cancelled === false) {
-    return 'Job could not be cancelled because it already finished.';
-  }
-  return null;
-}
-
 export function isActiveSyncJob(job: JobDTO): boolean {
   return job.status === JobStatus.QUEUED || job.status === JobStatus.RUNNING;
 }

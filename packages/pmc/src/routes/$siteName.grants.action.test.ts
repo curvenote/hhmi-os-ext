@@ -1,10 +1,9 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActionFunctionArgs } from 'react-router';
 
 const mockEnqueueAndDispatchJob = vi.fn();
 const mockWithAppPMCContext = vi.fn();
-const mockUpdateMany = vi.fn();
 
 vi.mock('../backend/context.server.js', () => ({
   withAppPMCContext: mockWithAppPMCContext,
@@ -12,9 +11,6 @@ vi.mock('../backend/context.server.js', () => ({
 
 vi.mock('@curvenote/scms-server', () => ({
   enqueueAndDispatchJob: mockEnqueueAndDispatchJob,
-  getPrismaClient: vi.fn(async () => ({
-    job: { updateMany: mockUpdateMany },
-  })),
   jobs: {},
 }));
 
@@ -38,7 +34,7 @@ vi.mock('../backend/jobs/hhmi-grants-sync.js', async (importActual) => ({
 const { action } = await import('./$siteName.grants.js');
 
 function createActionArgs(
-  intent: 'sync' | 'cancel',
+  intent: 'sync',
   options: { syncStrategy?: string; jobId?: string } = {},
 ): ActionFunctionArgs {
   const formData = new FormData();
@@ -59,18 +55,11 @@ function createActionArgs(
 describe('grants route action', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-07-23T12:00:00.000Z'));
     mockWithAppPMCContext.mockResolvedValue({
       site: { id: 'site-1' },
       user: { id: 'user-1' },
     });
     mockEnqueueAndDispatchJob.mockResolvedValue(undefined);
-    mockUpdateMany.mockResolvedValue({ count: 1 });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it('returns 400 without enqueueing for an invalid strategy', async () => {
@@ -96,33 +85,5 @@ describe('grants route action', () => {
       },
       invoked_by_id: 'user-1',
     });
-  });
-
-  it('cancels only an active job belonging to the current site', async () => {
-    const result = await action(createActionArgs('cancel'));
-
-    expect(mockUpdateMany).toHaveBeenCalledWith({
-      where: {
-        id: 'job-1',
-        payload: { path: ['site_id'], equals: 'site-1' },
-        job_type: 'HHMI_GRANTS_SYNC',
-        status: { in: ['QUEUED', 'RUNNING'] },
-      },
-      data: {
-        status: 'CANCELLED',
-        messages: { push: 'Job was cancelled by user' },
-        date_modified: '2026-07-23T12:00:00.000Z',
-      },
-    });
-    expect(result).toEqual({ success: true, cancelled: true });
-  });
-
-  it('reports when the active scoped job could not be cancelled', async () => {
-    mockUpdateMany.mockResolvedValueOnce({ count: 0 });
-
-    const result = await action(createActionArgs('cancel'));
-
-    expect(mockUpdateMany).toHaveBeenCalledTimes(1);
-    expect(result).toEqual({ success: true, cancelled: false });
   });
 });

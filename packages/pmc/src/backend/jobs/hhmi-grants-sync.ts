@@ -209,7 +209,7 @@ function transformAirtableRecord(
 // Job Processing
 // ==============================
 
-export function siteScopedJobWhere(jobId: string, siteId: string) {
+function siteScopedJobWhere(jobId: string, siteId: string) {
   return {
     id: jobId,
     payload: {
@@ -219,39 +219,20 @@ export function siteScopedJobWhere(jobId: string, siteId: string) {
   };
 }
 
-export async function conditionallyUpdateRunningHhmiSyncJob(
-  jobId: string,
-  siteId: string,
-  message: string,
-) {
+async function getTerminalHhmiSyncJob(jobId: string, siteId: string) {
   const prisma = await getPrismaClient();
-  const result = await prisma.job.updateMany({
-    where: {
-      ...siteScopedJobWhere(jobId, siteId),
-      job_type: HHMI_GRANTS_SYNC,
-      status: {
-        in: [JobStatus.QUEUED, JobStatus.RUNNING],
-      },
-    },
-    data: {
-      date_modified: formatDate(),
-      status: JobStatus.RUNNING,
-      messages: { push: message },
-    },
-  });
   const job = await prisma.job.findFirst({
-    where: {
-      ...siteScopedJobWhere(jobId, siteId),
-      job_type: HHMI_GRANTS_SYNC,
-    },
+    where: siteScopedJobWhere(jobId, siteId),
   });
-  return { count: result.count, job };
-}
-
-function didHhmiSyncProgressStop(
-  progress: Awaited<ReturnType<typeof conditionallyUpdateRunningHhmiSyncJob>>,
-) {
-  return progress.count === 0 || progress.job?.status !== JobStatus.RUNNING;
+  if (
+    job &&
+    (job.status === JobStatus.COMPLETED ||
+      job.status === JobStatus.FAILED ||
+      job.status === JobStatus.CANCELLED)
+  ) {
+    return job;
+  }
+  return null;
 }
 
 export async function conditionallyTerminalizeHhmiSyncJob(
@@ -314,36 +295,32 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
   let skippedCount = 0;
   let errorCount = 0;
   const errors: Array<{ recordId?: string; error: string }> = [];
+  let job;
   let completedJob;
 
-  const start = await conditionallyUpdateRunningHhmiSyncJob(
-    data.id,
-    siteId,
-    'Starting funding identifiers sync from Airtable',
-  );
-  if (!start.job) {
-    throw new Error(`HHMI grants sync job ${data.id} not found`);
+  const terminalJob = await getTerminalHhmiSyncJob(data.id, siteId);
+  if (terminalJob) {
+    console.log(`Skipping HHMI grants sync job ${data.id}: status is ${terminalJob.status}`);
+    return jobs.formatJobDTO(ctx, terminalJob);
   }
-  if (didHhmiSyncProgressStop(start)) {
-    console.log(`Skipping HHMI grants sync job ${data.id}: status is ${start.job.status}`);
-    return jobs.formatJobDTO(ctx, start.job);
-  }
-  const job = start.job;
 
   try {
+    job = await jobs.dbStartJob({ ...data, status: JobStatus.RUNNING });
     const parsedSyncStrategy = parseSyncStrategy(payload.sync_strategy ?? payload.syncStrategy);
     if (!parsedSyncStrategy) throw new Error('Invalid sync strategy');
     syncStrategy = parsedSyncStrategy;
 
+    await jobs.dbUpdateJob(job.id, {
+      status: JobStatus.RUNNING,
+      message: 'Starting funding identifiers sync from Airtable',
+    });
+
     console.log(`Starting HHMI grants sync job ${job.id}`);
 
-    const fetching = await conditionallyUpdateRunningHhmiSyncJob(
-      job.id,
-      siteId,
-      'Fetching funding identifiers from Airtable',
-    );
-    if (!fetching.job) throw new Error(`HHMI grants sync job ${job.id} not found`);
-    if (didHhmiSyncProgressStop(fetching)) return jobs.formatJobDTO(ctx, fetching.job);
+    await jobs.dbUpdateJob(job.id, {
+      status: JobStatus.RUNNING,
+      message: 'Fetching funding identifiers from Airtable',
+    });
 
     // Fetch all scientists from Airtable
     const airtableRecords = await fetchAllScientists();
@@ -351,13 +328,10 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
 
     console.log(`Retrieved ${plural('%s record(s)', totalRecords)} from Airtable`);
 
-    const processing = await conditionallyUpdateRunningHhmiSyncJob(
-      job.id,
-      siteId,
-      `Processing ${plural('%s record(s)', totalRecords)} from Airtable`,
-    );
-    if (!processing.job) throw new Error(`HHMI grants sync job ${job.id} not found`);
-    if (didHhmiSyncProgressStop(processing)) return jobs.formatJobDTO(ctx, processing.job);
+    await jobs.dbUpdateJob(job.id, {
+      status: JobStatus.RUNNING,
+      message: `Processing ${plural('%s record(s)', totalRecords)} from Airtable`,
+    });
 
     // Transform and validate records
     const scientists: HHMIScientist[] = [];
@@ -392,13 +366,10 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
       throw new Error('Refusing to replace all funding data with an empty result set');
     }
 
-    const updating = await conditionallyUpdateRunningHhmiSyncJob(
-      job.id,
-      siteId,
-      `Updating funding identifiers with ${plural('%s valid record(s)', validCount)}`,
-    );
-    if (!updating.job) throw new Error(`HHMI grants sync job ${job.id} not found`);
-    if (didHhmiSyncProgressStop(updating)) return jobs.formatJobDTO(ctx, updating.job);
+    await jobs.dbUpdateJob(job.id, {
+      status: JobStatus.RUNNING,
+      message: `Updating funding identifiers with ${plural('%s valid record(s)', validCount)}`,
+    });
 
     // Update the scientists data in the database
     console.log(

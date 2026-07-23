@@ -46,7 +46,6 @@ vi.stubGlobal('fetch', mockFetch);
 
 const {
   HHMI_GRANTS_SYNC,
-  conditionallyUpdateRunningHhmiSyncJob,
   conditionallyTerminalizeHhmiSyncJob,
   hhmiGrantsSyncHandler,
   invalidateOldHhmiSyncJobs,
@@ -304,32 +303,6 @@ describe('HHMI grants sync jobs', () => {
     expect(mockFindFirst).not.toHaveBeenCalled();
   });
 
-  it('updates progress only for the active HHMI sync job at the requested site', async () => {
-    const result = await conditionallyUpdateRunningHhmiSyncJob(
-      'job-1',
-      'site-1',
-      'Fetching funding identifiers from Airtable',
-    );
-
-    expect(mockUpdateMany).toHaveBeenCalledWith({
-      where: {
-        id: 'job-1',
-        payload: { path: ['site_id'], equals: 'site-1' },
-        job_type: HHMI_GRANTS_SYNC,
-        status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] },
-      },
-      data: {
-        date_modified: '2026-07-23T12:00:00.000Z',
-        status: JobStatus.RUNNING,
-        messages: { push: 'Fetching funding identifiers from Airtable' },
-      },
-    });
-    expect(result).toEqual({
-      count: 1,
-      job: expect.objectContaining({ id: 'job-1', status: JobStatus.RUNNING }),
-    });
-  });
-
   describe('hhmiGrantsSyncHandler', () => {
     it.each([JobStatus.FAILED, JobStatus.CANCELLED, JobStatus.COMPLETED])(
       'does not restart a job already in terminal status %s',
@@ -395,20 +368,9 @@ describe('HHMI grants sync jobs', () => {
           payload: { site_id: 'site-1', sync_type: 'hhmi-scientists' },
         });
 
-        expect(mockDbStartJob).not.toHaveBeenCalled();
-        expect(mockUpdateMany).toHaveBeenCalledWith({
-          where: {
-            id: 'job-1',
-            payload: { path: ['site_id'], equals: 'site-1' },
-            job_type: HHMI_GRANTS_SYNC,
-            status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] },
-          },
-          data: {
-            date_modified: '2026-07-23T12:00:00.000Z',
-            status: JobStatus.RUNNING,
-            messages: { push: 'Starting funding identifiers sync from Airtable' },
-          },
-        });
+        expect(mockDbStartJob).toHaveBeenCalledWith(
+          expect.objectContaining({ id: 'job-1', status: JobStatus.RUNNING }),
+        );
         expect(mockUpdateHHMIScientists).toHaveBeenCalledWith([], 'merge');
         expect(mockUpdateMany).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -704,128 +666,6 @@ describe('HHMI grants sync jobs', () => {
       consoleError.mockRestore();
     });
 
-    it('preserves cancellation that occurs while Airtable records are fetched', async () => {
-      const queuedJob = { id: 'job-1', status: JobStatus.QUEUED };
-      const cancelledJob = { id: 'job-1', status: JobStatus.CANCELLED };
-      mockJobState = queuedJob;
-      mockFetch.mockImplementationOnce(async () => {
-        mockJobState = cancelledJob;
-        return {
-          ok: true,
-          json: async () => ({ records: [] }),
-        };
-      });
-
-      const result = await hhmiGrantsSyncHandler({} as never, {
-        id: 'job-1',
-        job_type: HHMI_GRANTS_SYNC,
-        payload: { site_id: 'site-1', sync_type: 'hhmi-scientists' },
-      });
-
-      const processingUpdate = mockUpdateMany.mock.calls.find(
-        ([call]) => call.data.messages?.push === 'Processing 0 records from Airtable',
-      );
-      expect(processingUpdate?.[0].where).toEqual({
-        id: 'job-1',
-        payload: { path: ['site_id'], equals: 'site-1' },
-        job_type: HHMI_GRANTS_SYNC,
-        status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] },
-      });
-      await expect(
-        mockUpdateMany.mock.results[mockUpdateMany.mock.results.length - 1]?.value,
-      ).resolves.toEqual({ count: 0 });
-      expect(mockDbStartJob).not.toHaveBeenCalled();
-      expect(mockUpdateHHMIScientists).not.toHaveBeenCalled();
-      expect(mockUpdateMany.mock.calls.map(([call]) => call.data.status)).not.toContain(
-        JobStatus.COMPLETED,
-      );
-      expect(mockUpdateMany.mock.calls.map(([call]) => call.data.status)).not.toContain(
-        JobStatus.FAILED,
-      );
-      expect(result).toBe(cancelledJob);
-    });
-
-    it('preserves cancellation immediately before the persistence progress transition', async () => {
-      const cancelledJob = { id: 'job-1', status: JobStatus.CANCELLED };
-      const defaultUpdateMany = mockUpdateMany.getMockImplementation();
-      mockUpdateMany.mockImplementation(async (args) => {
-        if (args.data.messages?.push?.startsWith('Updating funding identifiers')) {
-          mockJobState = cancelledJob;
-        }
-        return defaultUpdateMany?.(args);
-      });
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          records: [
-            { id: 'record-1', fields: { 'grant-id': 'grant-1', 'full-name': 'Scientist' } },
-          ],
-        }),
-      });
-
-      const result = await hhmiGrantsSyncHandler({} as never, {
-        id: 'job-1',
-        job_type: HHMI_GRANTS_SYNC,
-        payload: { site_id: 'site-1', sync_type: 'hhmi-scientists' },
-      });
-
-      const updatingCall = mockUpdateMany.mock.calls.find(([call]) =>
-        call.data.messages?.push?.startsWith('Updating funding identifiers'),
-      );
-      expect(updatingCall?.[0].where).toEqual({
-        id: 'job-1',
-        payload: { path: ['site_id'], equals: 'site-1' },
-        job_type: HHMI_GRANTS_SYNC,
-        status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] },
-      });
-      expect(mockUpdateHHMIScientists).not.toHaveBeenCalled();
-      expect(mockUpdateMany.mock.calls.map(([call]) => call.data.status)).not.toContain(
-        JobStatus.COMPLETED,
-      );
-      expect(mockUpdateMany.mock.calls.map(([call]) => call.data.status)).not.toContain(
-        JobStatus.FAILED,
-      );
-      expect(result).toBe(cancelledJob);
-    });
-
-    it('preserves cancellation between the persistence progress update and its follow-up read', async () => {
-      const cancelledJob = { id: 'job-1', status: JobStatus.CANCELLED };
-      const defaultUpdateMany = mockUpdateMany.getMockImplementation();
-      mockUpdateMany.mockImplementation(async (args) => {
-        const updateResult = await defaultUpdateMany?.(args);
-        if (args.data.messages?.push?.startsWith('Updating funding identifiers')) {
-          mockJobState = cancelledJob;
-        }
-        return updateResult;
-      });
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          records: [
-            { id: 'record-1', fields: { 'grant-id': 'grant-1', 'full-name': 'Scientist' } },
-          ],
-        }),
-      });
-
-      const result = await hhmiGrantsSyncHandler({} as never, {
-        id: 'job-1',
-        job_type: HHMI_GRANTS_SYNC,
-        payload: { site_id: 'site-1', sync_type: 'hhmi-scientists' },
-      });
-
-      const updatingCallIndex = mockUpdateMany.mock.calls.findIndex(([call]) =>
-        call.data.messages?.push?.startsWith('Updating funding identifiers'),
-      );
-      await expect(mockUpdateMany.mock.results[updatingCallIndex]?.value).resolves.toEqual({
-        count: 1,
-      });
-      await expect(mockFindFirst.mock.results[updatingCallIndex]?.value).resolves.toBe(
-        cancelledJob,
-      );
-      expect(mockUpdateHHMIScientists).not.toHaveBeenCalled();
-      expect(result).toBe(cancelledJob);
-    });
-
     it('preserves a terminal status reached while handling an error', async () => {
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const queuedJob = { id: 'job-1', status: JobStatus.QUEUED };
@@ -856,8 +696,12 @@ describe('HHMI grants sync jobs', () => {
       consoleError.mockRestore();
     });
 
-    it('fails clearly without terminalizing when the dispatched job row is missing', async () => {
-      mockJobState = null;
+    it('does not attempt failed terminalization when completed job lookup returns null', async () => {
+      mockJobState = { id: 'job-1', status: JobStatus.RUNNING };
+      mockFindFirst
+        .mockImplementationOnce(async () => null)
+        .mockImplementationOnce(async () => null)
+        .mockImplementationOnce(async () => null);
 
       await expect(
         hhmiGrantsSyncHandler({} as never, {
@@ -870,14 +714,8 @@ describe('HHMI grants sync jobs', () => {
       expect(mockUpdateMany).toHaveBeenCalledTimes(1);
       expect(mockUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ status: JobStatus.RUNNING }),
+          data: expect.objectContaining({ status: JobStatus.COMPLETED }),
         }),
-      );
-      expect(mockUpdateMany.mock.calls.map(([call]) => call.data.status)).not.toContain(
-        JobStatus.FAILED,
-      );
-      expect(mockUpdateMany.mock.calls.map(([call]) => call.data.status)).not.toContain(
-        JobStatus.COMPLETED,
       );
       expect(mockFormatJobDTO).not.toHaveBeenCalled();
     });

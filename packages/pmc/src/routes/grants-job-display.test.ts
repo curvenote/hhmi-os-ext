@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { JobStatus } from '@curvenote/scms-db';
 import type { JobDTO } from '@curvenote/common';
 import {
-  getCancellationOutcome,
   getNextLatchedJobIds,
   isSyncControlDisabled,
   partitionSyncJobsForDisplay,
@@ -18,15 +17,6 @@ function makeJob(id: string, status: JobStatus, dateCreated: string): JobDTO {
 }
 
 describe('funding sync job display', () => {
-  it('shows a cancellation-lost note only after the action settles', () => {
-    expect(getCancellationOutcome('idle', { success: true, cancelled: false })).toBe(
-      'Job could not be cancelled because it already finished.',
-    );
-    expect(getCancellationOutcome('submitting', { success: true, cancelled: false })).toBeNull();
-    expect(getCancellationOutcome('idle', { success: true, cancelled: true })).toBeNull();
-    expect(getCancellationOutcome('idle', undefined)).toBeNull();
-  });
-
   it('features a newly active job before the latch effect runs', () => {
     const active = makeJob('active', JobStatus.RUNNING, '2026-07-23T12:00:00.000Z');
 

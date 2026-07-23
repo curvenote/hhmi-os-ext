@@ -20,14 +20,13 @@ import {
   useRevalidateOnInterval,
 } from '@curvenote/scms-core';
 import { withAppPMCContext } from '../backend/context.server.js';
-import { JobStatus } from '@curvenote/scms-db';
 import type { JobDTO } from '@curvenote/common';
 import {
   getHHMIScientists,
   getHHMIScientistsStats,
   type HHMIScientist,
 } from '../backend/hhmi-grants.server.js';
-import { jobs, getPrismaClient, enqueueAndDispatchJob } from '@curvenote/scms-server';
+import { jobs, enqueueAndDispatchJob } from '@curvenote/scms-server';
 import {
   getAirtableApiKey,
   getAirtableBaseId,
@@ -37,14 +36,12 @@ import {
   HHMI_GRANTS_SYNC,
   invalidateOldHhmiSyncJobs,
   isHhmiSyncJobStale,
-  siteScopedJobWhere,
 } from '../backend/jobs/hhmi-grants-sync.js';
 import {
   getNextLatchedJobIds,
   isActiveSyncJob,
   isSyncControlDisabled,
   partitionSyncJobsForDisplay,
-  getCancellationOutcome,
 } from './grants-job-display.js';
 import { parseSyncStrategy } from '../common/grants-sync-strategy.js';
 import { shouldResetReplaceExistingData } from './sync-button-state.js';
@@ -108,30 +105,6 @@ export async function action(args: ActionFunctionArgs) {
   const ctx = await withAppPMCContext(args, [scopes.site.submissions.update]);
   const formData = await args.request.formData();
   const intent = formData.get('intent');
-
-  if (intent === 'cancel') {
-    const jobId = formData.get('jobId') as string;
-
-    const prisma = await getPrismaClient();
-    const result = await prisma.job.updateMany({
-      where: {
-        ...siteScopedJobWhere(jobId, ctx.site.id),
-        job_type: HHMI_GRANTS_SYNC,
-        status: {
-          in: [JobStatus.QUEUED, JobStatus.RUNNING],
-        },
-      },
-      data: {
-        status: JobStatus.CANCELLED,
-        messages: {
-          push: 'Job was cancelled by user',
-        },
-        date_modified: new Date().toISOString(),
-      },
-    });
-
-    return { success: true, cancelled: result.count > 0 };
-  }
 
   if (intent === 'sync') {
     const jobId = formData.get('jobId') as string;
@@ -473,11 +446,7 @@ function GrantsTable({ scientists }: { scientists: HHMIScientist[] }) {
 }
 
 function SyncJobCard({ job }: { job: JobDTO }) {
-  const cancelFetcher = useFetcher<{ success: boolean; cancelled: boolean }>();
   const results = job.results as JobResults;
-  const isActive = isActiveSyncJob(job);
-  const isCancellable = isActive;
-  const cancellationOutcome = getCancellationOutcome(cancelFetcher.state, cancelFetcher.data);
 
   return (
     <li>
@@ -504,24 +473,7 @@ function SyncJobCard({ job }: { job: JobDTO }) {
                 {job.status.toLowerCase()}
               </span>
             </div>
-            {isCancellable && (
-              <cancelFetcher.Form method="post" className="flex items-center h-6">
-                <input type="hidden" name="intent" value="cancel" />
-                <input type="hidden" name="jobId" value={job.id} />
-                <ui.Button
-                  className="flex gap-0 p-0"
-                  type="submit"
-                  variant="link"
-                  disabled={cancelFetcher.state === 'submitting'}
-                >
-                  Cancel
-                </ui.Button>
-              </cancelFetcher.Form>
-            )}
           </div>
-          {cancellationOutcome && (
-            <div className="mb-1 text-sm text-orange-700">{cancellationOutcome}</div>
-          )}
 
           <div className="flex gap-2 mb-1 text-sm text-gray-500">
             <div>Started: {formatDate(job.date_created, 'yyyy-MM-dd HH:mm:ss')}</div>
