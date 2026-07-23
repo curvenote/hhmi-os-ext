@@ -34,6 +34,11 @@ import {
   getAirtableScientistsTableId,
 } from '../backend/airtable-config.server.js';
 import { invalidateOldHhmiSyncJobs } from '../backend/jobs/hhmi-grants-sync.js';
+import {
+  getNextLatchedJobIds,
+  isActiveSyncJob,
+  partitionSyncJobsForDisplay,
+} from './grants-job-display.js';
 
 type JobResults = {
   startTime?: string;
@@ -64,6 +69,7 @@ export const meta: MetaFunction<LoaderData> = () => {
 };
 
 const HISTORY_LIMIT = 10;
+const FEATURED_LATCH_LIMIT = 1;
 // Fetch a small buffer above history so an active job doesn't push older runs off the list
 const JOBS_FETCH_LIMIT = HISTORY_LIMIT + 5;
 
@@ -434,10 +440,6 @@ function GrantsTable({ scientists }: { scientists: HHMIScientist[] }) {
   );
 }
 
-function isActiveSyncJob(job: JobDTO) {
-  return job.status === JobStatus.QUEUED || job.status === JobStatus.RUNNING;
-}
-
 function SyncJobCard({ job }: { job: JobDTO }) {
   const cancelFetcher = useFetcher();
   const results = job.results as JobResults;
@@ -600,23 +602,20 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
 
   // Latch any job we observe as queued/running so it stays featured after completion
   useEffect(() => {
-    const activeIds = displayedJobs.filter(isActiveSyncJob).map((job) => job.id);
-    if (activeIds.length === 0) return;
-
     setLatchedJobIds((prev) => {
-      const missing = activeIds.filter((id) => !prev.includes(id));
-      return missing.length === 0 ? prev : [...prev, ...missing];
+      const next = getNextLatchedJobIds(displayedJobs, prev, FEATURED_LATCH_LIMIT);
+      return next.length === prev.length && next.every((id, index) => id === prev[index])
+        ? prev
+        : next;
     });
   }, [displayedJobs]);
 
-  const trulyActiveJobs = displayedJobs.filter(isActiveSyncJob);
-  const featuredJobs = latchedJobIds
-    .map((id) => displayedJobs.find((job) => job.id === id))
-    .filter((job): job is JobDTO => job != null);
-  const featuredJobIds = new Set(featuredJobs.map((job) => job.id));
-  const historyJobs = displayedJobs
-    .filter((job) => !isActiveSyncJob(job) && !featuredJobIds.has(job.id))
-    .slice(0, HISTORY_LIMIT);
+  const {
+    activeJobs: trulyActiveJobs,
+    featuredJobs,
+    historyJobs,
+  } = partitionSyncJobsForDisplay(displayedJobs, latchedJobIds, HISTORY_LIMIT);
+  const hasFeaturedCompletedJob = featuredJobs.some((job) => !isActiveSyncJob(job));
 
   const hasActiveSyncJobs =
     hasRunningJobs ||
@@ -661,7 +660,9 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
                 <p>
                   {displayedJobs.length === 0
                     ? 'No sync jobs yet. Click "Sync Funding Identifiers" to start your first sync.'
-                    : 'No completed sync jobs yet.'}
+                    : hasFeaturedCompletedJob
+                      ? 'No other sync job history yet.'
+                      : 'No completed sync jobs yet.'}
                 </p>
               </primitives.Card>
             ) : (
