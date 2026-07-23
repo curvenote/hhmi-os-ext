@@ -22,6 +22,7 @@ import { plural } from 'myst-common';
 export const HHMI_GRANTS_SYNC = 'HHMI_GRANTS_SYNC';
 
 const JOB_TIMEOUT = 5; // minutes
+export const HHMI_GRANTS_SYNC_TIMEOUT_MS = JOB_TIMEOUT * 60 * 1000;
 const AIRTABLE_PAGE_SIZE = 100; // Airtable's maximum page size
 
 // ==============================
@@ -372,6 +373,11 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
 // Utility Functions
 // ==============================
 
+export function isHhmiSyncJobStale(job: { status: string; date_modified: string }): boolean {
+  const isActive = job.status === JobStatus.QUEUED || job.status === JobStatus.RUNNING;
+  return isActive && Date.parse(job.date_modified) < Date.now() - HHMI_GRANTS_SYNC_TIMEOUT_MS;
+}
+
 /**
  * Check if there are any stale queued/running HHMI sync jobs for a site and mark them as failed
  */
@@ -379,7 +385,7 @@ export async function invalidateOldHhmiSyncJobs(siteId: string): Promise<void> {
   const prisma = await getPrismaClient();
 
   try {
-    const timeoutAgo = new Date(Date.now() - JOB_TIMEOUT * 60 * 1000).toISOString();
+    const timeoutAgo = new Date(Date.now() - HHMI_GRANTS_SYNC_TIMEOUT_MS).toISOString();
 
     const oldJobs = await prisma.job.findMany({
       where: {

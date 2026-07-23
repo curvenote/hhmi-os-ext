@@ -33,7 +33,7 @@ import {
   getAirtableBaseId,
   getAirtableScientistsTableId,
 } from '../backend/airtable-config.server.js';
-import { invalidateOldHhmiSyncJobs } from '../backend/jobs/hhmi-grants-sync.js';
+import { invalidateOldHhmiSyncJobs, isHhmiSyncJobStale } from '../backend/jobs/hhmi-grants-sync.js';
 import {
   getNextLatchedJobIds,
   isActiveSyncJob,
@@ -76,20 +76,26 @@ const JOBS_FETCH_LIMIT = HISTORY_LIMIT + 5;
 export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
   const ctx = await withAppPMCContext(args, [scopes.site.submissions.update]);
 
-  // Resolve stale queued/running jobs before deciding whether polling and sync should be enabled.
-  await invalidateOldHhmiSyncJobs(ctx.site.id);
+  // Load page data in parallel. Only run the cleanup query when the loaded jobs indicate it is
+  // necessary, avoiding an extra database round-trip on normal polling revalidations.
+  const [scientists, stats, initialJobList] = await Promise.all([
+    getHHMIScientists(),
+    getHHMIScientistsStats(),
+    jobs.list(ctx, ctx.site.id, ['HHMI_GRANTS_SYNC'], undefined, JOBS_FETCH_LIMIT),
+  ]);
+  let items = initialJobList.items;
 
-  // Get grants data and stats
-  const [scientists, stats] = await Promise.all([getHHMIScientists(), getHHMIScientistsStats()]);
-
-  // Get recent sync jobs (history is capped client-side to HISTORY_LIMIT)
-  const { items } = await jobs.list(
-    ctx,
-    ctx.site.id,
-    ['HHMI_GRANTS_SYNC'],
-    undefined,
-    JOBS_FETCH_LIMIT,
-  );
+  if (items.some(isHhmiSyncJobStale)) {
+    await invalidateOldHhmiSyncJobs(ctx.site.id);
+    const refreshedJobList = await jobs.list(
+      ctx,
+      ctx.site.id,
+      ['HHMI_GRANTS_SYNC'],
+      undefined,
+      JOBS_FETCH_LIMIT,
+    );
+    items = refreshedJobList.items;
+  }
 
   const hasRunningJobs = items.some(
     (job) => job.status === JobStatus.RUNNING || job.status === JobStatus.QUEUED,
