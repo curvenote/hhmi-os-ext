@@ -49,6 +49,7 @@ const {
   hhmiGrantsSyncHandler,
   invalidateOldHhmiSyncJobs,
   isHhmiSyncJobStale,
+  resolveHhmiGrantsSyncStrategy,
 } = await import('./hhmi-grants-sync.js');
 
 describe('HHMI grants sync jobs', () => {
@@ -158,6 +159,15 @@ describe('HHMI grants sync jobs', () => {
     ).toBe(false);
   });
 
+  it.each([
+    [undefined, 'merge'],
+    ['invalid', 'merge'],
+    ['merge', 'merge'],
+    ['replace', 'replace'],
+  ])('resolves sync strategy %s to %s', (value, expected) => {
+    expect(resolveHhmiGrantsSyncStrategy(value)).toBe(expected);
+  });
+
   it('does not overwrite a terminal status when completing a job', async () => {
     const cancelledJob = { id: 'job-1', status: JobStatus.CANCELLED };
     mockUpdateMany.mockResolvedValue({ count: 0 });
@@ -240,6 +250,65 @@ describe('HHMI grants sync jobs', () => {
         expect(result).toBe(completedJob);
       },
     );
+
+    it.each(['merge', 'replace'] as const)(
+      'forwards %s strategy to persistence and completed results',
+      async (syncStrategy) => {
+        const activeJob = { id: 'job-1', status: JobStatus.RUNNING };
+        const completedJob = { id: 'job-1', status: JobStatus.COMPLETED };
+        mockFindFirst
+          .mockResolvedValueOnce(activeJob)
+          .mockResolvedValueOnce(activeJob)
+          .mockResolvedValueOnce(completedJob);
+
+        await hhmiGrantsSyncHandler({} as never, {
+          id: 'job-1',
+          job_type: HHMI_GRANTS_SYNC,
+          payload: { site_id: 'site-1', sync_type: 'hhmi-scientists', syncStrategy },
+        });
+
+        expect(mockUpdateHHMIScientists).toHaveBeenCalledWith([], syncStrategy);
+        expect(mockUpdateMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              status: JobStatus.COMPLETED,
+              results: expect.objectContaining({ syncStrategy }),
+            }),
+          }),
+        );
+      },
+    );
+
+    it('records the resolved strategy in failed results', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const activeJob = { id: 'job-1', status: JobStatus.RUNNING };
+      const failedJob = { id: 'job-1', status: JobStatus.FAILED };
+      mockFindFirst
+        .mockResolvedValueOnce(activeJob)
+        .mockResolvedValueOnce(activeJob)
+        .mockResolvedValueOnce(failedJob);
+      mockUpdateHHMIScientists.mockRejectedValue(new Error('database unavailable'));
+
+      await hhmiGrantsSyncHandler({} as never, {
+        id: 'job-1',
+        job_type: HHMI_GRANTS_SYNC,
+        payload: {
+          site_id: 'site-1',
+          sync_type: 'hhmi-scientists',
+          syncStrategy: 'replace',
+        },
+      });
+
+      expect(mockUpdateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: JobStatus.FAILED,
+            results: expect.objectContaining({ syncStrategy: 'replace' }),
+          }),
+        }),
+      );
+      consoleError.mockRestore();
+    });
 
     it('stops before persisting scientists when a job becomes terminal mid-flight', async () => {
       const queuedJob = { id: 'job-1', status: JobStatus.QUEUED };

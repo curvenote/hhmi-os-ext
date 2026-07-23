@@ -39,6 +39,7 @@ import {
   isActiveSyncJob,
   partitionSyncJobsForDisplay,
 } from './grants-job-display.js';
+import { resolveFundingSyncStrategy } from './grants-sync-strategy.js';
 
 type JobResults = {
   startTime?: string;
@@ -136,6 +137,10 @@ export async function action(args: ActionFunctionArgs) {
 
   if (intent === 'sync') {
     const jobId = formData.get('jobId') as string;
+    const syncStrategy = resolveFundingSyncStrategy(formData.get('syncStrategy'));
+    if (!syncStrategy) {
+      return data({ error: 'Invalid sync strategy' }, { status: 400 });
+    }
 
     // Create a new HHMI_GRANTS_SYNC job
     await enqueueAndDispatchJob({
@@ -144,6 +149,7 @@ export async function action(args: ActionFunctionArgs) {
       payload: {
         site_id: ctx.site.id,
         sync_type: 'hhmi-scientists',
+        syncStrategy,
       },
       invoked_by_id: ctx.user?.id,
     });
@@ -204,6 +210,7 @@ function SyncButton({
   disabled: boolean;
 }) {
   const isUpdating = fetcher.state === 'submitting' || fetcher.state === 'loading';
+  const [replaceExistingData, setReplaceExistingData] = useState(false);
 
   const handleSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
@@ -212,13 +219,25 @@ function SyncButton({
       const formData = new FormData();
       formData.append('intent', 'sync');
       formData.append('jobId', jobId);
+      formData.append('syncStrategy', replaceExistingData ? 'replace' : 'merge');
       fetcher.submit(formData, { method: 'post' });
     },
-    [fetcher],
+    [fetcher, replaceExistingData],
   );
 
   return (
-    <fetcher.Form method="post" onSubmit={handleSubmit}>
+    <fetcher.Form method="post" onSubmit={handleSubmit} className="flex flex-col items-start gap-2">
+      <div className="flex items-center gap-2">
+        <ui.Checkbox
+          id="replace-existing-funding-data"
+          checked={replaceExistingData}
+          disabled={isUpdating || disabled}
+          onCheckedChange={(checked) => setReplaceExistingData(checked === true)}
+        />
+        <label htmlFor="replace-existing-funding-data" className="cursor-pointer text-sm">
+          Replace all existing data
+        </label>
+      </div>
       <ui.Button
         type="submit"
         variant="default"
@@ -570,6 +589,8 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
   useEffect(() => {
     if (syncFetcher.state !== 'idle' && syncFetcher.formData) {
       const jobId = syncFetcher.formData.get('jobId') as string;
+      const syncStrategy =
+        syncFetcher.formData.get('syncStrategy') === 'replace' ? 'replace' : 'merge';
       setOptimisticJobId(jobId);
 
       const optimisticJob = {
@@ -577,7 +598,7 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
         job_type: 'HHMI_GRANTS_SYNC',
         status: 'RUNNING' as const,
         date_created: new Date().toISOString(),
-        payload: { site_id: '', sync_type: 'hhmi-scientists' },
+        payload: { site_id: '', sync_type: 'hhmi-scientists', syncStrategy },
         messages: [],
         links: { self: '' },
         results: {
@@ -585,6 +606,7 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
           processedCount: '—',
           validCount: '—',
           errorCount: 0,
+          syncStrategy,
         },
       } as JobDTO & { date_modified: undefined };
 

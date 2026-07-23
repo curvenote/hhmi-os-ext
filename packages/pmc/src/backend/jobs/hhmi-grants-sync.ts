@@ -32,6 +32,7 @@ const AIRTABLE_PAGE_SIZE = 100; // Airtable's maximum page size
 export interface HHMIGrantsSyncJobPayload {
   site_id: string;
   sync_type: 'hhmi-scientists';
+  syncStrategy?: 'merge' | 'replace';
 }
 
 export interface AirtableScientistRecord {
@@ -56,6 +57,10 @@ export interface JobResults {
   errorCount: number;
   errors: Array<{ recordId?: string; error: string }>;
   syncStrategy: 'merge' | 'replace';
+}
+
+export function resolveHhmiGrantsSyncStrategy(value: unknown): 'merge' | 'replace' {
+  return value === 'replace' ? 'replace' : 'merge';
 }
 
 // ==============================
@@ -271,7 +276,9 @@ export async function conditionallyTerminalizeHhmiSyncJob(
  */
 export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
   const startTime = formatDate();
-  const { site_id: siteId } = data.payload as unknown as HHMIGrantsSyncJobPayload;
+  const payload = data.payload as unknown as HHMIGrantsSyncJobPayload;
+  const { site_id: siteId } = payload;
+  const syncStrategy = resolveHhmiGrantsSyncStrategy(payload.syncStrategy);
 
   let totalRecords: number | undefined;
   let processedCount = 0;
@@ -357,9 +364,9 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
 
     // Update the scientists data in the database
     console.log(
-      `🔄 Updating database with ${scientists.length} scientists using merge strategy...`,
+      `🔄 Updating database with ${scientists.length} scientists using ${syncStrategy} strategy...`,
     );
-    await updateHHMIScientists(scientists, 'merge');
+    await updateHHMIScientists(scientists, syncStrategy);
     console.log(`✅ Database update completed`);
 
     console.log(`Successfully synced ${validCount} HHMI grants`);
@@ -376,7 +383,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
         skippedCount,
         errorCount,
         errors,
-        syncStrategy: 'merge',
+        syncStrategy,
       } satisfies JobResults,
     });
     if (!completedJob) throw new Error(`HHMI grants sync job ${job.id} not found`);
@@ -397,7 +404,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
           skippedCount,
           errorCount,
           errors: errors.concat({ error: err.message || String(err) }),
-          syncStrategy: 'merge',
+          syncStrategy,
         } satisfies JobResults,
       });
       if (!failedJob) throw new Error(`HHMI grants sync job ${job.id} not found`);
