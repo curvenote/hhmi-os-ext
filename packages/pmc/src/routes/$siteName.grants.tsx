@@ -33,7 +33,11 @@ import {
   getAirtableBaseId,
   getAirtableScientistsTableId,
 } from '../backend/airtable-config.server.js';
-import { invalidateOldHhmiSyncJobs, isHhmiSyncJobStale } from '../backend/jobs/hhmi-grants-sync.js';
+import {
+  invalidateOldHhmiSyncJobs,
+  isHhmiSyncJobStale,
+  siteScopedJobWhere,
+} from '../backend/jobs/hhmi-grants-sync.js';
 import {
   getNextLatchedJobIds,
   isActiveSyncJob,
@@ -106,10 +110,14 @@ export async function action(args: ActionFunctionArgs) {
   if (intent === 'cancel') {
     const jobId = formData.get('jobId') as string;
 
-    // Mark the job as cancelled
     const prisma = await getPrismaClient();
-    await prisma.job.update({
-      where: { id: jobId },
+    const result = await prisma.job.updateMany({
+      where: {
+        ...siteScopedJobWhere(jobId, ctx.site.id),
+        status: {
+          in: [JobStatus.QUEUED, JobStatus.RUNNING],
+        },
+      },
       data: {
         status: JobStatus.CANCELLED,
         messages: {
@@ -117,10 +125,9 @@ export async function action(args: ActionFunctionArgs) {
         },
         date_modified: new Date().toISOString(),
       },
-      select: { id: true },
     });
 
-    return { success: true, cancelled: true };
+    return { success: true, cancelled: result.count > 0 };
   }
 
   if (intent === 'sync') {

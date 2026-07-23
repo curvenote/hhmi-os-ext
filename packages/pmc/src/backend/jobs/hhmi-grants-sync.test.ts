@@ -55,13 +55,28 @@ const {
 describe('HHMI grants sync jobs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUpdateHHMIScientists.mockReset();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-23T12:00:00.000Z'));
     mockFindMany.mockResolvedValue([
-      { id: 'queued-job', results: {}, status: JobStatus.QUEUED },
-      { id: 'running-job', results: {}, status: JobStatus.RUNNING },
+      {
+        id: 'queued-job',
+        results: {},
+        status: JobStatus.QUEUED,
+        date_modified: '2026-07-23T11:54:00.000Z',
+      },
+      {
+        id: 'running-job',
+        results: {},
+        status: JobStatus.RUNNING,
+        date_modified: '2026-07-23T11:54:00.000Z',
+      },
     ]);
-    mockJobState = { id: 'job-1', status: JobStatus.QUEUED };
+    mockJobState = {
+      id: 'job-1',
+      status: JobStatus.QUEUED,
+      date_modified: '2026-07-23T11:54:00.000Z',
+    };
     mockFindFirst.mockImplementation(async ({ where }) =>
       mockJobState?.id === where.id ? mockJobState : null,
     );
@@ -70,7 +85,9 @@ describe('HHMI grants sync jobs', () => {
       if (
         currentJob &&
         currentJob.id === where.id &&
-        [JobStatus.QUEUED, JobStatus.RUNNING].includes(currentJob.status)
+        [JobStatus.QUEUED, JobStatus.RUNNING].includes(currentJob.status) &&
+        (!where.date_modified ||
+          Date.parse(currentJob.date_modified) < Date.parse(where.date_modified.lt))
       ) {
         mockJobState = { ...currentJob, ...data };
         return { count: 1 };
@@ -112,6 +129,7 @@ describe('HHMI grants sync jobs', () => {
           id: 'queued-job',
           payload: { path: ['site_id'], equals: 'site-1' },
           status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] },
+          date_modified: { lt: '2026-07-23T11:55:00.000Z' },
         },
         data: expect.objectContaining({
           status: JobStatus.FAILED,
@@ -125,6 +143,7 @@ describe('HHMI grants sync jobs', () => {
           id: 'running-job',
           payload: { path: ['site_id'], equals: 'site-1' },
           status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] },
+          date_modified: { lt: '2026-07-23T11:55:00.000Z' },
         },
         data: expect.objectContaining({
           status: JobStatus.FAILED,
@@ -132,6 +151,46 @@ describe('HHMI grants sync jobs', () => {
         }),
       }),
     );
+    expect(mockFindFirst).not.toHaveBeenCalled();
+  });
+
+  it('does not reap a job refreshed after the stale-job query', async () => {
+    mockFindMany.mockImplementationOnce(async () => {
+      mockJobState = {
+        id: 'job-1',
+        status: JobStatus.RUNNING,
+        date_modified: '2026-07-23T11:59:00.000Z',
+      };
+      return [
+        {
+          id: 'job-1',
+          results: {},
+          status: JobStatus.RUNNING,
+          date_modified: '2026-07-23T11:54:00.000Z',
+        },
+      ];
+    });
+
+    await invalidateOldHhmiSyncJobs('site-1');
+
+    expect(mockUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'job-1',
+          payload: { path: ['site_id'], equals: 'site-1' },
+          status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] },
+          date_modified: { lt: '2026-07-23T11:55:00.000Z' },
+        },
+      }),
+    );
+    expect(await mockUpdateMany.mock.results[0].value).toEqual({ count: 0 });
+    expect(mockJobState).toEqual(
+      expect.objectContaining({
+        status: JobStatus.RUNNING,
+        date_modified: '2026-07-23T11:59:00.000Z',
+      }),
+    );
+    expect(mockFindFirst).not.toHaveBeenCalled();
   });
 
   it('does not update jobs when none are stale', async () => {
@@ -177,15 +236,41 @@ describe('HHMI grants sync jobs', () => {
     ).toBe(false);
   });
 
-  it('does not overwrite a terminal status when completing a job', async () => {
+  it('returns the updated job when terminalization wins', async () => {
+    mockJobState = { id: 'job-1', status: JobStatus.RUNNING };
+
+    const result = await conditionallyTerminalizeHhmiSyncJob(
+      'job-1',
+      'site-1',
+      {
+        status: JobStatus.COMPLETED,
+        message: 'completed',
+        results: { processedCount: 1 },
+      },
+      { includeJob: true },
+    );
+
+    expect(result).toEqual({
+      count: 1,
+      job: expect.objectContaining({ id: 'job-1', status: JobStatus.COMPLETED }),
+    });
+    expect(mockFindFirst).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns the current job when terminalization loses', async () => {
     const cancelledJob = { id: 'job-1', status: JobStatus.CANCELLED };
     mockJobState = cancelledJob;
 
-    const result = await conditionallyTerminalizeHhmiSyncJob('job-1', 'site-1', {
-      status: JobStatus.COMPLETED,
-      message: 'completed',
-      results: { processedCount: 1 },
-    });
+    const result = await conditionallyTerminalizeHhmiSyncJob(
+      'job-1',
+      'site-1',
+      {
+        status: JobStatus.COMPLETED,
+        message: 'completed',
+        results: { processedCount: 1 },
+      },
+      { includeJob: true },
+    );
 
     expect(mockUpdateMany).toHaveBeenCalledWith({
       where: {
@@ -204,7 +289,18 @@ describe('HHMI grants sync jobs', () => {
         payload: { path: ['site_id'], equals: 'site-1' },
       },
     });
-    expect(result).toBe(cancelledJob);
+    expect(result).toEqual({ count: 0, job: cancelledJob });
+  });
+
+  it('returns only the update count when the current job is not requested', async () => {
+    const result = await conditionallyTerminalizeHhmiSyncJob('job-1', 'site-1', {
+      status: JobStatus.FAILED,
+      message: 'timed out',
+      results: {},
+    });
+
+    expect(result).toEqual({ count: 1 });
+    expect(mockFindFirst).not.toHaveBeenCalled();
   });
 
   describe('hhmiGrantsSyncHandler', () => {
@@ -225,6 +321,40 @@ describe('HHMI grants sync jobs', () => {
         expect(result).toBe(terminalJob);
       },
     );
+
+    it.each([null, undefined])('rejects a %s payload before querying Prisma', async (payload) => {
+      await expect(
+        hhmiGrantsSyncHandler(
+          {} as never,
+          {
+            id: 'job-1',
+            job_type: HHMI_GRANTS_SYNC,
+            payload,
+          } as never,
+        ),
+      ).rejects.toThrow('HHMI grants sync job site_id is required');
+
+      expect(mockFindFirst).not.toHaveBeenCalled();
+      expect(mockUpdateMany).not.toHaveBeenCalled();
+      expect(mockDbStartJob).not.toHaveBeenCalled();
+    });
+
+    it('rejects a missing site_id before querying Prisma', async () => {
+      await expect(
+        hhmiGrantsSyncHandler(
+          {} as never,
+          {
+            id: 'job-1',
+            job_type: HHMI_GRANTS_SYNC,
+            payload: { sync_type: 'hhmi-scientists' },
+          } as never,
+        ),
+      ).rejects.toThrow('HHMI grants sync job site_id is required');
+
+      expect(mockFindFirst).not.toHaveBeenCalled();
+      expect(mockUpdateMany).not.toHaveBeenCalled();
+      expect(mockDbStartJob).not.toHaveBeenCalled();
+    });
 
     it.each([JobStatus.QUEUED, JobStatus.RUNNING])(
       'starts and completes a job whose stored status is %s',
@@ -585,6 +715,30 @@ describe('HHMI grants sync jobs', () => {
       );
       expect(result).toBe(cancelledJob);
       consoleError.mockRestore();
+    });
+
+    it('does not attempt failed terminalization when completed job lookup returns null', async () => {
+      mockJobState = { id: 'job-1', status: JobStatus.RUNNING };
+      mockFindFirst
+        .mockImplementationOnce(async () => null)
+        .mockImplementationOnce(async () => null)
+        .mockImplementationOnce(async () => null);
+
+      await expect(
+        hhmiGrantsSyncHandler({} as never, {
+          id: 'job-1',
+          job_type: HHMI_GRANTS_SYNC,
+          payload: { site_id: 'site-1', sync_type: 'hhmi-scientists' },
+        }),
+      ).rejects.toThrow('HHMI grants sync job job-1 not found');
+
+      expect(mockUpdateMany).toHaveBeenCalledTimes(1);
+      expect(mockUpdateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: JobStatus.COMPLETED }),
+        }),
+      );
+      expect(mockFormatJobDTO).not.toHaveBeenCalled();
     });
   });
 });
