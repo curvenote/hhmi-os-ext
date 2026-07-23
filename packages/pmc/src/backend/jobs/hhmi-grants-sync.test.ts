@@ -179,7 +179,6 @@ describe('HHMI grants sync jobs', () => {
 
   it('does not overwrite a terminal status when completing a job', async () => {
     const cancelledJob = { id: 'job-1', status: JobStatus.CANCELLED };
-    mockUpdateMany.mockResolvedValue({ count: 0 });
     mockJobState = cancelledJob;
 
     const result = await conditionallyTerminalizeHhmiSyncJob('job-1', 'site-1', {
@@ -258,6 +257,109 @@ describe('HHMI grants sync jobs', () => {
         );
       },
     );
+
+    it('transforms paginated records and records processing counts', async () => {
+      mockJobState = { id: 'job-1', status: JobStatus.RUNNING };
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            records: [
+              {
+                id: 'preferred-name',
+                fields: {
+                  'grant-id': 'HHMI-1',
+                  orcid: '0000-0001',
+                  'full-name': 'Ada Lovelace',
+                  'first-name-preferred': 'Ada',
+                  'first-name-primary': 'Augusta',
+                  'last-name-preferred': 'Lovelace',
+                  email: 'ada@example.org',
+                },
+              },
+              {
+                id: 'missing-grant',
+                fields: {
+                  'full-name': 'Missing Grant',
+                },
+              },
+            ],
+            offset: 'next-page',
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            records: [
+              {
+                id: 'primary-name',
+                fields: {
+                  'grant-id': 'HHMI-2',
+                  orcid: '0000-0002',
+                  'full-name': 'Grace Hopper',
+                  'first-name-preferred': '   ',
+                  'first-name-primary': 'Grace',
+                  'last-name-preferred': 'Hopper',
+                  email: 'grace@example.org',
+                },
+              },
+            ],
+          }),
+        });
+
+      await hhmiGrantsSyncHandler({} as never, {
+        id: 'job-1',
+        job_type: HHMI_GRANTS_SYNC,
+        payload: { site_id: 'site-1', sync_type: 'hhmi-scientists' },
+      });
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch.mock.calls[1][0]).toContain('offset=next-page');
+      expect(mockUpdateHHMIScientists).toHaveBeenCalledWith(
+        [
+          {
+            id: 'preferred-name',
+            fullName: 'Ada Lovelace',
+            firstName: 'Ada',
+            lastName: 'Lovelace',
+            email: 'ada@example.org',
+            grantId: 'HHMI-1',
+            orcid: '0000-0001',
+          },
+          {
+            id: 'primary-name',
+            fullName: 'Grace Hopper',
+            firstName: 'Grace',
+            lastName: 'Hopper',
+            email: 'grace@example.org',
+            grantId: 'HHMI-2',
+            orcid: '0000-0002',
+          },
+        ],
+        'merge',
+      );
+      expect(mockUpdateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: 'job-1',
+            payload: { path: ['site_id'], equals: 'site-1' },
+            status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] },
+          },
+          data: expect.objectContaining({
+            status: JobStatus.COMPLETED,
+            results: expect.objectContaining({
+              totalRecords: 3,
+              processedCount: 3,
+              validCount: 2,
+              skippedCount: 1,
+              errorCount: 0,
+              errors: [],
+              syncStrategy: 'merge',
+            }),
+          }),
+        }),
+      );
+    });
 
     it.each(['merge', 'replace'] as const)(
       'forwards %s strategy to persistence and completed results',
