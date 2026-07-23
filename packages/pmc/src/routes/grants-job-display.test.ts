@@ -54,6 +54,13 @@ describe('funding sync job display', () => {
     expect(getNextLatchedJobIds(jobs, ['previous'], 1)).toEqual(['active-new']);
   });
 
+  it('preserves latch identity when the active jobs are unchanged', () => {
+    const jobs = [makeJob('active-new', JobStatus.RUNNING, '2026-07-23T12:00:00.000Z')];
+    const previousIds = ['active-new'];
+
+    expect(getNextLatchedJobIds(jobs, previousIds, 1)).toBe(previousIds);
+  });
+
   it('keeps a completed job latched after it stops being active', () => {
     const completed = makeJob('done', JobStatus.COMPLETED, '2026-07-23T12:00:00.000Z');
     const previousIds = ['done'];
@@ -76,7 +83,7 @@ describe('funding sync job display', () => {
     expect(getNextLatchedJobIds([completed], ['missing'], 1)).toEqual([]);
   });
 
-  it('sorts equal-format timestamps using deterministic lexical order', () => {
+  it('orders history jobs newest-first', () => {
     const jobs = [
       makeJob('older', JobStatus.COMPLETED, '2026-07-23T09:00:00.000Z'),
       makeJob('newer', JobStatus.COMPLETED, '2026-07-23T10:00:00.000Z'),

@@ -7,7 +7,7 @@ import type {
 } from 'react-router';
 import { useFetcher, data } from 'react-router';
 import { RefreshCw, List, User, Database } from 'lucide-react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { StatCardData } from '@curvenote/scms-core';
 import {
   PageFrame,
@@ -623,14 +623,18 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
   }, [syncFetcher.state, syncFetcher.formData, optimisticJobId]);
 
   // Filter out optimistic job from displayed jobs when real data comes in
-  const displayedJobs = optimisticJobId
-    ? jobsState.filter((job, index) => {
-        if (job.id === optimisticJobId) {
-          return index === 0; // Only keep the first occurrence (optimistic job)
-        }
-        return true;
-      })
-    : jobsState;
+  const displayedJobs = useMemo(
+    () =>
+      optimisticJobId
+        ? jobsState.filter((job, index) => {
+            if (job.id === optimisticJobId) {
+              return index === 0; // Only keep the first occurrence (optimistic job)
+            }
+            return true;
+          })
+        : jobsState,
+    [jobsState, optimisticJobId],
+  );
 
   // Latch any job we observe as queued/running so it stays featured after completion
   useEffect(() => {

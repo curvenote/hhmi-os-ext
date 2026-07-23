@@ -25,6 +25,7 @@ export function getNextLatchedJobIds(
   limit: number,
 ): string[] {
   const liveIds = new Set(jobs.map((job) => job.id));
+  // Keep the latch bounded to jobs still loaded by the route.
   const livePreviousIds = previousIds.filter((id) => liveIds.has(id));
   const activeIds = sortNewestFirst(jobs.filter(isActiveSyncJob)).map((job) => job.id);
   const nextIds =
