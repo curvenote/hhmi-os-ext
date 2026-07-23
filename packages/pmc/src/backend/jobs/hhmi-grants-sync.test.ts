@@ -3,14 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { JobStatus } from '@curvenote/scms-db';
 
 const mockFindMany = vi.fn();
-const mockFindUnique = vi.fn();
+const mockFindFirst = vi.fn();
+const mockUpdateMany = vi.fn();
 const mockDbStartJob = vi.fn();
 const mockDbUpdateJob = vi.fn();
 const mockFormatJobDTO = vi.fn((_ctx, job) => job);
 
 vi.mock('@curvenote/scms-server', () => ({
   getPrismaClient: vi.fn(async () => ({
-    job: { findMany: mockFindMany, findUnique: mockFindUnique },
+    job: { findMany: mockFindMany, findFirst: mockFindFirst, updateMany: mockUpdateMany },
   })),
   jobs: {
     dbStartJob: mockDbStartJob,
@@ -19,8 +20,13 @@ vi.mock('@curvenote/scms-server', () => ({
   },
 }));
 
-const { HHMI_GRANTS_SYNC, hhmiGrantsSyncHandler, invalidateOldHhmiSyncJobs, isHhmiSyncJobStale } =
-  await import('./hhmi-grants-sync.js');
+const {
+  HHMI_GRANTS_SYNC,
+  conditionallyTerminalizeHhmiSyncJob,
+  hhmiGrantsSyncHandler,
+  invalidateOldHhmiSyncJobs,
+  isHhmiSyncJobStale,
+} = await import('./hhmi-grants-sync.js');
 
 describe('invalidateOldHhmiSyncJobs', () => {
   beforeEach(() => {
@@ -31,7 +37,8 @@ describe('invalidateOldHhmiSyncJobs', () => {
       { id: 'queued-job', results: {}, status: JobStatus.QUEUED },
       { id: 'running-job', results: {}, status: JobStatus.RUNNING },
     ]);
-    mockFindUnique.mockResolvedValue(null);
+    mockFindFirst.mockResolvedValue(null);
+    mockUpdateMany.mockResolvedValue({ count: 1 });
   });
 
   afterEach(() => {
@@ -49,14 +56,32 @@ describe('invalidateOldHhmiSyncJobs', () => {
         date_modified: { lt: '2026-07-23T11:55:00.000Z' },
       },
     });
-    expect(mockDbUpdateJob).toHaveBeenCalledTimes(2);
-    expect(mockDbUpdateJob).toHaveBeenCalledWith(
-      'queued-job',
-      expect.objectContaining({ status: JobStatus.FAILED, message: 'Job timed out' }),
+    expect(mockUpdateMany).toHaveBeenCalledTimes(2);
+    expect(mockUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'queued-job',
+          payload: { path: ['site_id'], equals: 'site-1' },
+          status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] },
+        },
+        data: expect.objectContaining({
+          status: JobStatus.FAILED,
+          messages: { push: 'Job timed out' },
+        }),
+      }),
     );
-    expect(mockDbUpdateJob).toHaveBeenCalledWith(
-      'running-job',
-      expect.objectContaining({ status: JobStatus.FAILED, message: 'Job timed out' }),
+    expect(mockUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'running-job',
+          payload: { path: ['site_id'], equals: 'site-1' },
+          status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] },
+        },
+        data: expect.objectContaining({
+          status: JobStatus.FAILED,
+          messages: { push: 'Job timed out' },
+        }),
+      }),
     );
   });
 
@@ -65,7 +90,7 @@ describe('invalidateOldHhmiSyncJobs', () => {
 
     await invalidateOldHhmiSyncJobs('site-1');
 
-    expect(mockDbUpdateJob).not.toHaveBeenCalled();
+    expect(mockUpdateMany).not.toHaveBeenCalled();
   });
 
   it('swallows stale-job query errors without updating jobs', async () => {
@@ -74,7 +99,7 @@ describe('invalidateOldHhmiSyncJobs', () => {
 
     await expect(invalidateOldHhmiSyncJobs('site-1')).resolves.toBeUndefined();
 
-    expect(mockDbUpdateJob).not.toHaveBeenCalled();
+    expect(mockUpdateMany).not.toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalledWith(
       'Error invalidating old HHMI sync jobs:',
       expect.any(Error),
@@ -103,11 +128,42 @@ describe('invalidateOldHhmiSyncJobs', () => {
     ).toBe(false);
   });
 
+  it('does not overwrite a terminal status when completing a job', async () => {
+    const cancelledJob = { id: 'job-1', status: JobStatus.CANCELLED };
+    mockUpdateMany.mockResolvedValue({ count: 0 });
+    mockFindFirst.mockResolvedValue(cancelledJob);
+
+    const result = await conditionallyTerminalizeHhmiSyncJob('job-1', 'site-1', {
+      status: JobStatus.COMPLETED,
+      message: 'completed',
+      results: { processedCount: 1 },
+    });
+
+    expect(mockUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'job-1',
+        payload: { path: ['site_id'], equals: 'site-1' },
+        status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] },
+      },
+      data: expect.objectContaining({
+        status: JobStatus.COMPLETED,
+        messages: { push: 'completed' },
+      }),
+    });
+    expect(mockFindFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'job-1',
+        payload: { path: ['site_id'], equals: 'site-1' },
+      },
+    });
+    expect(result).toBe(cancelledJob);
+  });
+
   it.each([JobStatus.FAILED, JobStatus.CANCELLED, JobStatus.COMPLETED])(
     'does not restart a job already in terminal status %s',
     async (status) => {
       const terminalJob = { id: 'terminal-job', status };
-      mockFindUnique.mockResolvedValue(terminalJob);
+      mockFindFirst.mockResolvedValue(terminalJob);
 
       const result = await hhmiGrantsSyncHandler({} as never, {
         id: 'terminal-job',

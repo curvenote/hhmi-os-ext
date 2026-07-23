@@ -1,6 +1,6 @@
 import type { Context, CreateJob } from '@curvenote/scms-core';
 import { getPrismaClient, jobs } from '@curvenote/scms-server';
-import { JobStatus } from '@curvenote/scms-db';
+import { JobStatus, type Prisma } from '@curvenote/scms-db';
 import { formatDate } from '@curvenote/common';
 import {
   getAirtableApiKey,
@@ -205,9 +205,17 @@ function transformAirtableRecord(
 // Job Processing
 // ==============================
 
-async function getTerminalHhmiSyncJob(jobId: string) {
+async function getTerminalHhmiSyncJob(jobId: string, siteId: string) {
   const prisma = await getPrismaClient();
-  const job = await prisma.job.findUnique({ where: { id: jobId } });
+  const job = await prisma.job.findFirst({
+    where: {
+      id: jobId,
+      payload: {
+        path: ['site_id'],
+        equals: siteId,
+      },
+    },
+  });
   if (
     job &&
     (job.status === JobStatus.COMPLETED ||
@@ -219,11 +227,51 @@ async function getTerminalHhmiSyncJob(jobId: string) {
   return null;
 }
 
+export async function conditionallyTerminalizeHhmiSyncJob(
+  jobId: string,
+  siteId: string,
+  update: {
+    status: (typeof JobStatus)['COMPLETED'] | (typeof JobStatus)['FAILED'];
+    message: string;
+    results: Prisma.InputJsonValue;
+  },
+) {
+  const prisma = await getPrismaClient();
+  await prisma.job.updateMany({
+    where: {
+      id: jobId,
+      payload: {
+        path: ['site_id'],
+        equals: siteId,
+      },
+      status: {
+        in: [JobStatus.QUEUED, JobStatus.RUNNING],
+      },
+    },
+    data: {
+      date_modified: formatDate(),
+      status: update.status,
+      results: update.results,
+      messages: { push: update.message },
+    },
+  });
+  return prisma.job.findFirst({
+    where: {
+      id: jobId,
+      payload: {
+        path: ['site_id'],
+        equals: siteId,
+      },
+    },
+  });
+}
+
 /**
  * Main job handler for HHMI scientists sync
  */
 export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
   const startTime = formatDate();
+  const { site_id: siteId } = data.payload as unknown as HHMIGrantsSyncJobPayload;
 
   let totalRecords: number | undefined;
   let processedCount = 0;
@@ -233,7 +281,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
   const errors: Array<{ recordId?: string; error: string }> = [];
   let job;
 
-  const terminalJob = await getTerminalHhmiSyncJob(data.id);
+  const terminalJob = await getTerminalHhmiSyncJob(data.id, siteId);
   if (terminalJob) {
     console.log(`Skipping HHMI grants sync job ${data.id}: status is ${terminalJob.status}`);
     return jobs.formatJobDTO(ctx, terminalJob);
@@ -294,7 +342,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
       `📊 Processing Summary: ${validCount} valid, ${skippedCount} skipped, ${errorCount} errors`,
     );
 
-    const terminalJobBeforeUpdate = await getTerminalHhmiSyncJob(job.id);
+    const terminalJobBeforeUpdate = await getTerminalHhmiSyncJob(job.id, siteId);
     if (terminalJobBeforeUpdate) {
       console.log(
         `Skipping database update for HHMI grants sync job ${job.id}: status is ${terminalJobBeforeUpdate.status}`,
@@ -316,8 +364,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
 
     console.log(`Successfully synced ${validCount} HHMI grants`);
 
-    // Complete the job
-    await jobs.dbUpdateJob(job.id, {
+    const completedJob = await conditionallyTerminalizeHhmiSyncJob(job.id, siteId, {
       status: JobStatus.COMPLETED,
       message: `Funding Id sync completed successfully`,
       results: {
@@ -330,18 +377,15 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
         errorCount,
         errors,
         syncStrategy: 'merge',
-      } as JobResults,
+      } satisfies JobResults,
     });
+    if (!completedJob) throw new Error(`HHMI grants sync job ${job.id} not found`);
+    return jobs.formatJobDTO(ctx, completedJob);
   } catch (err: any) {
     console.error('HHMI scientists sync job failed:', err);
 
     if (job) {
-      const terminalJobAfterError = await getTerminalHhmiSyncJob(job.id);
-      if (terminalJobAfterError) {
-        return jobs.formatJobDTO(ctx, terminalJobAfterError);
-      }
-
-      await jobs.dbUpdateJob(job.id, {
+      const failedJob = await conditionallyTerminalizeHhmiSyncJob(job.id, siteId, {
         status: JobStatus.FAILED,
         message: `Funding Id sync failed: ${err.message}`,
         results: {
@@ -354,19 +398,14 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
           errorCount,
           errors: errors.concat({ error: err.message || String(err) }),
           syncStrategy: 'merge',
-        } as JobResults,
+        } satisfies JobResults,
       });
-
-      const failedJob = await jobs.dbUpdateJob(job.id, { status: JobStatus.FAILED });
+      if (!failedJob) throw new Error(`HHMI grants sync job ${job.id} not found`);
       return jobs.formatJobDTO(ctx, failedJob);
     } else {
       throw err;
     }
   }
-
-  // Return the completed job
-  const finalJob = await jobs.dbUpdateJob(job.id, { status: JobStatus.COMPLETED });
-  return jobs.formatJobDTO(ctx, finalJob);
 }
 
 // ==============================
@@ -407,13 +446,13 @@ export async function invalidateOldHhmiSyncJobs(siteId: string): Promise<void> {
       console.log(`Found ${plural('%s old HHMI sync job(s)', oldJobs.length)}, marking as failed`);
 
       for (const oldJob of oldJobs) {
-        await jobs.dbUpdateJob(oldJob.id, {
+        await conditionallyTerminalizeHhmiSyncJob(oldJob.id, siteId, {
           status: JobStatus.FAILED,
           message: 'Job timed out',
           results: {
             ...(oldJob.results as unknown as JobResults),
             endTime: formatDate(),
-          } as JobResults,
+          } satisfies JobResults,
         });
       }
     }
