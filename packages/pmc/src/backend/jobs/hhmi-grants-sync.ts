@@ -31,7 +31,7 @@ const AIRTABLE_PAGE_SIZE = 100; // Airtable's maximum page size
 
 export interface HHMIGrantsSyncJobPayload {
   site_id: string;
-  sync_type: 'hhmi-grants';
+  sync_type: 'hhmi-scientists';
 }
 
 export interface AirtableScientistRecord {
