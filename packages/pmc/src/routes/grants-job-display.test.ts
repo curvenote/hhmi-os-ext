@@ -54,6 +54,40 @@ describe('funding sync job display', () => {
     expect(getNextLatchedJobIds(jobs, ['previous'], 1)).toEqual(['active-new']);
   });
 
+  it('keeps a completed job latched after it stops being active', () => {
+    const completed = makeJob('done', JobStatus.COMPLETED, '2026-07-23T12:00:00.000Z');
+    const previousIds = ['done'];
+
+    expect(getNextLatchedJobIds([completed], previousIds, 1)).toBe(previousIds);
+  });
+
+  it('truncates completed latch ids to the limit', () => {
+    const jobs = [
+      makeJob('done-new', JobStatus.COMPLETED, '2026-07-23T12:00:00.000Z'),
+      makeJob('done-old', JobStatus.COMPLETED, '2026-07-23T11:00:00.000Z'),
+    ];
+
+    expect(getNextLatchedJobIds(jobs, ['done-new', 'done-old'], 1)).toEqual(['done-new']);
+  });
+
+  it('prunes completed latch ids that are no longer loaded', () => {
+    const completed = makeJob('loaded', JobStatus.COMPLETED, '2026-07-23T12:00:00.000Z');
+
+    expect(getNextLatchedJobIds([completed], ['missing'], 1)).toEqual([]);
+  });
+
+  it('sorts equal-format timestamps using deterministic lexical order', () => {
+    const jobs = [
+      makeJob('older', JobStatus.COMPLETED, '2026-07-23T09:00:00.000Z'),
+      makeJob('newer', JobStatus.COMPLETED, '2026-07-23T10:00:00.000Z'),
+    ];
+
+    expect(partitionSyncJobsForDisplay(jobs, [], 10).historyJobs.map((job) => job.id)).toEqual([
+      'newer',
+      'older',
+    ]);
+  });
+
   it('enables sync after the featured job completes', () => {
     const completed = makeJob('completed', JobStatus.COMPLETED, '2026-07-23T12:00:00.000Z');
     const { activeJobs, featuredJobs } = partitionSyncJobsForDisplay(

@@ -635,12 +635,7 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
 
   // Latch any job we observe as queued/running so it stays featured after completion
   useEffect(() => {
-    setLatchedJobIds((prev) => {
-      const next = getNextLatchedJobIds(displayedJobs, prev, FEATURED_LATCH_LIMIT);
-      return next.length === prev.length && next.every((id, index) => id === prev[index])
-        ? prev
-        : next;
-    });
+    setLatchedJobIds((prev) => getNextLatchedJobIds(displayedJobs, prev, FEATURED_LATCH_LIMIT));
   }, [displayedJobs]);
 
   const {

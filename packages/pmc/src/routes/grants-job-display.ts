@@ -14,7 +14,9 @@ export function isSyncControlDisabled(
 }
 
 function sortNewestFirst(jobs: JobDTO[]): JobDTO[] {
-  return [...jobs].sort((a, b) => b.date_created.localeCompare(a.date_created));
+  return [...jobs].sort((a, b) =>
+    a.date_created < b.date_created ? 1 : a.date_created > b.date_created ? -1 : 0,
+  );
 }
 
 export function getNextLatchedJobIds(
@@ -22,9 +24,17 @@ export function getNextLatchedJobIds(
   previousIds: string[],
   limit: number,
 ): string[] {
+  const liveIds = new Set(jobs.map((job) => job.id));
+  const livePreviousIds = previousIds.filter((id) => liveIds.has(id));
   const activeIds = sortNewestFirst(jobs.filter(isActiveSyncJob)).map((job) => job.id);
-  if (activeIds.length === 0) return previousIds.slice(0, limit);
-  return [...new Set([...activeIds, ...previousIds])].slice(0, limit);
+  const nextIds =
+    activeIds.length === 0
+      ? livePreviousIds.slice(0, limit)
+      : [...new Set([...activeIds, ...livePreviousIds])].slice(0, limit);
+  const isUnchanged =
+    nextIds.length === previousIds.length &&
+    nextIds.every((id, index) => id === previousIds[index]);
+  return isUnchanged ? previousIds : nextIds;
 }
 
 export function partitionSyncJobsForDisplay(
