@@ -731,6 +731,28 @@ describe('HHMI grants sync jobs', () => {
       expect(result).toBe(timedOutJob);
     });
 
+    it('throws when the job row disappears after a progress update loses', async () => {
+      mockJobState = { id: 'job-1', status: JobStatus.QUEUED };
+      mockFetch.mockImplementationOnce(async () => {
+        mockJobState = null;
+        return {
+          ok: true,
+          json: async () => ({ records: [] }),
+        };
+      });
+
+      await expect(
+        hhmiGrantsSyncHandler({} as never, {
+          id: 'job-1',
+          job_type: HHMI_GRANTS_SYNC,
+          payload: { site_id: 'site-1', sync_type: 'hhmi-scientists' },
+        }),
+      ).rejects.toThrow('HHMI grants sync job job-1 not found');
+
+      expect(mockUpdateHHMIScientists).not.toHaveBeenCalled();
+      expect(mockFormatJobDTO).not.toHaveBeenCalled();
+    });
+
     it('stops before writing when the reaper terminalizes at the updating progress guard', async () => {
       const timedOutJob = { id: 'job-1', status: JobStatus.FAILED };
       mockJobState = { id: 'job-1', status: JobStatus.QUEUED };

@@ -261,6 +261,17 @@ async function updateRunningHhmiSyncJobProgress(jobId: string, siteId: string, m
   return { count: result.count, job };
 }
 
+function formatStoppedHhmiSyncProgress(
+  ctx: Context,
+  jobId: string,
+  progress: Awaited<ReturnType<typeof updateRunningHhmiSyncJobProgress>>,
+) {
+  if (!progress.job) {
+    throw new Error(`HHMI grants sync job ${jobId} not found`);
+  }
+  return jobs.formatJobDTO(ctx, progress.job);
+}
+
 export async function conditionallyTerminalizeHhmiSyncJob(
   jobId: string,
   siteId: string,
@@ -343,7 +354,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
       siteId,
       'Fetching funding identifiers from Airtable',
     );
-    if (fetching.count === 0) return jobs.formatJobDTO(ctx, fetching.job ?? job);
+    if (fetching.count === 0) return formatStoppedHhmiSyncProgress(ctx, job.id, fetching);
 
     // Fetch all scientists from Airtable
     const airtableRecords = await fetchAllScientists();
@@ -356,7 +367,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
       siteId,
       `Processing ${plural('%s record(s)', totalRecords)} from Airtable`,
     );
-    if (processing.count === 0) return jobs.formatJobDTO(ctx, processing.job ?? job);
+    if (processing.count === 0) return formatStoppedHhmiSyncProgress(ctx, job.id, processing);
 
     // Transform and validate records
     const scientists: HHMIScientist[] = [];
@@ -396,7 +407,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
       siteId,
       `Updating funding identifiers with ${plural('%s valid record(s)', validCount)}`,
     );
-    if (updating.count === 0) return jobs.formatJobDTO(ctx, updating.job ?? job);
+    if (updating.count === 0) return formatStoppedHhmiSyncProgress(ctx, job.id, updating);
 
     // Update the scientists data in the database
     console.log(
