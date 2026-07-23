@@ -8,6 +8,9 @@ const mockUpdateMany = vi.fn();
 const mockDbStartJob = vi.fn();
 const mockDbUpdateJob = vi.fn();
 const mockFormatJobDTO = vi.fn((_ctx, job) => job);
+const mockUpdateHHMIScientists = vi.fn();
+const mockFetch = vi.fn();
+const mockGetAirtableApiKey = vi.fn();
 
 vi.mock('@curvenote/scms-server', () => ({
   getPrismaClient: vi.fn(async () => ({
@@ -19,6 +22,26 @@ vi.mock('@curvenote/scms-server', () => ({
     formatJobDTO: mockFormatJobDTO,
   },
 }));
+
+vi.mock('../airtable-config.server.js', () => ({
+  getAirtableApiKey: mockGetAirtableApiKey,
+  getAirtableBaseId: vi.fn(async () => 'base-id'),
+  getAirtableScientistsTableId: vi.fn(async () => 'table-id'),
+  getAirtableScientistsViewId: vi.fn(async () => undefined),
+  getAirtableScientistsGrantIdFieldId: vi.fn(async () => 'grant-id'),
+  getAirtableScientistsOrcidFieldId: vi.fn(async () => 'orcid'),
+  getAirtableScientistsFullNameFieldId: vi.fn(async () => 'full-name'),
+  getAirtableScientistsFirstNamePreferredFieldId: vi.fn(async () => 'first-name-preferred'),
+  getAirtableScientistsFirstNamePrimaryFieldId: vi.fn(async () => 'first-name-primary'),
+  getAirtableScientistsLastNamePreferredFieldId: vi.fn(async () => 'last-name-preferred'),
+  getAirtableScientistsEmailFieldId: vi.fn(async () => 'email'),
+}));
+
+vi.mock('../hhmi-grants.server.js', () => ({
+  updateHHMIScientists: mockUpdateHHMIScientists,
+}));
+
+vi.stubGlobal('fetch', mockFetch);
 
 const {
   HHMI_GRANTS_SYNC,
@@ -39,6 +62,13 @@ describe('invalidateOldHhmiSyncJobs', () => {
     ]);
     mockFindFirst.mockResolvedValue(null);
     mockUpdateMany.mockResolvedValue({ count: 1 });
+    mockDbStartJob.mockResolvedValue({ id: 'job-1', status: JobStatus.RUNNING });
+    mockDbUpdateJob.mockResolvedValue({ id: 'job-1', status: JobStatus.RUNNING });
+    mockGetAirtableApiKey.mockResolvedValue('api-key');
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ records: [] }),
+    });
   });
 
   afterEach(() => {
@@ -176,4 +206,81 @@ describe('invalidateOldHhmiSyncJobs', () => {
       expect(result).toBe(terminalJob);
     },
   );
+
+  it.each([JobStatus.QUEUED, JobStatus.RUNNING])(
+    'starts and completes a job whose stored status is %s',
+    async (status) => {
+      const activeJob = { id: 'job-1', status };
+      const completedJob = { id: 'job-1', status: JobStatus.COMPLETED };
+      mockFindFirst
+        .mockResolvedValueOnce(activeJob)
+        .mockResolvedValueOnce(activeJob)
+        .mockResolvedValueOnce(completedJob);
+
+      const result = await hhmiGrantsSyncHandler({} as never, {
+        id: 'job-1',
+        job_type: HHMI_GRANTS_SYNC,
+        payload: { site_id: 'site-1', sync_type: 'hhmi-grants' },
+      });
+
+      expect(mockDbStartJob).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'job-1', status: JobStatus.RUNNING }),
+      );
+      expect(mockUpdateHHMIScientists).toHaveBeenCalledWith([], 'merge');
+      expect(mockUpdateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            id: 'job-1',
+            status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] },
+          }),
+          data: expect.objectContaining({ status: JobStatus.COMPLETED }),
+        }),
+      );
+      expect(result).toBe(completedJob);
+    },
+  );
+
+  it('stops before persisting scientists when a job becomes terminal mid-flight', async () => {
+    const queuedJob = { id: 'job-1', status: JobStatus.QUEUED };
+    const cancelledJob = { id: 'job-1', status: JobStatus.CANCELLED };
+    mockFindFirst.mockResolvedValueOnce(queuedJob).mockResolvedValueOnce(cancelledJob);
+
+    const result = await hhmiGrantsSyncHandler({} as never, {
+      id: 'job-1',
+      job_type: HHMI_GRANTS_SYNC,
+      payload: { site_id: 'site-1', sync_type: 'hhmi-grants' },
+    });
+
+    expect(mockDbStartJob).toHaveBeenCalled();
+    expect(mockUpdateHHMIScientists).not.toHaveBeenCalled();
+    expect(mockUpdateMany).not.toHaveBeenCalled();
+    expect(result).toBe(cancelledJob);
+  });
+
+  it('preserves a terminal status reached while handling an error', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const queuedJob = { id: 'job-1', status: JobStatus.QUEUED };
+    const cancelledJob = { id: 'job-1', status: JobStatus.CANCELLED };
+    mockFindFirst.mockResolvedValueOnce(queuedJob).mockResolvedValueOnce(cancelledJob);
+    mockUpdateMany.mockResolvedValue({ count: 0 });
+    mockGetAirtableApiKey.mockRejectedValue(new Error('Airtable unavailable'));
+
+    const result = await hhmiGrantsSyncHandler({} as never, {
+      id: 'job-1',
+      job_type: HHMI_GRANTS_SYNC,
+      payload: { site_id: 'site-1', sync_type: 'hhmi-grants' },
+    });
+
+    expect(mockUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'job-1',
+          status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] },
+        }),
+        data: expect.objectContaining({ status: JobStatus.FAILED }),
+      }),
+    );
+    expect(result).toBe(cancelledJob);
+    consoleError.mockRestore();
+  });
 });
