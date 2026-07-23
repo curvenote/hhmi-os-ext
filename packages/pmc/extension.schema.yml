@@ -115,3 +115,15 @@ properties:
                   fullName:
                     type: string
                     description: Airtable full name field ID
+                  firstNamePreferred:
+                    type: string
+                    description: Airtable First Name (Preferred) field ID
+                  firstNamePrimary:
+                    type: string
+                    description: Airtable First Name (Primary) field ID
+                  lastNamePreferred:
+                    type: string
+                    description: Airtable Last Name (Preferred) field ID
+                  email:
+                    type: string
+                    description: Airtable Email field ID

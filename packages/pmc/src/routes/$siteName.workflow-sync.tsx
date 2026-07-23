@@ -18,7 +18,7 @@ import {
 } from '@curvenote/scms-core';
 import { withAppPMCContext } from '../backend/context.server.js';
 import { JobStatus } from '@curvenote/scms-db';
-import { jobs, getPrismaClient, enqueueAndDispatchJob } from '@curvenote/scms-server';
+import { jobs, enqueueAndDispatchJob } from '@curvenote/scms-server';
 import type { JobDTO } from '@curvenote/common';
 
 type JobResults = {
@@ -69,26 +69,6 @@ export async function action(args: ActionFunctionArgs) {
 
   const formData = await args.request.formData();
   const intent = formData.get('intent');
-
-  if (intent === 'cancel') {
-    const jobId = formData.get('jobId') as string;
-
-    // Mark the job as failed with a cancellation message
-    const prisma = await getPrismaClient();
-    await prisma.job.update({
-      where: { id: jobId },
-      data: {
-        status: JobStatus.CANCELLED,
-        messages: {
-          push: 'Job was cancelled by user',
-        },
-        date_modified: new Date().toISOString(),
-      },
-      select: { id: true },
-    });
-
-    return { success: true, cancelled: true };
-  }
 
   if (intent === 'sync') {
     const jobId = formData.get('jobId') as string;
@@ -178,11 +158,8 @@ function SyncButton({
 }
 
 function UpdateJobCard({ job }: { job: JobDTO }) {
-  const cancelFetcher = useFetcher();
   const results = job.results as JobResults;
   const payload = job.payload as WorkflowSyncJobPayload | undefined;
-  const isRunning = job.status === 'RUNNING';
-  const isCancellable = isRunning;
 
   return (
     <li>
@@ -205,22 +182,6 @@ function UpdateJobCard({ job }: { job: JobDTO }) {
                 {job.status.toLowerCase()}
               </span>
             </div>
-            {isCancellable && (
-              <cancelFetcher.Form method="post" className="flex items-center h-6">
-                <input type="hidden" name="intent" value="cancel" />
-                <input type="hidden" name="jobId" value={job.id} />
-                <ui.Button
-                  className="flex gap-0 p-0"
-                  type="submit"
-                  variant="link"
-                  // size="sm"
-                  disabled={cancelFetcher.state === 'submitting'}
-                >
-                  {/* <X className="w-3 h-3" /> */}
-                  Cancel
-                </ui.Button>
-              </cancelFetcher.Form>
-            )}
           </div>
           <div className="flex gap-2 mb-1 text-sm text-gray-500">
             <div>Started: {formatDate(job.date_created, 'yyyy-MM-dd HH:mm:ss')}</div>

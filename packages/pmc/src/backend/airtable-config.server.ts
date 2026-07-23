@@ -21,6 +21,10 @@ interface PMCAirtableConfig {
         grantId: string;
         orcid: string;
         fullName: string;
+        firstNamePreferred?: string;
+        firstNamePrimary?: string;
+        lastNamePreferred?: string;
+        email?: string;
       };
     };
   };
@@ -86,6 +90,15 @@ async function getPMCAirtableConfig(): Promise<PMCAirtableConfig> {
   return airtableConfig as PMCAirtableConfig;
 }
 
+function requireScientistFieldId(fieldId: string | undefined, fieldName: string): string {
+  if (!fieldId) {
+    throw new Error(
+      `PMC Airtable scientists ${fieldName} field ID is missing. Please update the app-config.`,
+    );
+  }
+  return fieldId;
+}
+
 // ==============================
 // Individual Getters (Maintains API Compatibility)
 // ==============================
@@ -128,6 +141,35 @@ export async function getAirtableScientistsOrcidFieldId(): Promise<string> {
 export async function getAirtableScientistsFullNameFieldId(): Promise<string> {
   const config = await getPMCAirtableConfig();
   return config.tables.scientists.fields.fullName;
+}
+
+export async function getAirtableScientistsFirstNamePreferredFieldId(): Promise<string> {
+  const config = await getPMCAirtableConfig();
+  return requireScientistFieldId(
+    config.tables.scientists.fields.firstNamePreferred,
+    'first name (preferred)',
+  );
+}
+
+export async function getAirtableScientistsFirstNamePrimaryFieldId(): Promise<string> {
+  const config = await getPMCAirtableConfig();
+  return requireScientistFieldId(
+    config.tables.scientists.fields.firstNamePrimary,
+    'first name (primary)',
+  );
+}
+
+export async function getAirtableScientistsLastNamePreferredFieldId(): Promise<string> {
+  const config = await getPMCAirtableConfig();
+  return requireScientistFieldId(
+    config.tables.scientists.fields.lastNamePreferred,
+    'last name (preferred)',
+  );
+}
+
+export async function getAirtableScientistsEmailFieldId(): Promise<string> {
+  const config = await getPMCAirtableConfig();
+  return requireScientistFieldId(config.tables.scientists.fields.email, 'email');
 }
 
 export async function getAirtableScientistsViewId(): Promise<string | undefined> {

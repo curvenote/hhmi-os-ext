@@ -14,7 +14,6 @@ import { plural } from 'myst-common';
 export const PMC_WORKFLOW_SYNC = 'PMC_WORKFLOW_SYNC';
 
 const JOB_TIMEOUT = 5; // minutes
-const CANCELLATION_CHECK_INTERVAL = 20;
 
 export type AirtableRecord = {
   fields: Record<string, any>;
@@ -301,28 +300,6 @@ export async function invalidateOldRunningJobs(): Promise<void> {
 }
 
 /**
- * Checks if a job has been cancelled by querying the database
- * Since JobStatus doesn't have CANCELLED, we check for a cancellation message
- */
-export async function isJobCancelled(jobId: string): Promise<boolean> {
-  const prisma = await getPrismaClient();
-  const job = await prisma.job.findUnique({
-    where: { id: jobId },
-    select: { status: true },
-  });
-  return job?.status === JobStatus.CANCELLED;
-}
-
-/**
- * Throws an error if the job has been cancelled
- */
-export async function checkJobCancellation(jobId: string): Promise<void> {
-  if (await isJobCancelled(jobId)) {
-    throw new Error('cancelled');
-  }
-}
-
-/**
  * Logs memory usage for monitoring during long-running jobs
  */
 function logMemoryUsage(stage: string) {
@@ -362,8 +339,6 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
       message: 'Finding submissions to update from Airtable',
     });
 
-    await checkJobCancellation(job.id);
-
     // Fetch all PMC submissions for the site
     const siteId = data.payload?.site_id;
     if (!siteId) throw new Error('Site ID not found in job payload');
@@ -378,9 +353,6 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
         activity: true,
       },
     });
-
-    // Simulate long-running job for testing cancellation
-    await checkJobCancellation(job.id);
 
     // Extract all manuscript IDs from submissions; ignore if they have no version or no manuscript ID
     const manuscriptIds = submissions
@@ -401,8 +373,6 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
     console.log(`Retrieved ${plural('%s record(s)', airtableRecords.size)} from Airtable`);
     logMemoryUsage('After Airtable fetch');
 
-    await checkJobCancellation(job.id);
-
     await jobs.dbUpdateJob(job.id, {
       status: JobStatus.RUNNING,
       message: `Processing ${plural('%s submission(s)', totalSubmissions)}`,
@@ -410,11 +380,6 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
 
     for (let i = 0; i < submissions.length; i++) {
       const submission = submissions[i];
-
-      // Check for cancellation every CANCELLATION_CHECK_INTERVAL submissions
-      if (i % CANCELLATION_CHECK_INTERVAL === 0 && i > 0) {
-        await checkJobCancellation(job.id);
-      }
 
       // Update progress every 500 submissions
       if (i % PROGRESS_UPDATE_INTERVAL === 0 && i > 0) {
@@ -611,23 +576,21 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
     });
   } catch (err: any) {
     if (job) {
-      if (err.message !== 'cancelled') {
-        await jobs.dbUpdateJob(job.id, {
-          status: JobStatus.FAILED,
-          message: `Job failed`,
-          results: {
-            startTime,
-            endTime: formatDate(),
-            totalSubmissions,
-            modifiedCount,
-            unmodifiedCount,
-            errorCount,
-            modifiedSubmissions,
-            errors: errors.concat({ error: err.message || String(err) }),
-          } as JobResults,
-        });
-        return jobs.formatJobDTO(ctx, { ...job, status: JobStatus.FAILED });
-      }
+      await jobs.dbUpdateJob(job.id, {
+        status: JobStatus.FAILED,
+        message: `Job failed`,
+        results: {
+          startTime,
+          endTime: formatDate(),
+          totalSubmissions,
+          modifiedCount,
+          unmodifiedCount,
+          errorCount,
+          modifiedSubmissions,
+          errors: errors.concat({ error: err.message || String(err) }),
+        } as JobResults,
+      });
+      return jobs.formatJobDTO(ctx, { ...job, status: JobStatus.FAILED });
     } else {
       throw err;
     }
