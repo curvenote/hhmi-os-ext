@@ -34,6 +34,7 @@ import {
   getAirtableScientistsTableId,
 } from '../backend/airtable-config.server.js';
 import {
+  HHMI_GRANTS_SYNC,
   invalidateOldHhmiSyncJobs,
   isHhmiSyncJobStale,
   siteScopedJobWhere,
@@ -43,6 +44,7 @@ import {
   isActiveSyncJob,
   isSyncControlDisabled,
   partitionSyncJobsForDisplay,
+  getCancellationOutcome,
 } from './grants-job-display.js';
 import { parseSyncStrategy } from '../common/grants-sync-strategy.js';
 import { shouldResetReplaceExistingData } from './sync-button-state.js';
@@ -114,6 +116,7 @@ export async function action(args: ActionFunctionArgs) {
     const result = await prisma.job.updateMany({
       where: {
         ...siteScopedJobWhere(jobId, ctx.site.id),
+        job_type: HHMI_GRANTS_SYNC,
         status: {
           in: [JobStatus.QUEUED, JobStatus.RUNNING],
         },
@@ -140,7 +143,7 @@ export async function action(args: ActionFunctionArgs) {
     // Create a new HHMI_GRANTS_SYNC job
     await enqueueAndDispatchJob({
       job_id: jobId,
-      job_type: 'HHMI_GRANTS_SYNC',
+      job_type: HHMI_GRANTS_SYNC,
       payload: {
         site_id: ctx.site.id,
         sync_type: 'hhmi-scientists',
@@ -470,10 +473,11 @@ function GrantsTable({ scientists }: { scientists: HHMIScientist[] }) {
 }
 
 function SyncJobCard({ job }: { job: JobDTO }) {
-  const cancelFetcher = useFetcher();
+  const cancelFetcher = useFetcher<{ success: boolean; cancelled: boolean }>();
   const results = job.results as JobResults;
   const isActive = isActiveSyncJob(job);
   const isCancellable = isActive;
+  const cancellationOutcome = getCancellationOutcome(cancelFetcher.state, cancelFetcher.data);
 
   return (
     <li>
@@ -515,6 +519,9 @@ function SyncJobCard({ job }: { job: JobDTO }) {
               </cancelFetcher.Form>
             )}
           </div>
+          {cancellationOutcome && (
+            <div className="mb-1 text-sm text-orange-700">{cancellationOutcome}</div>
+          )}
 
           <div className="flex gap-2 mb-1 text-sm text-gray-500">
             <div>Started: {formatDate(job.date_created, 'yyyy-MM-dd HH:mm:ss')}</div>

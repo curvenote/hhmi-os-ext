@@ -29,13 +29,10 @@ vi.mock('../backend/airtable-config.server.js', () => ({
   getAirtableScientistsTableId: vi.fn(),
 }));
 
-vi.mock('../backend/jobs/hhmi-grants-sync.js', () => ({
+vi.mock('../backend/jobs/hhmi-grants-sync.js', async (importActual) => ({
+  ...((await importActual()) as Record<string, unknown>),
   invalidateOldHhmiSyncJobs: vi.fn(),
   isHhmiSyncJobStale: vi.fn(),
-  siteScopedJobWhere: (jobId: string, siteId: string) => ({
-    id: jobId,
-    payload: { path: ['site_id'], equals: siteId },
-  }),
 }));
 
 const { action } = await import('./$siteName.grants.js');
@@ -108,6 +105,7 @@ describe('grants route action', () => {
       where: {
         id: 'job-1',
         payload: { path: ['site_id'], equals: 'site-1' },
+        job_type: 'HHMI_GRANTS_SYNC',
         status: { in: ['QUEUED', 'RUNNING'] },
       },
       data: {
@@ -119,7 +117,7 @@ describe('grants route action', () => {
     expect(result).toEqual({ success: true, cancelled: true });
   });
 
-  it.each(['terminal', 'wrong-site'])('reports cancellation lost when the job is %s', async () => {
+  it('reports when the active scoped job could not be cancelled', async () => {
     mockUpdateMany.mockResolvedValueOnce({ count: 0 });
 
     const result = await action(createActionArgs('cancel'));
