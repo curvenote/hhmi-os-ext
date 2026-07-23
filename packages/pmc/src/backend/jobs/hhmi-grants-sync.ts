@@ -233,6 +233,14 @@ async function getHhmiSyncJob(jobId: string, siteId: string) {
   });
 }
 
+/**
+ * Progress updates only apply while the job is still QUEUED/RUNNING.
+ * If the stale-job reaper terminalizes the row first, `count` is 0 and callers must stop.
+ *
+ * Residual window: after a successful progress update (including during
+ * `updateHHMIScientists`) the reaper can still mark the row FAILED before COMPLETED
+ * terminalize. Funding data may already be written while the returned job status is FAILED.
+ */
 async function updateRunningHhmiSyncJobProgress(jobId: string, siteId: string, message: string) {
   const prisma = await getPrismaClient();
   const result = await prisma.job.updateMany({
@@ -248,6 +256,7 @@ async function updateRunningHhmiSyncJobProgress(jobId: string, siteId: string, m
       messages: { push: message },
     },
   });
+  if (result.count > 0) return { count: result.count };
   const job = await getHhmiSyncJob(jobId, siteId);
   return { count: result.count, job };
 }
@@ -334,8 +343,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
       siteId,
       'Fetching funding identifiers from Airtable',
     );
-    if (!fetching.job) throw new Error(`HHMI grants sync job ${job.id} not found`);
-    if (fetching.count === 0) return jobs.formatJobDTO(ctx, fetching.job);
+    if (fetching.count === 0) return jobs.formatJobDTO(ctx, fetching.job ?? job);
 
     // Fetch all scientists from Airtable
     const airtableRecords = await fetchAllScientists();
@@ -348,8 +356,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
       siteId,
       `Processing ${plural('%s record(s)', totalRecords)} from Airtable`,
     );
-    if (!processing.job) throw new Error(`HHMI grants sync job ${job.id} not found`);
-    if (processing.count === 0) return jobs.formatJobDTO(ctx, processing.job);
+    if (processing.count === 0) return jobs.formatJobDTO(ctx, processing.job ?? job);
 
     // Transform and validate records
     const scientists: HHMIScientist[] = [];
@@ -389,8 +396,7 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
       siteId,
       `Updating funding identifiers with ${plural('%s valid record(s)', validCount)}`,
     );
-    if (!updating.job) throw new Error(`HHMI grants sync job ${job.id} not found`);
-    if (updating.count === 0) return jobs.formatJobDTO(ctx, updating.job);
+    if (updating.count === 0) return jobs.formatJobDTO(ctx, updating.job ?? job);
 
     // Update the scientists data in the database
     console.log(
