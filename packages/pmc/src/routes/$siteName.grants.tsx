@@ -72,8 +72,6 @@ export const meta: MetaFunction<LoaderData> = () => {
 
 const HISTORY_LIMIT = 10;
 const FEATURED_LATCH_LIMIT = 1;
-// Fetch a small buffer above history so an active job doesn't push older runs off the list
-const JOBS_FETCH_LIMIT = HISTORY_LIMIT + 5;
 
 export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
   const ctx = await withAppPMCContext(args, [scopes.site.submissions.update]);
@@ -83,19 +81,13 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
   const [scientists, stats, initialJobList] = await Promise.all([
     getHHMIScientists(),
     getHHMIScientistsStats(),
-    jobs.list(ctx, ctx.site.id, ['HHMI_GRANTS_SYNC'], undefined, JOBS_FETCH_LIMIT),
+    jobs.list(ctx, ctx.site.id, ['HHMI_GRANTS_SYNC']),
   ]);
   let items = initialJobList.items;
 
   if (items.some(isHhmiSyncJobStale)) {
     await invalidateOldHhmiSyncJobs(ctx.site.id);
-    const refreshedJobList = await jobs.list(
-      ctx,
-      ctx.site.id,
-      ['HHMI_GRANTS_SYNC'],
-      undefined,
-      JOBS_FETCH_LIMIT,
-    );
+    const refreshedJobList = await jobs.list(ctx, ctx.site.id, ['HHMI_GRANTS_SYNC']);
     items = refreshedJobList.items;
   }
 
