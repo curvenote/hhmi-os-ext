@@ -10,11 +10,11 @@
   },
   "scripts": {
     "start": "node index.js",
-    "build:service": "cd ../../packages/pmc-ftp-service && npm run build && cd ../.. && cp packages/pmc-ftp-service/dist/* services/pmc-ftp-cloudrun && cd services/pmc-ftp-cloudrun",
-    "build": "npm run build:service && ./build.sh",
+    "build:service": "cd ../../packages/pmc-ftp-service && bun run build && cd ../.. && cp packages/pmc-ftp-service/dist/* services/pmc-ftp-cloudrun && cd services/pmc-ftp-cloudrun",
+    "build": "bun run build:service && ./build.sh",
     "deploy": "./deploy.sh",
-    "build:local": "npm run build:service && docker build --tag pmc-ftp .",
-    "dev": "npm run build:local && ./run.sh"
+    "build:local": "bun run build:service && docker build --tag pmc-ftp .",
+    "dev": "bun run build:local && ./run.sh"
   },
   "dependencies": {},
   "devDependencies": {
