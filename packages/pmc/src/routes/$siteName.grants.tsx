@@ -17,6 +17,7 @@ import {
   StatsSection,
   SectionWithHeading,
   scopes,
+  useRevalidateOnInterval,
 } from '@curvenote/scms-core';
 import { withAppPMCContext } from '../backend/context.server.js';
 import { JobStatus } from '@curvenote/scms-db';
@@ -51,7 +52,6 @@ interface LoaderData {
     lastUpdated: string | null;
   };
   jobs: JobDTO[];
-  hasMoreJobs: boolean;
   hasRunningJobs: boolean;
 }
 
@@ -62,7 +62,9 @@ export const meta: MetaFunction<LoaderData> = () => {
   ];
 };
 
-const PAGE_SIZE = 50;
+const HISTORY_LIMIT = 10;
+// Fetch a small buffer above history so an active job doesn't push older runs off the list
+const JOBS_FETCH_LIMIT = HISTORY_LIMIT + 5;
 
 export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
   const ctx = await withAppPMCContext(args, [scopes.site.submissions.update]);
@@ -70,17 +72,23 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
   // Get grants data and stats
   const [scientists, stats] = await Promise.all([getHHMIScientists(), getHHMIScientistsStats()]);
 
-  // Get sync jobs
-  const totalJobs = await jobs.count(ctx, ctx.site.id, ['HHMI_GRANTS_SYNC']);
-  const { items } = await jobs.list(ctx, ctx.site.id, ['HHMI_GRANTS_SYNC'], undefined, PAGE_SIZE);
+  // Get recent sync jobs (history is capped client-side to HISTORY_LIMIT)
+  const { items } = await jobs.list(
+    ctx,
+    ctx.site.id,
+    ['HHMI_GRANTS_SYNC'],
+    undefined,
+    JOBS_FETCH_LIMIT,
+  );
 
-  const hasRunningJobs = items.some((job) => job.status === JobStatus.RUNNING);
+  const hasRunningJobs = items.some(
+    (job) => job.status === JobStatus.RUNNING || job.status === JobStatus.QUEUED,
+  );
 
   return {
     scientists,
     stats,
     jobs: items,
-    hasMoreJobs: totalJobs > items.length,
     hasRunningJobs,
   };
 }
@@ -169,31 +177,6 @@ export async function action(args: ActionFunctionArgs) {
     }
   }
 
-  if (intent === 'loadMore') {
-    const currentCount = parseInt(formData.get('currentCount') as string) || 0;
-    const take = PAGE_SIZE;
-    const skip = currentCount;
-
-    // Fetch additional jobs
-    const { items: additionalJobs } = await jobs.list(
-      ctx,
-      ctx.site.id,
-      ['HHMI_GRANTS_SYNC'],
-      undefined,
-      take,
-      skip,
-    );
-
-    const totalJobs = await jobs.count(ctx, ctx.site.id, ['HHMI_GRANTS_SYNC']);
-    const hasMoreJobs = totalJobs > currentCount + additionalJobs.length;
-
-    return {
-      jobs: additionalJobs,
-      hasMoreJobs,
-      totalCount: currentCount + additionalJobs.length,
-    };
-  }
-
   return data({ error: 'Invalid intent' }, { status: 400 });
 }
 
@@ -234,6 +217,120 @@ function SyncButton({
   );
 }
 
+function FieldValue({
+  value,
+  missingLabel = 'Missing',
+  className,
+  asLink,
+}: {
+  value?: string | null;
+  missingLabel?: string;
+  className?: string;
+  asLink?: { href: string; mono?: boolean };
+}) {
+  const trimmed = value?.trim() ?? '';
+  if (!trimmed) {
+    return <span className={`font-medium text-red-600 ${className ?? ''}`}>{missingLabel}</span>;
+  }
+  if (asLink) {
+    return (
+      <a
+        href={asLink.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`text-sm text-blue-600 hover:text-blue-800 ${asLink.mono ? 'font-mono' : ''} ${className ?? ''}`}
+      >
+        {trimmed}
+      </a>
+    );
+  }
+  return <span className={className}>{trimmed}</span>;
+}
+
+const SCIENTIST_FIELD_LABELS = {
+  fullName: 'Full name',
+  firstName: 'First name',
+  lastName: 'Last name',
+  email: 'Email',
+  orcid: 'ORCID',
+  grantId: 'Funding ID',
+} as const;
+
+type ScientistFieldKey = keyof typeof SCIENTIST_FIELD_LABELS;
+
+function getMissingScientistFields(scientist: HHMIScientist): ScientistFieldKey[] {
+  const checks: ScientistFieldKey[] = [
+    'grantId',
+    'fullName',
+    'firstName',
+    'lastName',
+    'email',
+    'orcid',
+  ];
+  return checks.filter((key) => !scientist[key]?.trim());
+}
+
+function MissingFieldsSummary({ scientists }: { scientists: HHMIScientist[] }) {
+  const incomplete = scientists
+    .map((scientist) => ({
+      scientist,
+      missing: getMissingScientistFields(scientist),
+    }))
+    .filter(({ missing }) => missing.length > 0);
+
+  if (incomplete.length === 0) return null;
+
+  return (
+    <primitives.Card className="overflow-hidden border-red-200 bg-red-50/40">
+      <div className="border-b border-red-100 px-3 py-2">
+        <p className="text-sm font-medium text-red-800">
+          {incomplete.length} record{incomplete.length === 1 ? '' : 's'} with missing fields
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-red-50">
+            <tr>
+              <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-red-700">
+                NIHMS Funding Id
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-red-700">
+                Missing
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-red-100 bg-white/70">
+            {incomplete.map(({ scientist, missing }) => (
+              <tr key={scientist.id}>
+                <td className="px-3 py-1.5 whitespace-nowrap align-top">
+                  <ui.Badge
+                    variant="outline"
+                    className="border-red-300 font-mono text-xs text-red-700"
+                  >
+                    {scientist.grantId?.trim() || 'Missing funding ID'}
+                  </ui.Badge>
+                </td>
+                <td className="px-3 py-1.5 align-top">
+                  <div className="flex flex-wrap gap-1">
+                    {missing.map((field) => (
+                      <span
+                        key={field}
+                        className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700"
+                      >
+                        {SCIENTIST_FIELD_LABELS[field]}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </primitives.Card>
+  );
+}
+
 function GrantsTable({ scientists }: { scientists: HHMIScientist[] }) {
   if (scientists.length === 0) {
     return (
@@ -245,60 +342,103 @@ function GrantsTable({ scientists }: { scientists: HHMIScientist[] }) {
   }
 
   return (
-    <primitives.Card className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                NIHMS Funding Id
-              </th>
-              <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                Investigator Name
-              </th>
-              <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                ORCID
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {scientists.map((scientist) => (
-              <tr key={scientist.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <ui.Badge variant="outline" className="font-mono text-xs">
-                    {scientist.grantId}
-                  </ui.Badge>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <User className="mr-2 w-4 h-4 text-gray-400" />
-                    <span className="font-medium text-gray-900">{scientist.fullName}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <a
-                    href={`https://orcid.org/${scientist.orcid}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono text-sm text-blue-600 hover:text-blue-800"
-                  >
-                    {scientist.orcid}
-                  </a>
-                </td>
+    <div className="flex flex-col gap-4">
+      <MissingFieldsSummary scientists={scientists} />
+      <primitives.Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                  NIHMS Funding Id
+                </th>
+                <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                  Investigator
+                </th>
+                <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                  ORCID
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </primitives.Card>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {scientists.map((scientist) => (
+                <tr key={scientist.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 whitespace-nowrap align-top">
+                    <ui.Badge variant="outline" className="font-mono text-xs">
+                      {scientist.grantId}
+                    </ui.Badge>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <div className="flex items-start gap-2">
+                      <User className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                      <div className="min-w-0 space-y-1">
+                        <div className="font-medium text-gray-900">
+                          <FieldValue value={scientist.fullName} missingLabel="Missing full name" />
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-gray-600">
+                          <span>
+                            First:{' '}
+                            <FieldValue
+                              value={scientist.firstName}
+                              missingLabel="Missing"
+                              className="text-gray-900"
+                            />
+                          </span>
+                          <span>
+                            Last:{' '}
+                            <FieldValue
+                              value={scientist.lastName}
+                              missingLabel="Missing"
+                              className="text-gray-900"
+                            />
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Email:{' '}
+                          <FieldValue
+                            value={scientist.email}
+                            missingLabel="Missing"
+                            className="text-gray-900"
+                            asLink={
+                              scientist.email?.trim()
+                                ? { href: `mailto:${scientist.email.trim()}` }
+                                : undefined
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap align-top">
+                    <FieldValue
+                      value={scientist.orcid}
+                      missingLabel="Missing ORCID"
+                      asLink={
+                        scientist.orcid?.trim()
+                          ? { href: `https://orcid.org/${scientist.orcid.trim()}`, mono: true }
+                          : undefined
+                      }
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </primitives.Card>
+    </div>
   );
+}
+
+function isActiveSyncJob(job: JobDTO) {
+  return job.status === JobStatus.QUEUED || job.status === JobStatus.RUNNING;
 }
 
 function SyncJobCard({ job }: { job: JobDTO }) {
   const cancelFetcher = useFetcher();
   const results = job.results as JobResults;
-  const isRunning = job.status === 'RUNNING';
-  const isCancellable = isRunning;
+  const isActive = isActiveSyncJob(job);
+  const isCancellable = isActive;
 
   return (
     <li>
@@ -315,9 +455,11 @@ function SyncJobCard({ job }: { job: JobDTO }) {
                       ? 'text-red-600'
                       : job.status === 'RUNNING'
                         ? 'text-blue-600'
-                        : job.status === 'CANCELLED'
-                          ? 'text-orange-600'
-                          : 'text-gray-600'
+                        : job.status === 'QUEUED'
+                          ? 'text-blue-600'
+                          : job.status === 'CANCELLED'
+                            ? 'text-orange-600'
+                            : 'text-gray-600'
                 }`}
               >
                 {job.status.toLowerCase()}
@@ -382,46 +524,15 @@ function SyncJobCard({ job }: { job: JobDTO }) {
   );
 }
 
-function LoadMoreButton({
-  fetcher,
-  currentCount,
-}: {
-  fetcher: FetcherWithComponents<any>;
-  currentCount: number;
-}) {
-  const isLoading = fetcher.state === 'submitting' || fetcher.state === 'loading';
-
-  return (
-    <fetcher.Form method="post" className="mt-4">
-      <input type="hidden" name="intent" value="loadMore" />
-      <input type="hidden" name="currentCount" value={currentCount} />
-      <ui.Button
-        type="submit"
-        variant="link"
-        size="default"
-        disabled={isLoading}
-        className="w-full"
-      >
-        {isLoading ? 'Loading...' : 'Load More Jobs'}
-      </ui.Button>
-    </fetcher.Form>
-  );
-}
-
 export default function GrantsManagementPage({ loaderData }: { loaderData: LoaderData }) {
-  const {
-    scientists: initialScientists,
-    stats,
-    jobs: initialJobs,
-    hasMoreJobs: initialHasMoreJobs,
-    hasRunningJobs,
-  } = loaderData;
+  const { scientists: initialScientists, stats, jobs: initialJobs, hasRunningJobs } = loaderData;
 
   const syncFetcher = useFetcher({ key: 'sync' });
-  const loadMoreFetcher = useFetcher({ key: 'loadMore' });
   const [jobsState, setJobs] = useState(initialJobs);
-  const [hasMoreJobs, setHasMoreJobs] = useState(initialHasMoreJobs);
   const [optimisticJobId, setOptimisticJobId] = useState<string | null>(null);
+  // Session latch: keep jobs visible in the featured slot after they leave QUEUED/RUNNING.
+  // Cleared on full page refresh / navigation remount.
+  const [latchedJobIds, setLatchedJobIds] = useState<string[]>([]);
 
   // Convert stats to array format for StatsSection
   const statsData: StatCardData[] = [
@@ -441,8 +552,7 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
   // Update jobs from loader data
   useEffect(() => {
     setJobs(initialJobs);
-    setHasMoreJobs(initialHasMoreJobs);
-  }, [initialJobs, initialHasMoreJobs]);
+  }, [initialJobs]);
 
   // Handle optimistic UI for new sync jobs
   useEffect(() => {
@@ -484,17 +594,35 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
       })
     : jobsState;
 
-  // Handle load more response
+  // Latch any job we observe as queued/running so it stays featured after completion
   useEffect(() => {
-    if (loadMoreFetcher.data && loadMoreFetcher.state === 'idle') {
-      const { jobs: newJobs, hasMoreJobs: newHasMoreJobs } = loadMoreFetcher.data as {
-        jobs: JobDTO[];
-        hasMoreJobs: boolean;
-      };
-      setJobs((prev) => [...prev, ...newJobs]);
-      setHasMoreJobs(newHasMoreJobs);
-    }
-  }, [loadMoreFetcher.data, loadMoreFetcher.state]);
+    const activeIds = displayedJobs.filter(isActiveSyncJob).map((job) => job.id);
+    if (activeIds.length === 0) return;
+
+    setLatchedJobIds((prev) => {
+      const missing = activeIds.filter((id) => !prev.includes(id));
+      return missing.length === 0 ? prev : [...prev, ...missing];
+    });
+  }, [displayedJobs]);
+
+  const trulyActiveJobs = displayedJobs.filter(isActiveSyncJob);
+  const featuredJobs = latchedJobIds
+    .map((id) => displayedJobs.find((job) => job.id === id))
+    .filter((job): job is JobDTO => job != null);
+  const featuredJobIds = new Set(featuredJobs.map((job) => job.id));
+  const historyJobs = displayedJobs
+    .filter((job) => !isActiveSyncJob(job) && !featuredJobIds.has(job.id))
+    .slice(0, HISTORY_LIMIT);
+
+  const hasActiveSyncJobs =
+    hasRunningJobs ||
+    trulyActiveJobs.length > 0 ||
+    syncFetcher.state !== 'idle' ||
+    !!optimisticJobId;
+  const syncDisabled = hasActiveSyncJobs;
+
+  // Revalidate the page while a sync job is queued/running (same pattern as submissions polling)
+  useRevalidateOnInterval({ enabled: hasActiveSyncJobs, interval: 1500 });
 
   return (
     <PageFrame title="NIHMS Funding Identifiers">
@@ -502,8 +630,16 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
         {/* Stats and Sync Section */}
         <StatsSection
           stats={statsData}
-          actionButton={<SyncButton fetcher={syncFetcher} disabled={hasRunningJobs} />}
+          actionButton={<SyncButton fetcher={syncFetcher} disabled={syncDisabled} />}
         />
+
+        {featuredJobs.length > 0 && (
+          <ul className="space-y-4">
+            {featuredJobs.map((job) => (
+              <SyncJobCard key={job.id} job={job} />
+            ))}
+          </ul>
+        )}
 
         {/* Grants Table */}
         <section>
@@ -514,23 +650,22 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
 
         {/* Sync Jobs History */}
         <section>
-          <SectionWithHeading heading="Sync Jobs" icon={<List />}>
-            {displayedJobs.length === 0 ? (
+          <SectionWithHeading heading="Sync Job History" icon={<List />}>
+            {historyJobs.length === 0 ? (
               <primitives.Card className="p-6 text-center text-gray-500">
                 <RefreshCw className="mx-auto mb-2 w-8 h-8" />
-                <p>No sync jobs yet. Click "Sync Funding Identifiers" to start your first sync.</p>
+                <p>
+                  {displayedJobs.length === 0
+                    ? 'No sync jobs yet. Click "Sync Funding Identifiers" to start your first sync.'
+                    : 'No completed sync jobs yet.'}
+                </p>
               </primitives.Card>
             ) : (
-              <>
-                <ul className="space-y-4">
-                  {displayedJobs.map((job) => (
-                    <SyncJobCard key={job.id} job={job} />
-                  ))}
-                </ul>
-                {hasMoreJobs && (
-                  <LoadMoreButton fetcher={loadMoreFetcher} currentCount={displayedJobs.length} />
-                )}
-              </>
+              <ul className="space-y-4">
+                {historyJobs.map((job) => (
+                  <SyncJobCard key={job.id} job={job} />
+                ))}
+              </ul>
             )}
           </SectionWithHeading>
         </section>

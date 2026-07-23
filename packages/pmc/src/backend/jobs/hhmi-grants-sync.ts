@@ -10,6 +10,10 @@ import {
   getAirtableScientistsGrantIdFieldId,
   getAirtableScientistsOrcidFieldId,
   getAirtableScientistsFullNameFieldId,
+  getAirtableScientistsFirstNamePreferredFieldId,
+  getAirtableScientistsFirstNamePrimaryFieldId,
+  getAirtableScientistsLastNamePreferredFieldId,
+  getAirtableScientistsEmailFieldId,
 } from '../airtable-config.server.js';
 import { updateHHMIScientists, type HHMIScientist } from '../hhmi-grants.server.js';
 import { plural } from 'myst-common';
@@ -121,21 +125,53 @@ async function fetchAllScientists(): Promise<AirtableScientistRecord[]> {
   return allRecords;
 }
 
+interface ScientistFieldIds {
+  grantId: string;
+  orcid: string;
+  fullName: string;
+  firstNamePreferred: string;
+  firstNamePrimary: string;
+  lastNamePreferred: string;
+  email: string;
+}
+
+async function getScientistFieldIds(): Promise<ScientistFieldIds> {
+  const [grantId, orcid, fullName, firstNamePreferred, firstNamePrimary, lastNamePreferred, email] =
+    await Promise.all([
+      getAirtableScientistsGrantIdFieldId(),
+      getAirtableScientistsOrcidFieldId(),
+      getAirtableScientistsFullNameFieldId(),
+      getAirtableScientistsFirstNamePreferredFieldId(),
+      getAirtableScientistsFirstNamePrimaryFieldId(),
+      getAirtableScientistsLastNamePreferredFieldId(),
+      getAirtableScientistsEmailFieldId(),
+    ]);
+
+  return {
+    grantId,
+    orcid,
+    fullName,
+    firstNamePreferred,
+    firstNamePrimary,
+    lastNamePreferred,
+    email,
+  };
+}
+
 /**
  * Transform Airtable record to HhmiScientist
  */
-async function transformAirtableRecord(
+function transformAirtableRecord(
   record: AirtableScientistRecord,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  validCount: number = 0,
-): Promise<HHMIScientist | null> {
-  const grantIdFieldId = await getAirtableScientistsGrantIdFieldId();
-  const orcidFieldId = await getAirtableScientistsOrcidFieldId();
-  const fullNameFieldId = await getAirtableScientistsFullNameFieldId();
-
-  const grantId = record.fields[grantIdFieldId];
-  const fullName = record.fields[fullNameFieldId];
-  const orcid = record.fields[orcidFieldId] || '';
+  fieldIds: ScientistFieldIds,
+): HHMIScientist | null {
+  const grantId = record.fields[fieldIds.grantId];
+  const fullName = record.fields[fieldIds.fullName];
+  const orcid = record.fields[fieldIds.orcid] || '';
+  const firstNamePreferred = record.fields[fieldIds.firstNamePreferred];
+  const firstNamePrimary = record.fields[fieldIds.firstNamePrimary];
+  const lastNamePreferred = record.fields[fieldIds.lastNamePreferred] || '';
+  const email = record.fields[fieldIds.email] || '';
 
   // Skip records with missing essential data
   if (!grantId || !fullName) {
@@ -145,12 +181,20 @@ async function transformAirtableRecord(
     return null;
   }
 
+  const firstNamePreferredTrimmed =
+    firstNamePreferred != null ? String(firstNamePreferred).trim() : '';
+  const firstNamePrimaryTrimmed = firstNamePrimary != null ? String(firstNamePrimary).trim() : '';
+  const firstName = firstNamePreferredTrimmed || firstNamePrimaryTrimmed;
+
   // Use original Airtable ID as string to preserve precision
   const scientistId = record.id;
 
   return {
     id: scientistId,
     fullName: String(fullName).trim(),
+    firstName,
+    lastName: String(lastNamePreferred).trim(),
+    email: String(email).trim(),
     grantId: String(grantId).trim(),
     orcid: String(orcid).trim(),
   };
@@ -202,12 +246,13 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
 
     // Transform and validate records
     const scientists: HHMIScientist[] = [];
+    const fieldIds = await getScientistFieldIds();
 
     for (const record of airtableRecords) {
       processedCount++;
 
       try {
-        const scientist = await transformAirtableRecord(record, validCount);
+        const scientist = transformAirtableRecord(record, fieldIds);
 
         if (scientist) {
           scientists.push(scientist);

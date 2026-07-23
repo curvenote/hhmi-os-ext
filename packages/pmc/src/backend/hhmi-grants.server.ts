@@ -15,6 +15,9 @@ import { randomUUID } from 'node:crypto';
 export interface HHMIScientist {
   id: string; // Airtable row ID (as string to preserve precision)
   fullName: string; // Scientist's full name
+  firstName: string; // Preferred first name, falling back to primary
+  lastName: string; // Preferred last name
+  email: string; // Email address
   grantId: string; // HHMI grant ID (e.g., "HHMI_Smith_J")
   orcid: string; // ORCID identifier
 }

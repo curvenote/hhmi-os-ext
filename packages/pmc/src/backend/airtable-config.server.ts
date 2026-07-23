@@ -21,6 +21,10 @@ interface PMCAirtableConfig {
         grantId: string;
         orcid: string;
         fullName: string;
+        firstNamePreferred: string;
+        firstNamePrimary: string;
+        lastNamePreferred: string;
+        email: string;
       };
     };
   };
@@ -83,6 +87,30 @@ async function getPMCAirtableConfig(): Promise<PMCAirtableConfig> {
     );
   }
 
+  if (!airtableConfig.tables?.scientists?.fields?.firstNamePreferred) {
+    throw new Error(
+      'PMC Airtable scientists first name (preferred) field ID is missing. Please update the app-config.',
+    );
+  }
+
+  if (!airtableConfig.tables?.scientists?.fields?.firstNamePrimary) {
+    throw new Error(
+      'PMC Airtable scientists first name (primary) field ID is missing. Please update the app-config.',
+    );
+  }
+
+  if (!airtableConfig.tables?.scientists?.fields?.lastNamePreferred) {
+    throw new Error(
+      'PMC Airtable scientists last name (preferred) field ID is missing. Please update the app-config.',
+    );
+  }
+
+  if (!airtableConfig.tables?.scientists?.fields?.email) {
+    throw new Error(
+      'PMC Airtable scientists email field ID is missing. Please update the app-config.',
+    );
+  }
+
   return airtableConfig as PMCAirtableConfig;
 }
 
@@ -128,6 +156,26 @@ export async function getAirtableScientistsOrcidFieldId(): Promise<string> {
 export async function getAirtableScientistsFullNameFieldId(): Promise<string> {
   const config = await getPMCAirtableConfig();
   return config.tables.scientists.fields.fullName;
+}
+
+export async function getAirtableScientistsFirstNamePreferredFieldId(): Promise<string> {
+  const config = await getPMCAirtableConfig();
+  return config.tables.scientists.fields.firstNamePreferred;
+}
+
+export async function getAirtableScientistsFirstNamePrimaryFieldId(): Promise<string> {
+  const config = await getPMCAirtableConfig();
+  return config.tables.scientists.fields.firstNamePrimary;
+}
+
+export async function getAirtableScientistsLastNamePreferredFieldId(): Promise<string> {
+  const config = await getPMCAirtableConfig();
+  return config.tables.scientists.fields.lastNamePreferred;
+}
+
+export async function getAirtableScientistsEmailFieldId(): Promise<string> {
+  const config = await getPMCAirtableConfig();
+  return config.tables.scientists.fields.email;
 }
 
 export async function getAirtableScientistsViewId(): Promise<string | undefined> {
