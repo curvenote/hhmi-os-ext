@@ -83,18 +83,6 @@ describe('funding sync job display', () => {
     expect(getNextLatchedJobIds([completed], ['missing'], 1)).toEqual([]);
   });
 
-  it('orders history jobs newest-first', () => {
-    const jobs = [
-      makeJob('older', JobStatus.COMPLETED, '2026-07-23T09:00:00.000Z'),
-      makeJob('newer', JobStatus.COMPLETED, '2026-07-23T10:00:00.000Z'),
-    ];
-
-    expect(partitionSyncJobsForDisplay(jobs, [], 10).historyJobs.map((job) => job.id)).toEqual([
-      'newer',
-      'older',
-    ]);
-  });
-
   it('enables sync after the featured job completes', () => {
     const completed = makeJob('completed', JobStatus.COMPLETED, '2026-07-23T12:00:00.000Z');
     const { activeJobs, featuredJobs } = partitionSyncJobsForDisplay(

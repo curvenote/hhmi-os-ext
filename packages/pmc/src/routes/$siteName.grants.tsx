@@ -622,7 +622,7 @@ export default function GrantsManagementPage({ loaderData }: { loaderData: Loade
     }
   }, [syncFetcher.state, syncFetcher.formData, optimisticJobId]);
 
-  // Filter out optimistic job from displayed jobs when real data comes in
+  // Keep this stable so the latch effect below does not re-run on every render while optimistic.
   const displayedJobs = useMemo(
     () =>
       optimisticJobId
