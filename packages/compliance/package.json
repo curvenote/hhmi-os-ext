@@ -71,7 +71,9 @@
     "react": "^18.3.1",
     "react-router": "^7.9.5",
     "zod": "^4.1.12",
-    "zod-form-data": "^3.0.1"
+    "zod-form-data": "^3.0.1",
+    "@react-router/node": "7.9.5",
+    "doi-utils": "^2.0.5"
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.25.1",
@@ -105,7 +107,8 @@
     "tsx": "^4.19.3",
     "typescript": "^5.6.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^4.0.6"
+    "vitest": "^4.0.6",
+    "vite": "^7.1.12"
   },
   "prisma": {
     "seed": "tsx prisma/seed.mts"
