@@ -77,7 +77,7 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
   const ctx = await withAppPMCContext(args, [scopes.site.submissions.update]);
 
   // Resolve stale queued/running jobs before deciding whether polling and sync should be enabled.
-  await invalidateOldHhmiSyncJobs();
+  await invalidateOldHhmiSyncJobs(ctx.site.id);
 
   // Get grants data and stats
   const [scientists, stats] = await Promise.all([getHHMIScientists(), getHHMIScientistsStats()]);

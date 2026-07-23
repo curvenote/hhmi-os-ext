@@ -204,6 +204,20 @@ function transformAirtableRecord(
 // Job Processing
 // ==============================
 
+async function getTerminalHhmiSyncJob(jobId: string) {
+  const prisma = await getPrismaClient();
+  const job = await prisma.job.findUnique({ where: { id: jobId } });
+  if (
+    job &&
+    (job.status === JobStatus.COMPLETED ||
+      job.status === JobStatus.FAILED ||
+      job.status === JobStatus.CANCELLED)
+  ) {
+    return job;
+  }
+  return null;
+}
+
 /**
  * Main job handler for HHMI scientists sync
  */
@@ -217,6 +231,12 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
   let errorCount = 0;
   const errors: Array<{ recordId?: string; error: string }> = [];
   let job;
+
+  const terminalJob = await getTerminalHhmiSyncJob(data.id);
+  if (terminalJob) {
+    console.log(`Skipping HHMI grants sync job ${data.id}: status is ${terminalJob.status}`);
+    return jobs.formatJobDTO(ctx, terminalJob);
+  }
 
   try {
     job = await jobs.dbStartJob({ ...data, status: JobStatus.RUNNING });
@@ -273,6 +293,14 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
       `📊 Processing Summary: ${validCount} valid, ${skippedCount} skipped, ${errorCount} errors`,
     );
 
+    const terminalJobBeforeUpdate = await getTerminalHhmiSyncJob(job.id);
+    if (terminalJobBeforeUpdate) {
+      console.log(
+        `Skipping database update for HHMI grants sync job ${job.id}: status is ${terminalJobBeforeUpdate.status}`,
+      );
+      return jobs.formatJobDTO(ctx, terminalJobBeforeUpdate);
+    }
+
     await jobs.dbUpdateJob(job.id, {
       status: JobStatus.RUNNING,
       message: `Updating funding identifiers with ${plural('%s valid record(s)', validCount)}`,
@@ -307,6 +335,11 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
     console.error('HHMI scientists sync job failed:', err);
 
     if (job) {
+      const terminalJobAfterError = await getTerminalHhmiSyncJob(job.id);
+      if (terminalJobAfterError) {
+        return jobs.formatJobDTO(ctx, terminalJobAfterError);
+      }
+
       await jobs.dbUpdateJob(job.id, {
         status: JobStatus.FAILED,
         message: `Funding Id sync failed: ${err.message}`,
@@ -340,9 +373,9 @@ export async function hhmiGrantsSyncHandler(ctx: Context, data: CreateJob) {
 // ==============================
 
 /**
- * Check if there are any old queued/running HHMI sync jobs and mark them as failed
+ * Check if there are any stale queued/running HHMI sync jobs for a site and mark them as failed
  */
-export async function invalidateOldHhmiSyncJobs(): Promise<void> {
+export async function invalidateOldHhmiSyncJobs(siteId: string): Promise<void> {
   const prisma = await getPrismaClient();
 
   try {
@@ -354,7 +387,11 @@ export async function invalidateOldHhmiSyncJobs(): Promise<void> {
         status: {
           in: [JobStatus.QUEUED, JobStatus.RUNNING],
         },
-        date_created: {
+        payload: {
+          path: ['site_id'],
+          equals: siteId,
+        },
+        date_modified: {
           lt: timeoutAgo,
         },
       },
