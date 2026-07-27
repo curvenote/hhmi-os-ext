@@ -49,6 +49,7 @@
     "build:client": "tsup",
     "dev": "tsc -w",
     "compile": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "test": "vitest run",
     "test:unit": "vitest run",

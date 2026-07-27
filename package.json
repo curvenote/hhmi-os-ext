@@ -16,6 +16,7 @@
     "lint": "bun run --filter './packages/*' lint",
     "lint:format": "bun run --filter './packages/*' lint:format",
     "lint:format:fix": "bun run --filter './packages/*' lint:format:fix",
+    "typecheck": "turbo run typecheck",
     "test": "turbo run test"
   },
   "devDependencies": {

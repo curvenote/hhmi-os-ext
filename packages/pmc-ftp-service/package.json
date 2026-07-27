@@ -22,6 +22,7 @@
     "lint": "eslint \"src/**/*.ts\" -c ./.eslintrc.cjs",
     "lint:format": "bunx prettier --check \"src/**/*.ts\"",
     "lint:format:fix": "bunx prettier --write \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:launch": "ts-node bin/launch.ts",
