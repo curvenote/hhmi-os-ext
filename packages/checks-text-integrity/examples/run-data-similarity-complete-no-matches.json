@@ -1,0 +1,22 @@
+{
+  "status": "healthy",
+  "serviceDataSchema": {},
+  "serviceData": {
+    "stage": "processing_complete",
+    "submission_id": "f995g589-a868-52d8-91eb-48a05fcc3949",
+    "viewer_url": "https://integrity-provider.example.com/reports/f995g589-a868-52d8-91eb-48a05fcc3949",
+    "report_pdf_url": "https://integrity-provider.example.com/reports/f995g589-a868-52d8-91eb-48a05fcc3949.pdf",
+    "summary_report": {
+      "submission_id": "f995g589-a868-52d8-91eb-48a05fcc3949",
+      "overall_match_percentage": 0,
+      "internet_match_percentage": 0,
+      "publication_match_percentage": 0,
+      "submitted_works_match_percentage": 0,
+      "status": "COMPLETE",
+      "time_requested": "2017-11-07T10:00:00.000Z",
+      "time_generated": "2017-11-07T10:01:15.000Z",
+      "top_source_largest_matched_word_count": 0,
+      "top_matches": []
+    }
+  }
+}

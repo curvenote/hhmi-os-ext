@@ -1,0 +1,48 @@
+# $schema: https://json-schema.org/draft/2020-12/schema
+title: 'Image Integrity Checks Extension Module'
+description: 'Image Integrity Checks Extension Module Configuration'
+type: 'object'
+required:
+  - notifyBaseUrl
+properties:
+  task:
+    type: boolean
+    description: This extension will register one or more tasks
+    default: true
+  checks:
+    type: boolean
+    description: This extension will register one or more check services
+    default: true
+  routes:
+    type: boolean
+    description: This extension will register one or more routes
+    default: true
+  notifyBaseUrl:
+    type: string
+    description: Required base URL for Proofig webhook notifications (e.g. https://host/v1/hooks/proofig/notify). Used to build notify_url in submit payload.
+  apiBaseUrl:
+    type: string
+    description: Base URL for the Proofig API (e.g. https://proofig.example.com). PROOFIG_SUBMIT_STREAM jobs post directly to this API.
+  clientId:
+    type: string
+    description: Proofig API client ID for authentication.
+  clientSecret:
+    type: string
+    description: Proofig API client secret for authentication.
+    secret: true
+  pdfService:
+    type: object
+    description: >-
+      Proofig PDF Cloud Run worker Pub/Sub target. Project id and publisher credentials
+      are taken from main app-config (api.pubsubProjectId, api.converterSASecretKeyfile).
+    properties:
+      topic:
+        type: string
+        description: Pub/Sub topic name (id or full resource name) for the proofig-pdf-service worker.
+      devLocalPushUrl:
+        type: string
+        description: >-
+          Optional local HTTP stub URL for development pushes (defaults to
+          http://127.0.0.1:8088/). When set, dispatched reportUrl hosts of
+          localhost/127.0.0.1 are rewritten to host.docker.internal so the
+          Docker PDF worker can reach the Proofig UI on the host.

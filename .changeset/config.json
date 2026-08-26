@@ -3,7 +3,16 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [],
-  "linked": [["@hhmi/pmc","@hhmi/compliance"]],
+  "linked": [
+    ["@hhmi/pmc", "@hhmi/compliance"],
+    [
+      "@hhmi/checks-notify",
+      "@hhmi/checks-proofig",
+      "@hhmi/checks-shared",
+      "@hhmi/checks-text-integrity",
+      "@hhmi/proofig-pdf-service"
+    ]
+  ],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",

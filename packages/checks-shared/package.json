@@ -1,0 +1,95 @@
+{
+  "name": "@hhmi/checks-shared",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Shared authorization helpers for HHMI check extensions",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "browser": false,
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "node": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./analytics/events": {
+      "development": "./src/analytics/events.ts",
+      "types": "./dist/analytics/events.d.ts",
+      "default": "./dist/analytics/events.js"
+    },
+    "./analytics/client": {
+      "development": "./src/analytics/client.ts",
+      "types": "./dist/analytics/client.d.ts",
+      "default": "./dist/analytics/client.js"
+    },
+    "./analytics/server": {
+      "development": "./src/analytics/server.ts",
+      "types": "./dist/analytics/server.d.ts",
+      "default": "./dist/analytics/server.js"
+    },
+    "./analytics/properties": {
+      "development": "./src/analytics/properties.ts",
+      "types": "./dist/analytics/properties.d.ts",
+      "default": "./dist/analytics/properties.js"
+    },
+    "./analytics/runContext.server": {
+      "development": "./src/analytics/runContext.server.ts",
+      "types": "./dist/analytics/runContext.server.d.ts",
+      "default": "./dist/analytics/runContext.server.js"
+    },
+    "./analytics/trigger.server": {
+      "development": "./src/analytics/trigger.server.ts",
+      "types": "./dist/analytics/trigger.server.d.ts",
+      "default": "./dist/analytics/trigger.server.js"
+    },
+    "./useHoldingBusy": {
+      "development": "./src/useHoldingBusy.ts",
+      "types": "./dist/useHoldingBusy.d.ts",
+      "default": "./dist/useHoldingBusy.js"
+    },
+    "./ActionOverflow": {
+      "development": "./src/ActionOverflow.tsx",
+      "types": "./dist/ActionOverflow.d.ts",
+      "default": "./dist/ActionOverflow.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "rimraf dist",
+    "lint": "bunx eslint -c ../../.eslintrc.cjs \"src/**/*.ts\"",
+    "lint:format": "prettier --check \"src/**/*.ts\"",
+    "lint:format:fix": "prettier --write \"src/**/*.ts\"",
+    "build": "tsc --project tsconfig.json",
+    "compile": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "@curvenote/scms-core": "*",
+    "@curvenote/scms-server": "*",
+    "lucide-react": "^0.552.0",
+    "react": "^18.3.1",
+    "react-router": "7.18.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "eslint-config-curvenote": "^0.0.4",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.5.3",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.3"
+  },
+  "engines": {
+    "node": ">=22.21.0",
+    "bun": ">=1.3.10"
+  }
+}

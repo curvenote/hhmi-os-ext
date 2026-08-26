@@ -1,0 +1,23 @@
+{
+  "name": "@hhmi/proofig-pdf-service-cloudrun",
+  "description": "Bundled Proofig PDF service (Cloud Run deployment shell)",
+  "version": "0.0.1",
+  "private": true,
+  "license": "",
+  "author": "",
+  "engines": {
+    "node": "^22.0.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "build:service": "cd ../../packages/proofig-pdf-service && bun run build && cd ../.. && cp packages/proofig-pdf-service/dist/index.js services/proofig-pdf-cloudrun/ && mkdir -p services/proofig-pdf-cloudrun/native && rm -f services/proofig-pdf-cloudrun/native/*.node && touch services/proofig-pdf-cloudrun/native/.keep && (cp packages/proofig-pdf-service/dist/*.node services/proofig-pdf-cloudrun/native/ 2>/dev/null || true) && cd services/proofig-pdf-cloudrun",
+    "build": "bun run build:service && ./build.sh",
+    "deploy": "./deploy.sh",
+    "build:local": "bun run build:service && docker build --tag proofig-pdf-local .",
+    "dev": "bun run build:local && ./run.sh"
+  },
+  "dependencies": {
+    "playwright": "1.49.0"
+  },
+  "devDependencies": {}
+}

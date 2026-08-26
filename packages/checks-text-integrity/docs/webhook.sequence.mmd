@@ -1,0 +1,71 @@
+sequenceDiagram
+  autonumber
+  actor User as User
+  participant SCMS as SCMS (checks-text-integrity)
+  participant Relay as checks-relay (text integrity plugin)
+  participant Provider as External provider API
+
+  rect rgba(230,230,230,0.25)
+    note over User,SCMS: Submit from SCMS UI
+    User->>SCMS: Click submit
+    SCMS->>Relay: POST /api/v1/services/:service_name/submit\ncredentials, client_id, files[], notify_url, metadata
+    Relay->>Provider: Create submission
+    Provider-->>Relay: externalRef (submission id)
+    Relay->>Provider: Upload manuscript file(s)
+    Provider-->>Relay: Upload accepted
+    Relay-->>SCMS: 201 Created\nsubmissionId + externalRef (status=submitted)
+  end
+
+  rect rgba(230,230,230,0.25)
+    note over Provider,Relay: Webhook: SUBMISSION_COMPLETE
+    Provider->>Relay: POST /api/v1/ingest/:webhookPathId\nprovider event header = SUBMISSION_COMPLETE\n(body includes submission id)\n(optional signature)
+
+    alt Submission error
+      Relay-->>SCMS: notify: SUBMISSION_FAILED\npayload.submission_status=ERROR
+    else Submission success
+      Relay-->>SCMS: notify: SUBMISSION_COMPLETE\npayload.submission_status=COMPLETE
+      Relay->>Provider: Generate similarity report
+      Relay-->>SCMS: notify: PROCESSING_PHASE_STARTED\npayload.phase="upload_and_similarity"
+    end
+  end
+
+  rect rgba(230,230,230,0.25)
+    note over Provider,Relay: Webhook: SIMILARITY_COMPLETE
+    Provider->>Relay: POST /api/v1/ingest/:webhookPathId\nprovider event header = SIMILARITY_COMPLETE\n(payload includes similarity results + metadata.custom.check_service_run_id)
+
+    Relay-->>SCMS: notify: PROCESSING_PHASE_COMPLETE\npayload.phase="upload_and_similarity"\npayload.provider_payload=<full payload>\n(+ payload.report.* if available)
+
+    Relay->>Provider: Request report generation (async)\n(e.g. PDF, HTML, other)
+    Provider-->>Relay: 202 Accepted (report generation queued)
+    Relay-->>SCMS: notify: REPORT_GENERATION_STARTED
+  end
+
+  rect rgba(230,230,230,0.25)
+    note over Provider,Relay: Webhook: PDF_STATUS (report rendering status)
+    Provider->>Relay: POST /api/v1/ingest/:webhookPathId\nprovider event header = PDF_STATUS\nOccurs immediately after render request and on each status change\n(payload includes submission_id + status=PENDING|SUCCESS|FAILED)\n(optional signature)
+
+    alt status=PENDING
+      Relay-->>SCMS: notify: REPORT_GENERATION_STARTED
+    else status=SUCCESS
+      Relay-->>SCMS: notify: REPORT_GENERATION_COMPLETE\ninclude report id/url (format-specific)
+    else status=FAILED
+      Relay-->>SCMS: notify: REPORT_GENERATION_FAILED\ninclude error details (if present)
+    end
+  end
+
+  rect rgba(230,230,230,0.25)
+    note over SCMS,Relay: SCMS fetches report content (sync)
+    SCMS->>Relay: POST /api/v1/services/:service_name/submission/:submission_id/report\ncredentials + request params
+    Relay->>Provider: Fetch report artifact (content)\n(format-specific)
+    Provider-->>Relay: report bytes/content + content_type
+    Relay-->>SCMS: 200 OK (immediate)\nreport content
+  end
+
+  rect rgba(230,230,230,0.25)
+    note over User,SCMS: SCMS user clicks "Open and authenticate" (sync)
+    User->>SCMS: Click "Open and authenticate"
+    SCMS->>Relay: POST /api/v1/services/:service_name/submission/:submission_id/viewer-url\ncredentials + viewer options
+    Relay->>Provider: Create viewer/launch URL
+    Provider-->>Relay: viewer_url
+    Relay-->>SCMS: 200 OK\nviewer_url (+ expires_in)
+  end
