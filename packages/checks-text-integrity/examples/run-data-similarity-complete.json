@@ -1,0 +1,68 @@
+{
+  "status": "healthy",
+  "serviceDataSchema": {},
+  "serviceData": {
+    "stage": "processing_complete",
+    "submission_id": "e884f478-9757-41c7-80da-37b94ebb2838",
+    "viewer_url": "https://integrity-provider.example.com/reports/e884f478-9757-41c7-80da-37b94ebb2838",
+    "report_pdf_url": "https://integrity-provider.example.com/reports/e884f478-9757-41c7-80da-37b94ebb2838.pdf",
+    "summary_report": {
+      "submission_id": "e884f478-9757-41c7-80da-37b94ebb2838",
+      "overall_match_percentage": 21,
+      "internet_match_percentage": 14,
+      "publication_match_percentage": 6,
+      "submitted_works_match_percentage": 1,
+      "status": "COMPLETE",
+      "time_requested": "2017-11-06T19:14:31.828Z",
+      "time_generated": "2017-11-06T19:14:45.993Z",
+      "top_source_largest_matched_word_count": 193,
+      "top_matches": [
+        {
+          "percentage": 10,
+          "submission_id": "883fbb3a-2825-4a2a-8d24-d52e40673772",
+          "source_type": "INTERNET",
+          "matched_word_count_total": 70,
+          "submitted_date": "2024-09-12",
+          "institution_name": "Medium.com",
+          "name": "Evaluating the tolerance of Z in A flows"
+        },
+        {
+          "percentage": 5,
+          "submission_id": "a7c8d9e0-1234-5678-90ab-cdef12345678",
+          "source_type": "PUBLICATION",
+          "matched_word_count_total": 40,
+          "submitted_date": "2024-09-12",
+          "institution_name": "HHMI",
+          "name": "Investigating the dynamics of X on Y (submitted work)"
+        },
+        {
+          "percentage": 4,
+          "submission_id": "b8d9e0f1-2345-6789-01bc-def123456789",
+          "source_type": "SUBMITTED_WORK",
+          "matched_word_count_total": 35,
+          "submitted_date": "2021-05-05",
+          "institution_name": "Example University (submitted work sandbox)",
+          "name": "Example University submitted work match on 2021-05-05"
+        },
+        {
+          "percentage": 1,
+          "submission_id": "c9d0e1f2-3456-7890-12cd-ef1234567890",
+          "source_type": "INTERNET",
+          "matched_word_count_total": 12,
+          "submitted_date": "2023-01-15",
+          "institution_name": "arXiv",
+          "name": "Preliminary results on flow dynamics"
+        },
+        {
+          "percentage": 1,
+          "submission_id": "d0e1f2a3-4567-8901-23de-f12345678901",
+          "source_type": "PUBLICATION",
+          "matched_word_count_total": 8,
+          "submitted_date": "2022-11-20",
+          "institution_name": "Journal of Applied Research",
+          "name": "Methods and materials section overlap"
+        }
+      ]
+    }
+  }
+}

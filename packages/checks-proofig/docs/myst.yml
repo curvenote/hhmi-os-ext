@@ -1,0 +1,15 @@
+# See docs at: https://mystmd.org/guide/frontmatter
+version: 1
+project:
+  id: ccec5bd5-9b76-49f0-9811-7e6b9e0a58c7
+  # title:
+  # description:
+  # keywords: []
+  # authors: []
+  github: https://github.com/curvenote/hhmi-checks
+  # To autogenerate a Table of Contents, run "myst init --write-toc"
+site:
+  template: book-theme
+  # options:
+  #   favicon: favicon.ico
+  #   logo: site_logo.png

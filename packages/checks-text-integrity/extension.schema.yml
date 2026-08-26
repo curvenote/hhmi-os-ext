@@ -1,0 +1,73 @@
+# $schema: https://json-schema.org/draft/2020-12/schema
+title: Text Integrity Checks extension
+description: Configuration for the checks-text-integrity extension (app.extensions.checks-text-integrity)
+type: object
+additionalProperties: false
+properties:
+  task:
+    type: boolean
+    description: This extension registers dashboard / task integration
+  checks:
+    type: boolean
+    description: This extension registers check services on works
+  routes:
+    type: boolean
+    description: This extension registers HTTP routes
+  serviceName:
+    type: string
+    description: >-
+      Checks-relay plugin name for text integrity checks. Used in paths under /api/v1/services/{serviceName}/instances/{instanceId}/ (upload, configure, status, check routes). When omitted, runtime defaults to echo.
+  relayInstanceId:
+    type: string
+    description: >-
+      checks-relay instance id (URL segment). Object-store overrides take precedence over this value when set in admin; otherwise defaults to the literal id "default".
+  notifyBaseUrl:
+    type: string
+    description: >-
+      Required absolute base for Text Integrity webhook notify URLs (no trailing slash), e.g. https://host/v1/hooks/text-integrity/notify. Provider API keys belong in object store only, not here.
+  autoRetry:
+    type: object
+    description: >-
+      Automated retry policy for failed check runs (invoked by CronJob text-integrity-retry-sweep).
+      Sweep schedule is configured on that CronJob in System → Cron, not here.
+    additionalProperties: false
+    properties:
+      enabled:
+        type: boolean
+        description: When false, the sweep handler no-ops and cron seed registers the job disabled.
+      backoff:
+        type: object
+        additionalProperties: false
+        properties:
+          fixedIntervalSec:
+            type: integer
+            description: Phase 1 — wait after failure before each auto-retry, in seconds (e.g. 600 = 10 min).
+          fixedRetryCount:
+            type: integer
+            description: Number of auto-retries at fixedIntervalSec before exponential backoff.
+          stepBaseDelaySec:
+            type: integer
+            description: Phase 2 — base delay after fixed phase, in seconds (e.g. 3600 = 1 hour).
+          multiplier:
+            type: integer
+            description: Exponential multiplier for phase 2 delays.
+          maxStepDelaySec:
+            type: integer
+            description: Cap on each phase 2 retry interval, in seconds (e.g. 43200 = 12 hours).
+      limits:
+        type: object
+        additionalProperties: false
+        properties:
+          maxRetryWindowSec:
+            type: integer
+            description: Stop auto-retry after this duration from the root failure, in seconds (e.g. 259200 = 3 days).
+          maxAttempts:
+            type: integer
+            description: Hard cap on attempt number for auto-retry eligibility.
+      sweep:
+        type: object
+        additionalProperties: false
+        properties:
+          limit:
+            type: integer
+            description: Maximum failed runs processed per sweep invocation.

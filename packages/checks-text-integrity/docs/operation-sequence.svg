@@ -1,0 +1,374 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="1400"
+  height="1680"
+  viewBox="0 0 1400 1680"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">Text Integrity Extension Operation Overview</title>
+  <desc id="desc">
+    Companion overview for the Text Integrity sequence diagrams, covering the happy path, status
+    polling, relay recovery, and local reconciliation retry.
+  </desc>
+  <defs>
+    <marker
+      id="arrow"
+      markerWidth="12"
+      markerHeight="12"
+      refX="10"
+      refY="6"
+      orient="auto"
+      markerUnits="strokeWidth"
+    >
+      <path d="M2,2 L10,6 L2,10 Z" fill="#2563eb" />
+    </marker>
+    <marker
+      id="arrow-muted"
+      markerWidth="12"
+      markerHeight="12"
+      refX="10"
+      refY="6"
+      orient="auto"
+      markerUnits="strokeWidth"
+    >
+      <path d="M2,2 L10,6 L2,10 Z" fill="#64748b" />
+    </marker>
+    <style>
+      .page {
+        fill: #f8fafc;
+      }
+      .title {
+        font:
+          700 34px Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        fill: #0f172a;
+      }
+      .subtitle {
+        font:
+          400 16px Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        fill: #475569;
+      }
+      .panel {
+        fill: #ffffff;
+        stroke: #cbd5e1;
+        stroke-width: 1.5;
+        rx: 20;
+      }
+      .panel-title {
+        font:
+          700 22px Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        fill: #0f172a;
+      }
+      .panel-note {
+        font:
+          400 14px Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        fill: #64748b;
+      }
+      .actor {
+        fill: #eff6ff;
+        stroke: #93c5fd;
+        stroke-width: 1.5;
+        rx: 12;
+      }
+      .store {
+        fill: #f8fafc;
+        stroke: #94a3b8;
+        stroke-width: 1.5;
+        rx: 12;
+      }
+      .relay {
+        fill: #ecfdf5;
+        stroke: #86efac;
+        stroke-width: 1.5;
+        rx: 12;
+      }
+      .provider {
+        fill: #fefce8;
+        stroke: #fde68a;
+        stroke-width: 1.5;
+        rx: 12;
+      }
+      .warning {
+        fill: #fff7ed;
+        stroke: #fdba74;
+        stroke-width: 1.5;
+        rx: 12;
+      }
+      .label {
+        font:
+          700 14px Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        fill: #0f172a;
+        text-anchor: middle;
+      }
+      .small {
+        font:
+          400 12px Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        fill: #334155;
+        text-anchor: middle;
+      }
+      .step {
+        font:
+          600 13px Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        fill: #1e3a8a;
+      }
+      .muted-step {
+        font:
+          600 13px Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        fill: #475569;
+      }
+      .arrow {
+        stroke: #2563eb;
+        stroke-width: 2.5;
+        fill: none;
+        marker-end: url(#arrow);
+      }
+      .muted-arrow {
+        stroke: #64748b;
+        stroke-width: 2;
+        fill: none;
+        stroke-dasharray: 6 6;
+        marker-end: url(#arrow-muted);
+      }
+      .marker-text {
+        font:
+          700 13px Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        fill: #9a3412;
+        text-anchor: middle;
+      }
+    </style>
+  </defs>
+
+  <rect class="page" width="1400" height="1680" />
+  <text class="title" x="70" y="70">Text Integrity Extension Operation Overview</text>
+  <text class="subtitle" x="70" y="102">
+    Companion SVG for the detailed Mermaid sequence diagrams in operation-sequence.md.
+  </text>
+
+  <!-- Happy path -->
+  <rect class="panel" x="50" y="140" width="1300" height="330" />
+  <text class="panel-title" x="80" y="185">1. Happy path: execute, upload, notify</text>
+  <text class="panel-note" x="80" y="212">
+    SCMS creates the run, the submit job uploads to checks-relay, then notify webhooks drive state
+    updates.
+  </text>
+
+  <rect class="actor" x="95" y="255" width="150" height="70" />
+  <text class="label" x="170" y="285">User / UI</text>
+  <text class="small" x="170" y="306">intent=execute</text>
+
+  <rect class="actor" x="315" y="255" width="170" height="70" />
+  <text class="label" x="400" y="285">Action</text>
+  <text class="small" x="400" y="306">create run</text>
+
+  <rect class="store" x="555" y="255" width="170" height="70" />
+  <text class="label" x="640" y="285">SCMS DB</text>
+  <text class="small" x="640" y="306">serviceData</text>
+
+  <rect class="actor" x="795" y="255" width="170" height="70" />
+  <text class="label" x="880" y="285">Submit job</text>
+  <text class="small" x="880" y="306">sign files</text>
+
+  <rect class="relay" x="1035" y="255" width="170" height="70" />
+  <text class="label" x="1120" y="285">checks-relay</text>
+  <text class="small" x="1120" y="306">upload</text>
+
+  <rect class="provider" x="1190" y="360" width="120" height="60" />
+  <text class="label" x="1250" y="385">Provider</text>
+  <text class="small" x="1250" y="404">externalId</text>
+
+  <path class="arrow" d="M245 290 H305" />
+  <text class="step" x="260" y="278">run</text>
+  <path class="arrow" d="M485 290 H545" />
+  <text class="step" x="500" y="278">persist</text>
+  <path class="arrow" d="M725 290 H785" />
+  <text class="step" x="733" y="278">enqueue</text>
+  <path class="arrow" d="M965 290 H1025" />
+  <text class="step" x="978" y="278">upload</text>
+  <path class="arrow" d="M1120 325 C1120 380 1160 390 1180 390" />
+  <text class="step" x="1128" y="356">submit</text>
+  <path class="muted-arrow" d="M1190 390 C1090 452 720 448 645 330" />
+  <text class="muted-step" x="930" y="442">notify envelope updates serviceData</text>
+
+  <!-- Polling catch-up -->
+  <rect class="panel" x="50" y="520" width="1300" height="300" />
+  <text class="panel-title" x="80" y="565">
+    2. Status polling: catch up missed notify envelopes
+  </text>
+  <text class="panel-note" x="80" y="592">
+    The relay-status action asks checks-relay for notify-equivalent envelopes and applies them
+    through the same state machine.
+  </text>
+
+  <rect class="actor" x="120" y="645" width="180" height="70" />
+  <text class="label" x="210" y="675">SCMS UI</text>
+  <text class="small" x="210" y="696">refresh status</text>
+
+  <rect class="actor" x="390" y="645" width="190" height="70" />
+  <text class="label" x="485" y="675">relay-status</text>
+  <text class="small" x="485" y="696">resolve externalId</text>
+
+  <rect class="relay" x="675" y="645" width="190" height="70" />
+  <text class="label" x="770" y="675">checks-relay</text>
+  <text class="small" x="770" y="696">check status</text>
+
+  <rect class="provider" x="955" y="645" width="170" height="70" />
+  <text class="label" x="1040" y="675">Provider</text>
+  <text class="small" x="1040" y="696">current state</text>
+
+  <rect class="store" x="555" y="735" width="210" height="55" />
+  <text class="label" x="660" y="758">SCMS DB</text>
+  <text class="small" x="660" y="778">apply envelopes</text>
+
+  <path class="arrow" d="M300 680 H380" />
+  <text class="step" x="318" y="668">poll</text>
+  <path class="arrow" d="M580 680 H665" />
+  <text class="step" x="598" y="668">POST status</text>
+  <path class="arrow" d="M865 680 H945" />
+  <text class="step" x="886" y="668">read</text>
+  <path class="muted-arrow" d="M955 705 C870 755 780 760 765 760" />
+  <text class="muted-step" x="840" y="746">envelopes[]</text>
+  <path class="arrow" d="M580 715 C580 735 605 744 625 746" />
+  <text class="step" x="462" y="745">applyRelayCheckStatusEnvelopes</text>
+
+  <!-- Recovery start -->
+  <rect class="panel" x="50" y="870" width="1300" height="355" />
+  <text class="panel-title" x="80" y="915">3. Status polling: guarded relay recovery</text>
+  <text class="panel-note" x="80" y="942">
+    When relay returns a recoverable start-report-generation hint, SCMS leases the recovery before
+    calling relay.
+  </text>
+
+  <rect class="actor" x="105" y="995" width="180" height="70" />
+  <text class="label" x="195" y="1025">relay-status</text>
+  <text class="small" x="195" y="1046">recovery hint</text>
+
+  <rect class="store" x="365" y="995" width="190" height="70" />
+  <text class="label" x="460" y="1025">Plan recovery</text>
+  <text class="small" x="460" y="1046">lease + stage guard</text>
+
+  <rect class="relay" x="635" y="995" width="210" height="70" />
+  <text class="label" x="740" y="1025">checks-relay</text>
+  <text class="small" x="740" y="1046">start generation</text>
+
+  <rect class="provider" x="925" y="995" width="190" height="70" />
+  <text class="label" x="1020" y="1025">Provider</text>
+  <text class="small" x="1020" y="1046">generation starts</text>
+
+  <rect class="store" x="465" y="1125" width="220" height="65" />
+  <text class="label" x="575" y="1150">relayRecovery.startedAt</text>
+  <text class="small" x="575" y="1171">external call recorded</text>
+
+  <rect class="store" x="765" y="1125" width="260" height="65" />
+  <text class="label" x="895" y="1150">PROCESSING_PHASE_STARTED</text>
+  <text class="small" x="895" y="1171">local stage transition</text>
+
+  <rect class="store" x="1085" y="1125" width="215" height="65" />
+  <text class="label" x="1192" y="1150">localProcessingStartedAt</text>
+  <text class="small" x="1192" y="1171">local apply recorded</text>
+
+  <path class="arrow" d="M285 1030 H355" />
+  <text class="step" x="295" y="1018">plan</text>
+  <path class="arrow" d="M555 1030 H625" />
+  <text class="step" x="565" y="1018">startRelay</text>
+  <path class="arrow" d="M845 1030 H915" />
+  <text class="step" x="858" y="1018">start</text>
+  <path class="muted-arrow" d="M1020 1065 C1000 1110 640 1085 575 1120" />
+  <text class="muted-step" x="750" y="1098">success</text>
+  <path class="arrow" d="M685 1158 H755" />
+  <text class="step" x="704" y="1146">then</text>
+  <path class="arrow" d="M1025 1158 H1075" />
+  <text class="step" x="1033" y="1146">then</text>
+
+  <!-- Local retry -->
+  <rect class="panel" x="50" y="1275" width="1300" height="315" />
+  <text class="panel-title" x="80" y="1320">
+    4. Status polling: retry local reconciliation only
+  </text>
+  <text class="panel-note" x="80" y="1347">
+    If the external relay start succeeded but local processing was not marked, the next poll avoids
+    a duplicate relay start.
+  </text>
+
+  <rect class="warning" x="105" y="1400" width="255" height="85" />
+  <text class="label" x="232" y="1428">Stored recovery marker</text>
+  <text class="small" x="232" y="1451">startedAt exists</text>
+  <text class="small" x="232" y="1470">localProcessingStartedAt missing</text>
+
+  <rect class="actor" x="450" y="1408" width="200" height="70" />
+  <text class="label" x="550" y="1438">relay-status</text>
+  <text class="small" x="550" y="1459">plan=retryLocal</text>
+
+  <rect class="store" x="750" y="1408" width="250" height="70" />
+  <text class="label" x="875" y="1438">Apply local transition</text>
+  <text class="small" x="875" y="1459">no relay start call</text>
+
+  <rect class="store" x="1100" y="1408" width="210" height="70" />
+  <text class="label" x="1205" y="1438">Skip future recovery</text>
+  <text class="small" x="1205" y="1459">both markers present</text>
+
+  <path class="arrow" d="M360 1442 H440" />
+  <text class="step" x="375" y="1430">poll again</text>
+  <path class="arrow" d="M650 1442 H740" />
+  <text class="step" x="670" y="1430">retry local</text>
+  <path class="arrow" d="M1000 1442 H1090" />
+  <text class="step" x="1018" y="1430">record</text>
+
+  <text class="marker-text" x="700" y="1535">
+    Invariant: external side effects are recorded before local reconciliation, so retries do not
+    duplicate relay starts.
+  </text>
+</svg>

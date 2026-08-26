@@ -1,0 +1,87 @@
+{
+  "name": "@hhmi/checks-text-integrity",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Text Integrity Checking extension for Curvenote platform",
+  "author": "Steve Purves <steve@curvenote.com>",
+  "homepage": "https://github.com/curvenote/journals",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "browser": false,
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "node": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "development": "./src/client.ts",
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "require": "./dist/client.js",
+      "default": "./dist/client.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/curvenote/journals.git"
+  },
+  "scripts": {
+    "clean": "rimraf dist _build api && find . -name '.turbo' -type d -prune -exec rm -rf '{}' +",
+    "lint": "bunx eslint -c ../../.eslintrc.cjs \"src/**/*.{ts,tsx}\"",
+    "lint:format": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "lint:format:fix": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "lint:circular": "bunx madge --circular --extensions ts,tsx src",
+    "build": "bun run build:server && bun run build:client",
+    "build:server": "tsc --project tsconfig.json",
+    "build:client": "tsup",
+    "compile": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:watch": "vitest"
+  },
+  "bugs": {
+    "url": "https://github.com/curvenote/journals/issues"
+  },
+  "dependencies": {
+    "@curvenote/check-relay-types": "*",
+    "@curvenote/common": "*",
+    "@curvenote/scms-core": "*",
+    "@curvenote/scms-db": "*",
+    "@curvenote/scms-server": "*",
+    "@hhmi/checks-notify": "*",
+    "@hhmi/checks-shared": "*",
+    "@react-router/dev": "7.18.2",
+    "lucide-react": "^0.552.0",
+    "react": "^18.3.1",
+    "react-router": "7.18.2",
+    "uuidv7": "^1.1.0",
+    "zod": "^4.1.12",
+    "@react-router/node": "7.18.2",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@react-router/serve": "7.18.2",
+    "@tailwindcss/postcss": "^4.0.14",
+    "@types/node": "^22.19.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "eslint-config-curvenote": "^0.0.4",
+    "prettier": "^3.5.3",
+    "tsup": "^8.5.1",
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.3",
+    "vite": "^7.1.12"
+  },
+  "engines": {
+    "node": ">=22.21.0",
+    "bun": ">=1.3.10"
+  }
+}
