@@ -1,6 +1,6 @@
 {
   "name": "@hhmi/pmc-ftp-service",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "description": "Nodejs server for the PMC FTP submit service",
   "type": "module",
   "exports": "./dist/index.js",

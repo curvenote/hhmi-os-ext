@@ -1,6 +1,6 @@
 {
   "name": "@hhmi/compliance",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "description": "Compliance extension for the HHMI Workspace - powered by Curvenote.",
   "author": "Curvenote <support@curvenote.com>",
   "homepage": "https://github.com/HHMI-HQ/hhmi-workspace",
@@ -64,7 +64,7 @@
     "@curvenote/scms-server": "*",
     "@curvenote/scms-db": "*",
     "@heroicons/react": "^2.2.0",
-    "@hhmi/pmc": "^0.2.2",
+    "@hhmi/pmc": "^1.0.0",
     "@react-email/components": "0.5.7",
     "@react-router/dev": "7.18.2",
     "@scienceicons/react": "^0.0.13",

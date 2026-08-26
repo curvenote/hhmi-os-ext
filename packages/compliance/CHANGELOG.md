@@ -1,5 +1,24 @@
 # @hhmi/compliance
 
+## 1.0.0
+
+### Major Changes
+
+- Major version bump for all workspace packages.
+
+### Patch Changes
+
+- fd64fda: Minimize DB returns
+- Updated dependencies [fd64fda]
+- Updated dependencies [7b38cc6]
+- Updated dependencies [2b06f6b]
+- Updated dependencies [2b06f6b]
+- Updated dependencies
+- Updated dependencies [2b06f6b]
+- Updated dependencies [dd88233]
+- Updated dependencies [a3f06e1]
+  - @hhmi/pmc@1.0.0
+
 ## 0.4.0
 
 ### Minor Changes

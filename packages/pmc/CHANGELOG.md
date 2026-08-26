@@ -1,5 +1,24 @@
 # @hhmi/pmc
 
+## 1.0.0
+
+### Major Changes
+
+- Major version bump for all workspace packages.
+
+### Minor Changes
+
+- 7b38cc6: Register PMC Deposit as a standalone create-work option with icons and descriptions, add `PMCDepositLauncher` at `/app/works/pmc`, implement the `createWorkVersion` server handler, and fix PMC routing (JSON create response with client navigate, error UI, and route gating).
+- 2b06f6b: Add a merge/replace strategy for Funding Id Sync, including a guard that refuses to replace all funding data with an empty Airtable result.
+- 2b06f6b: Expand HHMI funding-identifier sync to store preferred/primary first name, preferred last name, and email from Airtable; improve the Funding Id Sync admin UI with richer investigator details, a missing-fields summary, active-job latching/polling, and a 10-run job history.
+- a3f06e1: Migrate PMC new-version creation to the platform `cloneDraftWorkVersionFromSource` helper with a PMC-specific `seedMetadataFromSource` that keeps full file inheritance while resetting deposit preview/confirmed flags. Work Details and submission-page clone paths inherit full predecessor state (files, authors, metadata) while preserving submission version wiring, duplicate-draft guards, activities, and deposit redirects. Fix inherited journal name display on new-version deposit forms; add contextual breadcrumbs for new-version deposit and confirm pages; clear DOI-lookup metadata when switching to manual entry without wiping inherited title/journal.
+
+### Patch Changes
+
+- fd64fda: Minimize DB returns
+- 2b06f6b: Remove unused cancel actions from Funding Id Sync and PMC workflow sync. Align funding sync progress updates with the stale-job reaper so timed-out jobs are not resurrected mid-run.
+- dd88233: Maintaing PMC upload behaviour for new versions while adopting updated clone and seed functions
+
 ## 0.2.2
 
 ### Patch Changes

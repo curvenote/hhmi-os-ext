@@ -1,5 +1,11 @@
 # pmc-ftp-service
 
+## 1.0.0
+
+### Major Changes
+
+- Major version bump for all workspace packages.
+
 ## 0.4.0
 
 ### Minor Changes

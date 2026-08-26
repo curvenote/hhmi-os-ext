@@ -1,6 +1,6 @@
 {
   "name": "@hhmi/proofig-pdf-service",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Nodejs server that renders a Proofig report URL to PDF and stores it back on workspace storage",
   "type": "module",
   "exports": "./dist/index.js",

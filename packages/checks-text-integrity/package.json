@@ -1,7 +1,7 @@
 {
   "name": "@hhmi/checks-text-integrity",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Text Integrity Checking extension for Curvenote platform",
   "author": "Steve Purves <steve@curvenote.com>",
   "homepage": "https://github.com/curvenote/journals",
