@@ -36,3 +36,23 @@ export function resolveActiveTransitionAfterLoad(
   if (jobId && handledTerminalJobIds.has(jobId)) return null;
   return incoming;
 }
+
+export type CompletedJobOutcome = 'pending' | 'success' | 'stuck';
+
+/**
+ * Decide the toast after a COMPLETED job once loader data has actually refreshed.
+ *
+ * `loaderEpoch` must advance after the job completed (new loader props). Until then
+ * the outcome is `pending` — otherwise we false-positive "stuck" on stale transition.
+ */
+export function decideCompletedJobOutcome(opts: {
+  completedJobId: string;
+  loaderTransition: WorkflowTransition | null | undefined;
+  loaderEpochAtComplete: number;
+  currentLoaderEpoch: number;
+}): CompletedJobOutcome {
+  const { completedJobId, loaderTransition, loaderEpochAtComplete, currentLoaderEpoch } = opts;
+  if (currentLoaderEpoch <= loaderEpochAtComplete) return 'pending';
+  if (getTransitionJobId(loaderTransition) === completedJobId) return 'stuck';
+  return 'success';
+}
