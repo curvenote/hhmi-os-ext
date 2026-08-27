@@ -70,19 +70,10 @@ export interface HHMIGrantOption {
   value: string;
   label: string;
   description: string;
-  email: string;
-}
-
-function formatGrantOptionDescription(scientist: HHMIScientist): string {
-  const email = scientist.email?.trim();
-  if (email) {
-    return `${scientist.grantId} · ${email}`;
-  }
-  return `${scientist.grantId} · Email not available`;
 }
 
 /**
- * Get HHMI scientists as grant options for UI components
+ * Get HHMI scientists as grant options for UI components (name + grantId only).
  */
 export async function getHHMIGrantOptions(): Promise<HHMIGrantOption[]> {
   const scientists = await getHHMIScientists();
@@ -90,8 +81,7 @@ export async function getHHMIGrantOptions(): Promise<HHMIGrantOption[]> {
   return scientists.map((scientist) => ({
     value: scientist.grantId,
     label: scientist.fullName,
-    description: formatGrantOptionDescription(scientist),
-    email: scientist.email?.trim() ?? '',
+    description: scientist.grantId,
   }));
 }
 

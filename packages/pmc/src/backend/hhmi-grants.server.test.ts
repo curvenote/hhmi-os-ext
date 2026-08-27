@@ -21,7 +21,7 @@ beforeEach(async () => {
 });
 
 describe('getHHMIGrantOptions', () => {
-  it('includes grant id and email in combobox description', async () => {
+  it('includes grant id in combobox description without email', async () => {
     mockFindFirst.mockResolvedValue({
       data: {
         scientists: [
@@ -44,13 +44,12 @@ describe('getHHMIGrantOptions', () => {
       {
         value: 'GRANT_Alpha_A',
         label: 'Alex Alpha',
-        description: 'GRANT_Alpha_A · alex.alpha@example.com',
-        email: 'alex.alpha@example.com',
+        description: 'GRANT_Alpha_A',
       },
     ]);
   });
 
-  it('notes when email is missing', async () => {
+  it('still returns grant id when email is missing', async () => {
     mockFindFirst.mockResolvedValue({
       data: {
         scientists: [
@@ -69,7 +68,6 @@ describe('getHHMIGrantOptions', () => {
 
     const options = await getHHMIGrantOptions();
 
-    expect(options[0]?.description).toBe('GRANT_No_Email · Email not available');
-    expect(options[0]?.email).toBe('');
+    expect(options[0]?.description).toBe('GRANT_No_Email');
   });
 });

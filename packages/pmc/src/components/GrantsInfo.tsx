@@ -10,43 +10,7 @@ import type { Funder } from './funders.js';
 import { PMC_FUNDERS_MAP } from './funders.js';
 import type { HHMIGrantOption } from '../backend/hhmi-grants.server.js';
 
-type GrantOption = ui.ComboBoxOption & Pick<HHMIGrantOption, 'email'>;
-
-function findGrantOption(grantOptions: GrantOption[], grantId?: string) {
-  if (!grantId) return undefined;
-  return grantOptions.find((option) => option.value === grantId);
-}
-
-function AwardeeGrantDetails({
-  grantId,
-  grantOptions,
-  investigatorName,
-}: {
-  grantId?: string;
-  grantOptions: GrantOption[];
-  investigatorName?: string;
-}) {
-  if (!grantId) return null;
-
-  const option = findGrantOption(grantOptions, grantId);
-  const email = option?.email?.trim();
-
-  return (
-    <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
-      <div className="font-mono">{grantId}</div>
-      {email ? (
-        <a href={`mailto:${email}`} className="hover:underline">
-          {email}
-        </a>
-      ) : (
-        <span>Email not available</span>
-      )}
-      {!option && investigatorName && (
-        <span className="block text-stone-500">Stored investigator: {investigatorName}</span>
-      )}
-    </div>
-  );
-}
+type GrantOption = ui.ComboBoxOption;
 
 // Component for the initial HHMI grant row (first bullet point)
 function InitialHHMIGrantRow({
@@ -92,29 +56,23 @@ function InitialHHMIGrantRow({
       </div>
       <div className={readonly ? 'flex-1 min-w-0' : 'w-64 min-w-0'}>
         {disabled ? (
-          <div>
-            <span className="text-sm font-medium text-gray-900">
-              {currentValue
-                ? grantOptions.find((option) => option.value === currentValue)?.label ||
-                  'No investigator selected'
-                : 'No investigator selected'}
-            </span>
-            <AwardeeGrantDetails grantId={currentValue} grantOptions={grantOptions} />
-          </div>
+          <span className="text-sm font-medium text-gray-900">
+            {currentValue
+              ? grantOptions.find((option) => option.value === currentValue)?.label ||
+                'No investigator selected'
+              : 'No investigator selected'}
+          </span>
         ) : (
-          <div>
-            <ui.ClientComboBox
-              options={grantOptions}
-              value={currentValue}
-              onValueChange={handleValueChange}
-              placeholder="Select HHMI investigator..."
-              searchPlaceholder="Search investigators..."
-              emptyMessage="No investigators found."
-              error={error}
-              disabled={disabled}
-            />
-            <AwardeeGrantDetails grantId={currentValue} grantOptions={grantOptions} />
-          </div>
+          <ui.ClientComboBox
+            options={grantOptions}
+            value={currentValue}
+            onValueChange={handleValueChange}
+            placeholder="Select HHMI investigator..."
+            searchPlaceholder="Search investigators..."
+            emptyMessage="No investigators found."
+            error={error}
+            disabled={disabled}
+          />
         )}
       </div>
       <div className="flex justify-end">{error && <ui.SmallErrorTray error={error} />}</div>
@@ -299,18 +257,11 @@ function GrantEntryRow({
       </div>
       <div className="w-64 min-w-0">
         {grant.funderKey === 'hhmi' ? (
-          <div>
-            <span className="text-sm font-medium text-gray-900">
-              {grantOptions.find((option) => option.value === grant.grantId)?.label ||
-                grant.investigatorName ||
-                grant.grantId}
-            </span>
-            <AwardeeGrantDetails
-              grantId={grant.grantId}
-              grantOptions={grantOptions}
-              investigatorName={grant.investigatorName}
-            />
-          </div>
+          <span className="text-sm font-medium text-gray-900">
+            {grantOptions.find((option) => option.value === grant.grantId)?.label ||
+              grant.investigatorName ||
+              grant.grantId}
+          </span>
         ) : (
           <span className="font-mono text-sm text-gray-900">{grant.grantId}</span>
         )}
