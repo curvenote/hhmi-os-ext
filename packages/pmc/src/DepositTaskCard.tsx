@@ -31,7 +31,7 @@ export function PMCDepositTaskCard() {
             <img src={pmcGraphic} alt="PMC Deposit" className="w-20 h-20" />
           </div>
           <div className="flex-1 text-left">
-            <h3 className="text-lg font-normal">PubMed Central Submission Tool</h3>
+            <h3 className="text-lg font-normal">Submit My Paper to PubMed Central</h3>
             <p className="text-sm text-muted-foreground line-clamp-3">
               Upload your final draft and HHMI will deposit it on PubMed Central on your behalf.
             </p>
