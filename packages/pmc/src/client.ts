@@ -58,6 +58,7 @@ export function getWorkCreateOptions(): WorkCreateOption[] {
       icon: PMCIcon,
       metadataKey: 'pmc',
       startPath: '/app/works/pmc',
+      formPathIncludes: '/site/pmc/',
       mode: 'standalone',
       order: 10,
     },

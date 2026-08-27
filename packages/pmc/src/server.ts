@@ -4,6 +4,7 @@ import type { SecureContext } from '@curvenote/scms-server';
 import { registerRoutes } from './routes.js';
 import { extension as clientExtension } from './client.js';
 import { createPMCWorkVersion, isPMCWorkMetadata } from './createWorkVersion.server.js';
+import { resolveResumeDraftPath } from './resolveResumeDraftPath.server.js';
 import { submitWorkToPmcSite } from './backend/versions/submitToSite.server.js';
 import { PMC_WORKSPACE_SITE_NAME } from './workflows.js';
 import { PMC_DEPOSIT_FTP, pmcDepositHandler } from './backend/jobs/pmc-deposit.js';
@@ -65,6 +66,7 @@ export const extension: ServerExtension = {
     if (!isPMCWorkMetadata(sourceVersionMetadata)) return null;
     return createPMCWorkVersion(ctx as SecureContext, workId, sourceVersionMetadata, defaultTitle);
   },
+  resolveResumeDraftPath,
   getOperatedSites: () => [PMC_WORKSPACE_SITE_NAME],
   submitToSite: submitWorkToPmcSite,
 };
