@@ -27,6 +27,7 @@ import type { JournalInfo, JournalInfoFile } from './types.js';
 import { PMC_STATE_NAMES, PMC_WORKSPACE_SITE_NAME } from '../../workflows.js';
 import type { PMCWorkVersionMetadata } from '../../common/validate.js';
 import { collectPmcDepositFiles } from '../../common/fileMappings.js';
+import { buildManifestGrants } from './pmc-deposit-grants.js';
 
 async function getWorkVersionFromSubmissionVersion(submissionVersionId: string) {
   const prisma = await getPrismaClient();
@@ -254,10 +255,7 @@ export async function buildAAMDepositManifest(
               contactType: 'reviewer' as const,
             },
       ],
-      grants: (pmc.grants || []).map((grant) => ({
-        funder: grant.funderKey,
-        id: grant.grantId,
-      })),
+      grants: await buildManifestGrants(pmc.grants || []),
     },
   };
 

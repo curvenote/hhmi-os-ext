@@ -31,7 +31,7 @@
   "dependencies": {
     "@curvenote/scms-tasks": "^0.24.0",
     "pmc-node-utils": "^0.3.1",
-    "pmc-utils": "^0.3.1",
+    "pmc-utils": "0.4.0",
     "express": "^4.18.1",
     "node-fetch": "^3.3.2",
     "p-limit": "^6.2.0",

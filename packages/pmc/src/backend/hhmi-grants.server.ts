@@ -66,28 +66,33 @@ export async function getHHMIScientists(): Promise<HHMIScientist[]> {
   return data.scientists || [];
 }
 
+export interface HHMIGrantOption {
+  value: string;
+  label: string;
+  description: string;
+  email: string;
+}
+
+function formatGrantOptionDescription(scientist: HHMIScientist): string {
+  const email = scientist.email?.trim();
+  if (email) {
+    return `${scientist.grantId} · ${email}`;
+  }
+  return `${scientist.grantId} · Email not available`;
+}
+
 /**
  * Get HHMI scientists as grant options for UI components
  */
-export async function getHHMIGrantOptions(): Promise<
-  Array<{
-    value: string;
-    label: string;
-    description: string;
-  }>
-> {
+export async function getHHMIGrantOptions(): Promise<HHMIGrantOption[]> {
   const scientists = await getHHMIScientists();
 
-  return scientists.map((scientist) => {
-    // Create unique ID: investigator_name_grant_id (lowercase, underscores)
-    const uniqueId = `${scientist.fullName.toLowerCase().replace(/\s+/g, '_')}_${scientist.grantId.toLowerCase()}`;
-
-    return {
-      value: uniqueId, // Use unique ID instead of Airtable ID
-      label: scientist.fullName,
-      description: scientist.grantId,
-    };
-  });
+  return scientists.map((scientist) => ({
+    value: scientist.grantId,
+    label: scientist.fullName,
+    description: formatGrantOptionDescription(scientist),
+    email: scientist.email?.trim() ?? '',
+  }));
 }
 
 /**

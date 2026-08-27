@@ -27,7 +27,6 @@ const AddGrantSchema = zfd.formData({
   funderKey: funderType,
   grantId: z.string().min(1, 'Grant ID is required'),
   investigatorName: z.string().optional(), // For HHMI grants
-  uniqueId: z.string().optional(),
 });
 
 const RemoveGrantSchema = zfd.formData({
@@ -42,11 +41,10 @@ const UpdateGrantSchema = zfd.formData({
 const SetInitialHHMIGrantSchema = zfd.formData({
   grantId: z.string().min(1, 'Grant ID is required'),
   investigatorName: z.string().optional(),
-  uniqueId: z.string().optional(),
 });
 
 const ClearInitialHHMIGrantSchema = zfd.formData({
-  uniqueId: z.string(),
+  grantId: z.string().min(1, 'Grant ID is required'),
 });
 
 // ==============================
@@ -60,7 +58,7 @@ export async function addGrant(formData: FormData, workVersionId: string) {
   return withValidFormData(
     AddGrantSchema,
     formData,
-    async ({ funderKey, grantId, investigatorName, uniqueId }) => {
+    async ({ funderKey, grantId, investigatorName }) => {
       return safelyUpdatePMCMetadata(workVersionId, (currentMetadata: PMCWorkVersionMetadata) => {
         // Ensure grants structure exists (migrate from funders if needed)
         const migratedMetadata = ensureGrantsStructure(currentMetadata) || currentMetadata;
@@ -83,7 +81,6 @@ export async function addGrant(formData: FormData, workVersionId: string) {
           funderKey,
           grantId: normalizedGrantId,
           ...(funderKey === 'hhmi' && investigatorName && { investigatorName }),
-          ...(funderKey === 'hhmi' && uniqueId && { uniqueId }),
         };
 
         // Add new grant to array
@@ -208,7 +205,7 @@ export async function setInitialHHMIGrant(formData: FormData, workVersionId: str
   return withValidFormData(
     SetInitialHHMIGrantSchema,
     formData,
-    async ({ grantId, investigatorName, uniqueId }) => {
+    async ({ grantId, investigatorName }) => {
       return safelyUpdatePMCMetadata(workVersionId, (currentMetadata: PMCWorkVersionMetadata) => {
         // Ensure grants structure exists
         const migratedMetadata = ensureGrantsStructure(currentMetadata) || currentMetadata;
@@ -225,7 +222,6 @@ export async function setInitialHHMIGrant(formData: FormData, workVersionId: str
             funderKey: 'hhmi',
             grantId: normalizeGrantId(grantId),
             investigatorName,
-            uniqueId,
           };
           return {
             ...migratedMetadata,
@@ -238,7 +234,6 @@ export async function setInitialHHMIGrant(formData: FormData, workVersionId: str
             funderKey: 'hhmi',
             grantId: normalizeGrantId(grantId),
             investigatorName,
-            uniqueId,
           };
           const updatedGrants = [newGrant, ...currentGrants];
           return {
@@ -256,15 +251,17 @@ export async function setInitialHHMIGrant(formData: FormData, workVersionId: str
  * Clear the initial HHMI grant (removes the first HHMI grant)
  */
 export async function clearInitialHHMIGrant(formData: FormData, workVersionId: string) {
-  return withValidFormData(ClearInitialHHMIGrantSchema, formData, async ({ uniqueId }) => {
+  return withValidFormData(ClearInitialHHMIGrantSchema, formData, async ({ grantId }) => {
     return safelyUpdatePMCMetadata(workVersionId, (currentMetadata: PMCWorkVersionMetadata) => {
       // Ensure grants structure exists
       const migratedMetadata = ensureGrantsStructure(currentMetadata) || currentMetadata;
       const currentGrants = migratedMetadata.grants || [];
+      const normalizedGrantId = normalizeGrantId(grantId);
 
       // Find existing HHMI grant
       const hhmiGrantIndex = currentGrants.findIndex(
-        (grant) => grant.funderKey === 'hhmi' && grant.uniqueId === uniqueId,
+        (grant) =>
+          grant.funderKey === 'hhmi' && normalizeGrantId(grant.grantId) === normalizedGrantId,
       );
 
       if (hhmiGrantIndex === -1) {

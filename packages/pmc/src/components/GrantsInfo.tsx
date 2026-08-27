@@ -8,6 +8,45 @@ import { validateGrantIdInput, normalizeGrantId } from '../common/validation.js'
 
 import type { Funder } from './funders.js';
 import { PMC_FUNDERS_MAP } from './funders.js';
+import type { HHMIGrantOption } from '../backend/hhmi-grants.server.js';
+
+type GrantOption = ui.ComboBoxOption & Pick<HHMIGrantOption, 'email'>;
+
+function findGrantOption(grantOptions: GrantOption[], grantId?: string) {
+  if (!grantId) return undefined;
+  return grantOptions.find((option) => option.value === grantId);
+}
+
+function AwardeeGrantDetails({
+  grantId,
+  grantOptions,
+  investigatorName,
+}: {
+  grantId?: string;
+  grantOptions: GrantOption[];
+  investigatorName?: string;
+}) {
+  if (!grantId) return null;
+
+  const option = findGrantOption(grantOptions, grantId);
+  const email = option?.email?.trim();
+
+  return (
+    <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+      <div className="font-mono">{grantId}</div>
+      {email ? (
+        <a href={`mailto:${email}`} className="hover:underline">
+          {email}
+        </a>
+      ) : (
+        <span>Email not available</span>
+      )}
+      {!option && investigatorName && (
+        <span className="block text-stone-500">Stored investigator: {investigatorName}</span>
+      )}
+    </div>
+  );
+}
 
 // Component for the initial HHMI grant row (first bullet point)
 function InitialHHMIGrantRow({
@@ -19,7 +58,7 @@ function InitialHHMIGrantRow({
   disabled,
   readonly = false,
 }: {
-  grantOptions: ui.ComboBoxOption[];
+  grantOptions: GrantOption[];
   value?: string;
   onSelect?: (grantId: string, investigatorName: string) => void;
   onClear?: (grantId: string, investigatorName: string) => void;
@@ -33,18 +72,14 @@ function InitialHHMIGrantRow({
   const currentValue = value || '';
 
   const handleValueChange = (newValue: string) => {
-    // Find the selected option to get the grant ID and investigator name
     const selectedOption = grantOptions.find((option) => option.value === newValue);
-    if (selectedOption && selectedOption.description) {
-      const grantId = selectedOption.description;
-      const investigatorName = selectedOption.label;
-      onSelect?.(grantId, investigatorName);
+    if (selectedOption) {
+      onSelect?.(selectedOption.value, selectedOption.label);
     } else if (newValue === '') {
       const previousValue = currentValue;
       const optionToClear = grantOptions.find((option) => option.value === previousValue);
       if (optionToClear) {
-        // Handle clear selection
-        onClear?.(optionToClear.description!, optionToClear.label);
+        onClear?.(optionToClear.value, optionToClear.label);
       }
     }
   };
@@ -55,26 +90,31 @@ function InitialHHMIGrantRow({
         <span className="font-medium text-gray-900">{funder.name}</span>
         <span className="ml-1 text-sm text-gray-500">({funder.abbreviation})</span>
       </div>
-      <div className="w-64">
+      <div className={readonly ? 'flex-1 min-w-0' : 'w-64 min-w-0'}>
         {disabled ? (
-          // Read-only mode: show investigator name if available
-          <span className="text-sm font-medium text-gray-900">
-            {currentValue
-              ? grantOptions.find((option) => option.value === currentValue)?.label ||
-                'No investigator selected'
-              : 'No investigator selected'}
-          </span>
+          <div>
+            <span className="text-sm font-medium text-gray-900">
+              {currentValue
+                ? grantOptions.find((option) => option.value === currentValue)?.label ||
+                  'No investigator selected'
+                : 'No investigator selected'}
+            </span>
+            <AwardeeGrantDetails grantId={currentValue} grantOptions={grantOptions} />
+          </div>
         ) : (
-          <ui.ClientComboBox
-            options={grantOptions}
-            value={currentValue}
-            onValueChange={handleValueChange}
-            placeholder="Select HHMI investigator..."
-            searchPlaceholder="Search investigators..."
-            emptyMessage="No investigators found."
-            error={error}
-            disabled={disabled}
-          />
+          <div>
+            <ui.ClientComboBox
+              options={grantOptions}
+              value={currentValue}
+              onValueChange={handleValueChange}
+              placeholder="Select HHMI investigator..."
+              searchPlaceholder="Search investigators..."
+              emptyMessage="No investigators found."
+              error={error}
+              disabled={disabled}
+            />
+            <AwardeeGrantDetails grantId={currentValue} grantOptions={grantOptions} />
+          </div>
         )}
       </div>
       <div className="flex justify-end">{error && <ui.SmallErrorTray error={error} />}</div>
@@ -91,7 +131,7 @@ function HHMIGrantSelect({
   onSelect,
   error,
 }: {
-  grantOptions: ui.ComboBoxOption[];
+  grantOptions: GrantOption[];
   value?: string;
   defaultValue?: string;
   disabled?: boolean;
@@ -134,7 +174,7 @@ function GrantEntryForm({
   error,
 }: {
   funders: Funder[];
-  grantOptions: ui.ComboBoxOption[];
+  grantOptions: GrantOption[];
   disabled?: boolean;
   error?: string;
 }) {
@@ -189,16 +229,7 @@ function GrantEntryForm({
               value={selectedHHMIValue}
               onSelect={(selectedValue) => {
                 setSelectedHHMIValue(selectedValue);
-                // Find the selected option to get the grant ID
-                const selectedOption = grantOptions.find(
-                  (option) => option.value === selectedValue,
-                );
-                if (selectedOption && selectedOption.description) {
-                  setGrantId(selectedOption.description);
-                } else {
-                  // If no value (clearing), clear the grant ID too
-                  setGrantId('');
-                }
+                setGrantId(selectedValue);
               }}
               disabled={disabled}
               error={error}
@@ -254,7 +285,7 @@ function GrantEntryRow({
   grant: GrantEntry;
   canDelete?: boolean;
   isInitialHHMI?: boolean;
-  grantOptions: ui.ComboBoxOption[];
+  grantOptions: GrantOption[];
   readonly?: boolean;
 }) {
   const removeFetcher = useFetcher();
@@ -266,12 +297,20 @@ function GrantEntryRow({
         <span className="font-medium text-gray-900">{funder.name}</span>
         <span className="ml-1 text-sm text-gray-500">({funder.abbreviation})</span>
       </div>
-      <div className="w-64">
+      <div className="w-64 min-w-0">
         {grant.funderKey === 'hhmi' ? (
-          <span className="text-sm font-medium text-gray-900">
-            {grantOptions.find((option) => option.description === grant.grantId)?.label ||
-              grant.grantId}
-          </span>
+          <div>
+            <span className="text-sm font-medium text-gray-900">
+              {grantOptions.find((option) => option.value === grant.grantId)?.label ||
+                grant.investigatorName ||
+                grant.grantId}
+            </span>
+            <AwardeeGrantDetails
+              grantId={grant.grantId}
+              grantOptions={grantOptions}
+              investigatorName={grant.investigatorName}
+            />
+          </div>
         ) : (
           <span className="font-mono text-sm text-gray-900">{grant.grantId}</span>
         )}
@@ -300,18 +339,10 @@ function GrantEntryRow({
   );
 }
 
-function getUniqueId(grantId: string, investigatorName: string) {
-  return `${investigatorName.toLowerCase().replace(/\s+/g, '_')}_${grantId.toLowerCase()}`;
-}
-
 export function GrantsInfo({ readonly = false }: { readonly?: boolean }) {
   const { metadata, grantOptions } = useLoaderData<{
     metadata: PMCWorkVersionMetadataSection;
-    grantOptions: Array<{
-      value: string;
-      label: string;
-      description: string;
-    }>;
+    grantOptions: HHMIGrantOption[];
   }>();
   const fetcher = useFetcher<{ success?: boolean; error?: GeneralError }>();
   const [resetKey, setResetKey] = useState(0);
@@ -340,9 +371,8 @@ export function GrantsInfo({ readonly = false }: { readonly?: boolean }) {
 
     if (funderKey === 'hhmi') {
       const investigatorName = formData.get('investigatorName') as string;
-      const uniqueId = getUniqueId(grantId, investigatorName);
       fetcher.submit(
-        { intent: 'grant-add', funderKey, grantId, investigatorName, uniqueId },
+        { intent: 'grant-add', funderKey, grantId, investigatorName },
         { method: 'post' },
       );
     } else {
@@ -351,20 +381,17 @@ export function GrantsInfo({ readonly = false }: { readonly?: boolean }) {
   };
 
   const handleInitialHHMIGrantChange = (grantId: string, investigatorName: string) => {
-    const uniqueId = getUniqueId(grantId, investigatorName);
     const formData = new FormData();
     formData.set('intent', 'initial-hhmi-grant-set');
     formData.set('grantId', grantId);
     formData.set('investigatorName', investigatorName);
-    formData.set('uniqueId', uniqueId);
     fetcher.submit(formData, { method: 'post' });
   };
 
-  const handleInitialHHMIGrantClear = (grantId: string, investigatorName: string) => {
-    const uniqueId = getUniqueId(grantId, investigatorName);
+  const handleInitialHHMIGrantClear = (grantId: string, _investigatorName: string) => {
     const formData = new FormData();
     formData.set('intent', 'initial-hhmi-grant-clear');
-    formData.set('uniqueId', uniqueId);
+    formData.set('grantId', grantId);
     fetcher.submit(formData, { method: 'post' });
   };
 
@@ -378,8 +405,8 @@ export function GrantsInfo({ readonly = false }: { readonly?: boolean }) {
 
   // Handle optimistic updates from the initial HHMI grant form
   const formIntent = fetcher.formData?.get('intent');
-  const optimisticFirstHHMIGrantSelectValue = String(fetcher.formData?.get('uniqueId'));
-  let firstHHMIGrantSelectValue = firstHHMIGrant?.uniqueId ? firstHHMIGrant.uniqueId : undefined;
+  const optimisticFirstHHMIGrantSelectValue = String(fetcher.formData?.get('grantId') ?? '');
+  let firstHHMIGrantSelectValue = firstHHMIGrant?.grantId ? firstHHMIGrant.grantId : undefined;
   if (fetcher.state !== 'idle' && formIntent === 'initial-hhmi-grant-set') {
     firstHHMIGrantSelectValue = optimisticFirstHHMIGrantSelectValue;
   } else if (fetcher.state !== 'idle' && formIntent === 'initial-hhmi-grant-clear') {

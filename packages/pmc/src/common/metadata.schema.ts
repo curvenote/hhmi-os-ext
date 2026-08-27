@@ -30,8 +30,7 @@ export const grantEntrySchema = z.object({
   id: z.string().optional(),
   funderKey: funderType,
   grantId: z.string().min(1, 'Grant ID is required'),
-  investigatorName: z.string().optional(), // For HHMI grants, store the investigator name
-  uniqueId: z.string().optional(), // For HHMI grants, store a unique identifier (investigator_name_grant_id)
+  investigatorName: z.string().optional(), // Optional display name for institutional grants
 });
 
 export type GrantEntry = z.infer<typeof grantEntrySchema>;
