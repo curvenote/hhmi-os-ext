@@ -1,5 +1,12 @@
 # @hhmi/pmc
 
+## 1.0.1
+
+### Patch Changes
+
+- 3f052ae: Change PMC Deposit card title
+- d39c761: Restore PMC deposit routing after platform draft-resume generalization (`formPathIncludes` + `resolveResumeDraftPath`)
+
 ## 1.0.0
 
 ### Major Changes
