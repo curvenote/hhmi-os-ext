@@ -1,7 +1,7 @@
 import { useFetcher, useRevalidator } from 'react-router';
 import type { WorkflowTransition, GeneralError } from '@curvenote/scms-core';
 import { ui, usePolling } from '@curvenote/scms-core';
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import type { JobDTO } from '@curvenote/common';
 import { JobStatus } from '@curvenote/scms-db';
 import { zfd } from 'zod-form-data';
@@ -9,6 +9,11 @@ import { z } from 'zod';
 import type { Prisma } from '@curvenote/scms-db';
 import { EllipsisVertical } from 'lucide-react';
 import { SplitButton } from './SplitButton.js';
+import {
+  getTransitionJobId,
+  resolveActiveTransitionAfterLoad,
+  shouldPollJobTransition,
+} from './jobTransitionPolling.js';
 
 interface SubmissionVersionTransitionInfo {
   id: string;
@@ -59,15 +64,55 @@ export function ActionsAreaForm({
   display = 'button',
   onActiveTransitionChange,
 }: ActionsAreaProps) {
-  const [activeTransition, setActiveTransition] = useState<WorkflowTransition | null>(
-    submissionVersion.transition as WorkflowTransition | null,
+  const handledTerminalJobIdsRef = useRef<Set<string>>(new Set());
+  const pendingOutcomeJobIdRef = useRef<string | null>(null);
+  const awaitingRevalidateRef = useRef(false);
+  const sawRevalidateLoadingRef = useRef(false);
+  const toastedOutcomeJobIdsRef = useRef<Set<string>>(new Set());
+
+  const [activeTransition, setActiveTransition] = useState<WorkflowTransition | null>(() =>
+    resolveActiveTransitionAfterLoad(
+      submissionVersion.transition as WorkflowTransition | null,
+      handledTerminalJobIdsRef.current,
+    ),
   );
   const revalidator = useRevalidator();
 
-  // Reset when viewing a different submission version (avoids stale in-progress state)
+  // Sync from loader; never restore a transition for a job we already saw as terminal
   useEffect(() => {
-    setActiveTransition(submissionVersion.transition as WorkflowTransition | null);
-  }, [submissionVersion.id]);
+    const incoming = submissionVersion.transition as WorkflowTransition | null;
+    setActiveTransition(
+      resolveActiveTransitionAfterLoad(incoming, handledTerminalJobIdsRef.current),
+    );
+  }, [submissionVersion.id, submissionVersion.transition]);
+
+  // After COMPLETED job + revalidate: toast success only if transition cleared; otherwise warn once
+  useEffect(() => {
+    if (!awaitingRevalidateRef.current) return;
+
+    if (revalidator.state === 'loading') {
+      sawRevalidateLoadingRef.current = true;
+      return;
+    }
+    if (revalidator.state !== 'idle' || !sawRevalidateLoadingRef.current) return;
+
+    const jobId = pendingOutcomeJobIdRef.current;
+    awaitingRevalidateRef.current = false;
+    sawRevalidateLoadingRef.current = false;
+    pendingOutcomeJobIdRef.current = null;
+    if (!jobId || toastedOutcomeJobIdsRef.current.has(jobId)) return;
+    toastedOutcomeJobIdsRef.current.add(jobId);
+
+    const incoming = submissionVersion.transition as WorkflowTransition | null;
+    if (getTransitionJobId(incoming) === jobId) {
+      ui.toastError(
+        'Deposit job finished but submission status was not updated. Refresh the page or contact support if this persists.',
+      );
+      setActiveTransition(null);
+    } else {
+      ui.toastSuccess('Action completed successfully');
+    }
+  }, [revalidator.state, submissionVersion.transition]);
 
   useEffect(() => {
     onActiveTransitionChange?.(activeTransition);
@@ -95,7 +140,9 @@ export function ActionsAreaForm({
       ui.toastError(errorMessage);
     } else if (fetcher.data?.success && fetcher.data?.item) {
       const transition = fetcher.data.item.transition as WorkflowTransition;
-      setActiveTransition(transition);
+      setActiveTransition(
+        resolveActiveTransitionAfterLoad(transition, handledTerminalJobIdsRef.current),
+      );
 
       if (!transition?.requiresJob) {
         ui.toastSuccess('Action completed successfully');
@@ -103,24 +150,35 @@ export function ActionsAreaForm({
     }
   }, [fetcher.data]);
 
-  const jobId = activeTransition?.state?.jobId;
-  const shouldPoll = activeTransition?.requiresJob && jobId;
+  const jobId = getTransitionJobId(activeTransition);
+  const shouldPoll = shouldPollJobTransition(activeTransition, handledTerminalJobIdsRef.current);
 
   const handleJobComplete = useCallback(
     (job: JobDTO) => {
-      if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
-        setActiveTransition(null);
-        revalidator.revalidate();
+      if (job.status !== JobStatus.COMPLETED && job.status !== JobStatus.FAILED) return;
 
-        if (job.status === JobStatus.COMPLETED) {
-          ui.toastSuccess('Action completed successfully');
-        } else if (job.status === JobStatus.FAILED) {
-          const errorMessage = `Job failed: ${job.messages?.join(', ') || 'Unknown error'}`;
-          ui.toastError(errorMessage);
-        }
+      const completedJobId = job.id ?? jobId;
+      if (completedJobId) {
+        handledTerminalJobIdsRef.current.add(completedJobId);
       }
+      setActiveTransition(null);
+
+      if (job.status === JobStatus.FAILED) {
+        const errorMessage = `Job failed: ${job.messages?.join(', ') || 'Unknown error'}`;
+        ui.toastError(errorMessage);
+        if (completedJobId) toastedOutcomeJobIdsRef.current.add(completedJobId);
+        revalidator.revalidate();
+        return;
+      }
+
+      // COMPLETED: wait for revalidate to see if status/transition actually advanced
+      if (completedJobId) {
+        pendingOutcomeJobIdRef.current = completedJobId;
+        awaitingRevalidateRef.current = true;
+      }
+      revalidator.revalidate();
     },
-    [revalidator],
+    [revalidator, jobId],
   );
 
   const handleJobError = useCallback((error: Error) => {
@@ -136,7 +194,7 @@ export function ActionsAreaForm({
     url: `/v1/jobs/${jobId}`,
     interval: 1500,
     enabled: !!shouldPoll,
-    pollImmediately: false,
+    pollImmediately: true,
     numRetries: 8,
     shouldStop: shouldStopPolling,
     onComplete: handleJobComplete,
