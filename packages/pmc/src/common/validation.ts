@@ -34,6 +34,32 @@ export function normalizeGrantId(grantId: string): string {
   return grantId.trim();
 }
 
+/**
+ * Canonical HHMI grant option / storage key: investigator name + grant id.
+ * Matches the historical format so existing submissions with `uniqueId` keep working.
+ * Example: "Sarah Ayroles" + "HHMI_Kocher_S" → "sarah_ayroles_hhmi_kocher_s"
+ */
+export function createHhmiGrantUniqueId(grantId: string, investigatorName: string): string {
+  const namePart = investigatorName.trim().toLowerCase().replace(/\s+/g, '_');
+  const grantPart = normalizeGrantId(grantId).toLowerCase();
+  return `${namePart}_${grantPart}`;
+}
+
+/**
+ * Resolve the select value for a stored HHMI grant (prefer persisted uniqueId).
+ */
+export function resolveHhmiGrantUniqueId(grant: {
+  grantId: string;
+  investigatorName?: string | null;
+  uniqueId?: string | null;
+}): string | undefined {
+  if (grant.uniqueId?.trim()) return grant.uniqueId.trim();
+  if (grant.investigatorName?.trim() && normalizeGrantId(grant.grantId)) {
+    return createHhmiGrantUniqueId(grant.grantId, grant.investigatorName);
+  }
+  return undefined;
+}
+
 // ==============================
 // Grant Validation
 // ==============================

@@ -4,7 +4,12 @@ import { Trash2, ExternalLink, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { GeneralError } from '@curvenote/scms-core';
 import type { PMCWorkVersionMetadataSection, GrantEntry } from '../common/metadata.schema.js';
-import { validateGrantIdInput, normalizeGrantId } from '../common/validation.js';
+import {
+  validateGrantIdInput,
+  normalizeGrantId,
+  createHhmiGrantUniqueId,
+  resolveHhmiGrantUniqueId,
+} from '../common/validation.js';
 
 import type { Funder } from './funders.js';
 import { PMC_FUNDERS_MAP } from './funders.js';
@@ -36,12 +41,13 @@ function InitialHHMIGrantRow({
   const handleValueChange = (newValue: string) => {
     const selectedOption = grantOptions.find((option) => option.value === newValue);
     if (selectedOption) {
-      onSelect?.(selectedOption.value, selectedOption.label);
+      // description = grantId, label = investigator name, value = uniqueId
+      onSelect?.(selectedOption.description, selectedOption.label);
     } else if (newValue === '') {
       const previousValue = currentValue;
       const optionToClear = grantOptions.find((option) => option.value === previousValue);
       if (optionToClear) {
-        onClear?.(optionToClear.value, optionToClear.label);
+        onClear?.(optionToClear.description, optionToClear.label);
       }
     }
   };
@@ -151,7 +157,9 @@ function GrantEntryForm({
     setGrantId(validatedValue);
   };
 
-  const canSubmit = selectedFunder && normalizeGrantId(grantId) && !disabled;
+  const canSubmit = isHHMI
+    ? selectedFunder && !!selectedHHMIValue && !disabled
+    : selectedFunder && normalizeGrantId(grantId) && !disabled;
 
   return (
     <div className="flex flex-row items-end w-full gap-4">
@@ -185,7 +193,8 @@ function GrantEntryForm({
               value={selectedHHMIValue}
               onSelect={(selectedValue) => {
                 setSelectedHHMIValue(selectedValue);
-                setGrantId(selectedValue);
+                const option = grantOptions.find((o) => o.value === selectedValue);
+                setGrantId(option?.description ?? '');
               }}
               disabled={disabled}
               error={error}
@@ -212,13 +221,15 @@ function GrantEntryForm({
       {normalizeGrantId(grantId) && (
         <input type="hidden" name="grantId" value={normalizeGrantId(grantId)} />
       )}
-      {/* For HHMI grants, also include the investigator name */}
       {isHHMI && selectedHHMIValue && (
-        <input
-          type="hidden"
-          name="investigatorName"
-          value={grantOptions.find((option) => option.value === selectedHHMIValue)?.label || ''}
-        />
+        <>
+          <input
+            type="hidden"
+            name="investigatorName"
+            value={grantOptions.find((option) => option.value === selectedHHMIValue)?.label || ''}
+          />
+          <input type="hidden" name="uniqueId" value={selectedHHMIValue} />
+        </>
       )}
 
       {/* Add Button */}
@@ -257,7 +268,10 @@ function GrantEntryRow({
         {grant.funderKey === 'hhmi' ? (
           <span className="text-sm font-medium text-gray-900">
             {grantOptions.find(
-              (option) => normalizeGrantId(option.value) === normalizeGrantId(grant.grantId),
+              (option) =>
+                option.value === resolveHhmiGrantUniqueId(grant) ||
+                (normalizeGrantId(option.description) === normalizeGrantId(grant.grantId) &&
+                  option.label === grant.investigatorName),
             )?.label ||
               grant.investigatorName ||
               grant.grantId}
@@ -322,8 +336,10 @@ export function GrantsInfo({ readonly = false }: { readonly?: boolean }) {
 
     if (funderKey === 'hhmi') {
       const investigatorName = formData.get('investigatorName') as string;
+      const uniqueId =
+        (formData.get('uniqueId') as string) || createHhmiGrantUniqueId(grantId, investigatorName);
       fetcher.submit(
-        { intent: 'grant-add', funderKey, grantId, investigatorName },
+        { intent: 'grant-add', funderKey, grantId, investigatorName, uniqueId },
         { method: 'post' },
       );
     } else {
@@ -332,17 +348,20 @@ export function GrantsInfo({ readonly = false }: { readonly?: boolean }) {
   };
 
   const handleInitialHHMIGrantChange = (grantId: string, investigatorName: string) => {
+    const uniqueId = createHhmiGrantUniqueId(grantId, investigatorName);
     const formData = new FormData();
     formData.set('intent', 'initial-hhmi-grant-set');
     formData.set('grantId', grantId);
     formData.set('investigatorName', investigatorName);
+    formData.set('uniqueId', uniqueId);
     fetcher.submit(formData, { method: 'post' });
   };
 
-  const handleInitialHHMIGrantClear = (grantId: string, _investigatorName: string) => {
+  const handleInitialHHMIGrantClear = (grantId: string, investigatorName: string) => {
+    const uniqueId = createHhmiGrantUniqueId(grantId, investigatorName);
     const formData = new FormData();
     formData.set('intent', 'initial-hhmi-grant-clear');
-    formData.set('grantId', grantId);
+    formData.set('uniqueId', uniqueId);
     fetcher.submit(formData, { method: 'post' });
   };
 
@@ -356,10 +375,12 @@ export function GrantsInfo({ readonly = false }: { readonly?: boolean }) {
 
   // Handle optimistic updates from the initial HHMI grant form
   const formIntent = fetcher.formData?.get('intent');
-  const optimisticFirstHHMIGrantSelectValue = String(fetcher.formData?.get('grantId') ?? '');
-  let firstHHMIGrantSelectValue = firstHHMIGrant?.grantId ? firstHHMIGrant.grantId : undefined;
+  const optimisticFirstHHMIGrantSelectValue = String(fetcher.formData?.get('uniqueId') ?? '');
+  let firstHHMIGrantSelectValue = firstHHMIGrant
+    ? resolveHhmiGrantUniqueId(firstHHMIGrant)
+    : undefined;
   if (fetcher.state !== 'idle' && formIntent === 'initial-hhmi-grant-set') {
-    firstHHMIGrantSelectValue = optimisticFirstHHMIGrantSelectValue;
+    firstHHMIGrantSelectValue = optimisticFirstHHMIGrantSelectValue || undefined;
   } else if (fetcher.state !== 'idle' && formIntent === 'initial-hhmi-grant-clear') {
     firstHHMIGrantSelectValue = undefined;
   }

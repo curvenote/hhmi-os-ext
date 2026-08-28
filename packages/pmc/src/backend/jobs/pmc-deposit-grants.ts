@@ -1,7 +1,7 @@
 import type { AAMDepositManifest } from 'pmc-utils';
 import type { GrantEntry } from '../../common/metadata.schema.js';
 import { normalizeGrantId } from '../../common/validation.js';
-import { getHHMIScientistByGrantId, type HHMIScientist } from '../hhmi-grants.server.js';
+import { getHHMIScientistByGrantIdAndName, type HHMIScientist } from '../hhmi-grants.server.js';
 
 export type ManifestGrant = AAMDepositManifest['metadata']['grants'][number];
 
@@ -25,22 +25,27 @@ export function grantPiFromScientistRecord(scientist: HHMIScientist) {
 
 /**
  * Ensure an HHMI grant can be deposited (synced contact + complete PI fields).
- * Call at grant-selection time so users see the problem before submitting.
+ * Resolves by grantId + investigator name — grant IDs alone are not unique.
  */
 export async function assertHhmiGrantReadyForDeposit(
   grantId: string,
+  investigatorName: string,
   context?: { workVersionId?: string },
 ): Promise<HHMIScientist> {
   const id = normalizeGrantId(grantId);
+  const name = investigatorName?.trim() ?? '';
   if (!id) {
     throw new Error('Grant ID is required for HHMI funding');
   }
+  if (!name) {
+    throw new Error(`Grant ${id}: investigator name is required`);
+  }
 
-  const scientist = await getHHMIScientistByGrantId(id);
+  const scientist = await getHHMIScientistByGrantIdAndName(id, name);
   const suffix = context?.workVersionId ? ` (workVersion ${context.workVersionId})` : '';
 
   if (!scientist) {
-    throw new Error(`Grant ${id}: no matching grant contact record found${suffix}`);
+    throw new Error(`Grant ${id} (${name}): no matching grant contact record found${suffix}`);
   }
 
   try {
@@ -80,7 +85,7 @@ export async function buildManifestGrants(
     }
 
     try {
-      const scientist = await assertHhmiGrantReadyForDeposit(id);
+      const scientist = await assertHhmiGrantReadyForDeposit(id, grant.investigatorName ?? '');
       manifestGrants.push({
         funder,
         id,

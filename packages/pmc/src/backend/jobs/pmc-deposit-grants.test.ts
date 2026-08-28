@@ -1,15 +1,20 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildManifestGrants, grantPiFromScientistRecord, assertHhmiGrantReadyForDeposit } from './pmc-deposit-grants.js';
+import {
+  buildManifestGrants,
+  grantPiFromScientistRecord,
+  assertHhmiGrantReadyForDeposit,
+} from './pmc-deposit-grants.js';
 import type { GrantEntry } from '../../common/metadata.schema.js';
 import type { HHMIScientist } from '../hhmi-grants.server.js';
 
 vi.mock('../hhmi-grants.server.js', () => ({
-  getHHMIScientistByGrantId: vi.fn(),
+  getHHMIScientistByGrantIdAndName: vi.fn(),
 }));
 
-import { getHHMIScientistByGrantId } from '../hhmi-grants.server.js';
+import { getHHMIScientistByGrantIdAndName } from '../hhmi-grants.server.js';
 
-const mockGetScientist = vi.mocked(getHHMIScientistByGrantId);
+const mockGetScientist = vi.mocked(getHHMIScientistByGrantIdAndName);
 
 const completeScientist: HHMIScientist = {
   id: 'rec001',
@@ -45,7 +50,15 @@ describe('buildManifestGrants', () => {
   it('adds pi for institutional grants with a matching contact record', async () => {
     mockGetScientist.mockResolvedValue(completeScientist);
 
-    const grants: GrantEntry[] = [{ id: '1', funderKey: 'hhmi', grantId: 'GRANT_Alpha_A' }];
+    const grants: GrantEntry[] = [
+      {
+        id: '1',
+        funderKey: 'hhmi',
+        grantId: 'GRANT_Alpha_A',
+        investigatorName: 'Alex Alpha',
+        uniqueId: 'alex_alpha_grant_alpha_a',
+      },
+    ];
 
     const result = await buildManifestGrants(grants);
 
@@ -60,7 +73,7 @@ describe('buildManifestGrants', () => {
         },
       },
     ]);
-    expect(mockGetScientist).toHaveBeenCalledWith('GRANT_Alpha_A');
+    expect(mockGetScientist).toHaveBeenCalledWith('GRANT_Alpha_A', 'Alex Alpha');
   });
 
   it('omits pi for other funders', async () => {
@@ -82,7 +95,12 @@ describe('buildManifestGrants', () => {
     });
 
     const grants: GrantEntry[] = [
-      { id: '1', funderKey: 'hhmi', grantId: 'GRANT_Beta_B' },
+      {
+        id: '1',
+        funderKey: 'hhmi',
+        grantId: 'GRANT_Beta_B',
+        investigatorName: 'Blair Beta',
+      },
       { id: '2', funderKey: 'nih', grantId: 'R01HD116750' },
       { id: '3', funderKey: 'nih', grantId: 'R00HD104902' },
     ];
@@ -99,11 +117,24 @@ describe('buildManifestGrants', () => {
     expect(result[2]).toEqual({ funder: 'nih', id: 'R00HD104902' });
   });
 
-  it('throws when no contact record matches the grant id', async () => {
+  it('throws when investigator name is missing', async () => {
+    await expect(
+      buildManifestGrants([{ id: '1', funderKey: 'hhmi', grantId: 'GRANT_Unknown' }]),
+    ).rejects.toThrow(/investigator name is required/);
+  });
+
+  it('throws when no contact record matches grantId + name', async () => {
     mockGetScientist.mockResolvedValue(null);
 
     await expect(
-      buildManifestGrants([{ id: '1', funderKey: 'hhmi', grantId: 'GRANT_Unknown' }]),
+      buildManifestGrants([
+        {
+          id: '1',
+          funderKey: 'hhmi',
+          grantId: 'GRANT_Unknown',
+          investigatorName: 'Unknown Person',
+        },
+      ]),
     ).rejects.toThrow(/no matching grant contact record found/);
   });
 
@@ -111,7 +142,14 @@ describe('buildManifestGrants', () => {
     mockGetScientist.mockResolvedValue({ ...completeScientist, email: '' });
 
     await expect(
-      buildManifestGrants([{ id: '1', funderKey: 'hhmi', grantId: 'GRANT_Alpha_A' }]),
+      buildManifestGrants([
+        {
+          id: '1',
+          funderKey: 'hhmi',
+          grantId: 'GRANT_Alpha_A',
+          investigatorName: 'Alex Alpha',
+        },
+      ]),
     ).rejects.toThrow(/email is missing/);
   });
 
@@ -119,10 +157,20 @@ describe('buildManifestGrants', () => {
     mockGetScientist.mockResolvedValue(null);
 
     await expect(
-      buildManifestGrants([{ id: '1', funderKey: 'hhmi', grantId: 'GRANT_Unknown' }], {
-        workVersionId: 'wv-1',
-        submissionId: 'sub-1',
-      }),
+      buildManifestGrants(
+        [
+          {
+            id: '1',
+            funderKey: 'hhmi',
+            grantId: 'GRANT_Unknown',
+            investigatorName: 'Unknown Person',
+          },
+        ],
+        {
+          workVersionId: 'wv-1',
+          submissionId: 'sub-1',
+        },
+      ),
     ).rejects.toThrow(/workVersion wv-1.*submission sub-1/);
   });
 });
@@ -134,7 +182,7 @@ describe('assertHhmiGrantReadyForDeposit', () => {
 
   it('resolves when the contact record has complete PI fields', async () => {
     mockGetScientist.mockResolvedValue(completeScientist);
-    await expect(assertHhmiGrantReadyForDeposit('GRANT_Alpha_A')).resolves.toEqual(
+    await expect(assertHhmiGrantReadyForDeposit('GRANT_Alpha_A', 'Alex Alpha')).resolves.toEqual(
       completeScientist,
     );
   });
@@ -142,7 +190,9 @@ describe('assertHhmiGrantReadyForDeposit', () => {
   it('throws before deposit when PI email is missing', async () => {
     mockGetScientist.mockResolvedValue({ ...completeScientist, email: ' ' });
     await expect(
-      assertHhmiGrantReadyForDeposit('GRANT_Alpha_A', { workVersionId: 'wv-9' }),
+      assertHhmiGrantReadyForDeposit('GRANT_Alpha_A', 'Alex Alpha', {
+        workVersionId: 'wv-9',
+      }),
     ).rejects.toThrow(/email is missing.*workVersion wv-9/);
   });
 });

@@ -1,6 +1,6 @@
 import { getPrismaClient, safeObjectDataUpdate } from '@curvenote/scms-server';
 import { randomUUID } from 'node:crypto';
-import { normalizeGrantId } from '../common/validation.js';
+import { createHhmiGrantUniqueId, normalizeGrantId } from '../common/validation.js';
 
 /**
  * HHMI Scientists Management
@@ -74,8 +74,8 @@ export interface HHMIGrantOption {
 }
 
 /**
- * Get HHMI scientists as grant options for UI components (name + grantId only).
- * Option value/description use trimmed grant IDs so they match stored grants and lookups.
+ * Get HHMI scientists as grant options for UI components.
+ * `value` is the historical name_grantId unique key; `description` is the trimmed grantId.
  */
 export async function getHHMIGrantOptions(): Promise<HHMIGrantOption[]> {
   const scientists = await getHHMIScientists();
@@ -83,7 +83,7 @@ export async function getHHMIGrantOptions(): Promise<HHMIGrantOption[]> {
   return scientists.map((scientist) => {
     const grantId = normalizeGrantId(scientist.grantId);
     return {
-      value: grantId,
+      value: createHhmiGrantUniqueId(grantId, scientist.fullName),
       label: scientist.fullName,
       description: grantId,
     };
@@ -151,6 +151,8 @@ export async function updateHHMIScientists(
 
 /**
  * Get a specific HHMI scientist by grant ID (trimmed match on both sides).
+ * Prefer getHHMIScientistByGrantIdAndName when investigator name is known —
+ * grant IDs are not unique across scientists.
  */
 export async function getHHMIScientistByGrantId(grantId: string): Promise<HHMIScientist | null> {
   const normalizedGrantId = normalizeGrantId(grantId);
@@ -160,6 +162,25 @@ export async function getHHMIScientistByGrantId(grantId: string): Promise<HHMISc
   return (
     scientists.find((scientist) => normalizeGrantId(scientist.grantId) === normalizedGrantId) ||
     null
+  );
+}
+
+/**
+ * Resolve scientist by grant ID + investigator name (canonical unique key).
+ */
+export async function getHHMIScientistByGrantIdAndName(
+  grantId: string,
+  investigatorName: string,
+): Promise<HHMIScientist | null> {
+  const targetUniqueId = createHhmiGrantUniqueId(grantId, investigatorName);
+  if (!normalizeGrantId(grantId) || !investigatorName.trim()) return null;
+
+  const scientists = await getHHMIScientists();
+  return (
+    scientists.find(
+      (scientist) =>
+        createHhmiGrantUniqueId(scientist.grantId, scientist.fullName) === targetUniqueId,
+    ) || null
   );
 }
 
