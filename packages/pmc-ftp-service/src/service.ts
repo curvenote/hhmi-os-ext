@@ -29,7 +29,6 @@ import {
   type HandlerContext,
   type SCMSClient,
 } from '@curvenote/scms-tasks';
-import type { Response } from 'express';
 import { preparePMCManifestText } from 'pmc-node-utils';
 import {
   AAMDepositManifestSchema,
@@ -259,7 +258,10 @@ export function createService() {
 
         // Report success (service responsibility); wrapper handles removeFolder(tmpFolder)
         const { successState, userId } = ctx.attributes;
-        await client.submissions.putStatus(successState, userId, res);
+        if (!successState) {
+          throw new Error('successState attribute is required to report submission status');
+        }
+        await client.submissions.putStatus(successState, userId);
         await client.jobs.completed(res, 'FTP upload completed successfully', {
           taskId: id,
           tarFileName,
@@ -268,13 +270,8 @@ export function createService() {
         });
       },
       {
-        onFailure: async (
-          client: SCMSClient,
-          failureState: string,
-          userId: string,
-          res: Response,
-        ) => {
-          await client.submissions.putStatus(failureState, userId, res);
+        onFailure: async (client: SCMSClient, failureState: string, userId: string) => {
+          await client.submissions.putStatus(failureState, userId);
         },
       },
     ),
