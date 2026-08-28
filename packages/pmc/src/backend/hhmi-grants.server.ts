@@ -1,5 +1,6 @@
 import { getPrismaClient, safeObjectDataUpdate } from '@curvenote/scms-server';
 import { randomUUID } from 'node:crypto';
+import { normalizeGrantId } from '../common/validation.js';
 
 /**
  * HHMI Scientists Management
@@ -74,15 +75,19 @@ export interface HHMIGrantOption {
 
 /**
  * Get HHMI scientists as grant options for UI components (name + grantId only).
+ * Option value/description use trimmed grant IDs so they match stored grants and lookups.
  */
 export async function getHHMIGrantOptions(): Promise<HHMIGrantOption[]> {
   const scientists = await getHHMIScientists();
 
-  return scientists.map((scientist) => ({
-    value: scientist.grantId,
-    label: scientist.fullName,
-    description: scientist.grantId,
-  }));
+  return scientists.map((scientist) => {
+    const grantId = normalizeGrantId(scientist.grantId);
+    return {
+      value: grantId,
+      label: scientist.fullName,
+      description: grantId,
+    };
+  });
 }
 
 /**
@@ -145,11 +150,17 @@ export async function updateHHMIScientists(
 }
 
 /**
- * Get a specific HHMI scientist by grant ID
+ * Get a specific HHMI scientist by grant ID (trimmed match on both sides).
  */
 export async function getHHMIScientistByGrantId(grantId: string): Promise<HHMIScientist | null> {
+  const normalizedGrantId = normalizeGrantId(grantId);
+  if (!normalizedGrantId) return null;
+
   const scientists = await getHHMIScientists();
-  return scientists.find((scientist) => scientist.grantId === grantId) || null;
+  return (
+    scientists.find((scientist) => normalizeGrantId(scientist.grantId) === normalizedGrantId) ||
+    null
+  );
 }
 
 /**

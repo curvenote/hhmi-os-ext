@@ -256,7 +256,9 @@ function GrantEntryRow({
       <div className="w-64 min-w-0">
         {grant.funderKey === 'hhmi' ? (
           <span className="text-sm font-medium text-gray-900">
-            {grantOptions.find((option) => option.value === grant.grantId)?.label ||
+            {grantOptions.find(
+              (option) => normalizeGrantId(option.value) === normalizeGrantId(grant.grantId),
+            )?.label ||
               grant.investigatorName ||
               grant.grantId}
           </span>
