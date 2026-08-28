@@ -1,5 +1,22 @@
 # @hhmi/pmc
 
+## 1.1.0
+
+### Minor Changes
+
+- 511308b: Enrich HHMI grant deposits with awardee PI (`fname`, `lname`, `email`) looked up from synced grant records, surface grant ID and email in the grant picker, and bump `pmc-utils` to 0.4.0 so FTP renders nested `<PI>` in `bulk_meta.xml`.
+
+### Patch Changes
+
+- 53668d0: Hide investigator emails from the HHMI grant selector; show only name in the closed dropdown
+- 7ed2100: Fix false "status was not updated" toast after successful Send to PMC by waiting for loader data to refresh before deciding job outcome.
+- 4d0f905: Stop PMC admin action polling/toast loops when a deposit job finishes but the submission transition is stuck.
+- 1449e04: Flag duplicate NIHMS funding IDs on the grants sync admin page, with warn vs info cards based on whether investigator name uniquely resolves the collision.
+- 0b2dab6: Restore HHMI grant identity as grantId + investigator name (`uniqueId`) so duplicate grant IDs stay distinct and existing submissions keep their selected investigator.
+- abba334: Normalize HHMI grant IDs with trim on both lookup and combobox option values so whitespace from Airtable no longer breaks PI resolution.
+- 01c95c3: Sign PMC deposit files via resolveBucketForCdn so local MinIO private CDN URLs map to the prv bucket
+- 6f76732: Fix admin deposit success toast (fire on job COMPLETED), require two loader/revalidate epochs before stuck warning, validate HHMI PI completeness when grants are selected, and cover clearInitialHHMIGrant grantId matching.
+
 ## 1.0.1
 
 ### Patch Changes

@@ -626,17 +626,17 @@ var require_nacl_fast = __commonJS({
         x2[i2 + 6] = l >> 8 & 255;
         x2[i2 + 7] = l & 255;
       }
-      function vn2(x2, xi2, y2, yi2, n) {
+      function vn2(x2, xi2, y, yi2, n) {
         var i2, d = 0;
         for (i2 = 0; i2 < n; i2++)
-          d |= x2[xi2 + i2] ^ y2[yi2 + i2];
+          d |= x2[xi2 + i2] ^ y[yi2 + i2];
         return (1 & d - 1 >>> 8) - 1;
       }
-      function crypto_verify_16(x2, xi2, y2, yi2) {
-        return vn2(x2, xi2, y2, yi2, 16);
+      function crypto_verify_16(x2, xi2, y, yi2) {
+        return vn2(x2, xi2, y, yi2, 16);
       }
-      function crypto_verify_32(x2, xi2, y2, yi2) {
-        return vn2(x2, xi2, y2, yi2, 32);
+      function crypto_verify_32(x2, xi2, y, yi2) {
+        return vn2(x2, xi2, y, yi2, 32);
       }
       function core_salsa20(o, p2, k2, c) {
         var j0 = c[0] & 255 | (c[1] & 255) << 8 | (c[2] & 255) << 16 | (c[3] & 255) << 24, j1 = k2[0] & 255 | (k2[1] & 255) << 8 | (k2[2] & 255) << 16 | (k2[3] & 255) << 24, j2 = k2[4] & 255 | (k2[5] & 255) << 8 | (k2[6] & 255) << 16 | (k2[7] & 255) << 24, j3 = k2[8] & 255 | (k2[9] & 255) << 8 | (k2[10] & 255) << 16 | (k2[11] & 255) << 24, j4 = k2[12] & 255 | (k2[13] & 255) << 8 | (k2[14] & 255) << 16 | (k2[15] & 255) << 24, j5 = c[4] & 255 | (c[5] & 255) << 8 | (c[6] & 255) << 16 | (c[7] & 255) << 24, j6 = p2[0] & 255 | (p2[1] & 255) << 8 | (p2[2] & 255) << 16 | (p2[3] & 255) << 24, j7 = p2[4] & 255 | (p2[5] & 255) << 8 | (p2[6] & 255) << 16 | (p2[7] & 255) << 24, j8 = p2[8] & 255 | (p2[9] & 255) << 8 | (p2[10] & 255) << 16 | (p2[11] & 255) << 24, j9 = p2[12] & 255 | (p2[13] & 255) << 8 | (p2[14] & 255) << 16 | (p2[15] & 255) << 24, j10 = c[8] & 255 | (c[9] & 255) << 8 | (c[10] & 255) << 16 | (c[11] & 255) << 24, j11 = k2[16] & 255 | (k2[17] & 255) << 8 | (k2[18] & 255) << 16 | (k2[19] & 255) << 24, j12 = k2[20] & 255 | (k2[21] & 255) << 8 | (k2[22] & 255) << 16 | (k2[23] & 255) << 24, j13 = k2[24] & 255 | (k2[25] & 255) << 8 | (k2[26] & 255) << 16 | (k2[27] & 255) << 24, j14 = k2[28] & 255 | (k2[29] & 255) << 8 | (k2[30] & 255) << 16 | (k2[31] & 255) << 24, j15 = c[12] & 255 | (c[13] & 255) << 8 | (c[14] & 255) << 16 | (c[15] & 255) << 24;
@@ -1818,7 +1818,7 @@ var require_nacl_fast = __commonJS({
         o[14] = t14;
         o[15] = t15;
       }
-      function S2(o, a) {
+      function S3(o, a) {
         M2(o, a, a);
       }
       function inv25519(o, i2) {
@@ -1827,7 +1827,7 @@ var require_nacl_fast = __commonJS({
         for (a = 0; a < 16; a++)
           c[a] = i2[a];
         for (a = 253; a >= 0; a--) {
-          S2(c, c);
+          S3(c, c);
           if (a !== 2 && a !== 4)
             M2(c, c, i2);
         }
@@ -1840,7 +1840,7 @@ var require_nacl_fast = __commonJS({
         for (a = 0; a < 16; a++)
           c[a] = i2[a];
         for (a = 250; a >= 0; a--) {
-          S2(c, c);
+          S3(c, c);
           if (a !== 1)
             M2(c, c, i2);
         }
@@ -1869,20 +1869,20 @@ var require_nacl_fast = __commonJS({
           Z3(a, a, c);
           A3(c, b2, d);
           Z3(b2, b2, d);
-          S2(d, e3);
-          S2(f4, a);
+          S3(d, e3);
+          S3(f4, a);
           M2(a, c, a);
           M2(c, b2, e3);
           A3(e3, a, c);
           Z3(a, a, c);
-          S2(b2, a);
+          S3(b2, a);
           Z3(c, d, f4);
           M2(a, c, _121665);
           A3(a, a, d);
           M2(c, c, a);
           M2(a, d, f4);
           M2(d, b2, x2);
-          S2(b2, e3);
+          S3(b2, e3);
           sel25519(a, b2, r2);
           sel25519(c, d, r2);
         }
@@ -1902,25 +1902,25 @@ var require_nacl_fast = __commonJS({
       function crypto_scalarmult_base(q2, n) {
         return crypto_scalarmult(q2, n, _9);
       }
-      function crypto_box_keypair(y2, x2) {
+      function crypto_box_keypair(y, x2) {
         randombytes(x2, 32);
-        return crypto_scalarmult_base(y2, x2);
+        return crypto_scalarmult_base(y, x2);
       }
-      function crypto_box_beforenm(k2, y2, x2) {
+      function crypto_box_beforenm(k2, y, x2) {
         var s4 = new Uint8Array(32);
-        crypto_scalarmult(s4, x2, y2);
+        crypto_scalarmult(s4, x2, y);
         return crypto_core_hsalsa20(k2, _0, s4, sigma);
       }
       var crypto_box_afternm = crypto_secretbox;
       var crypto_box_open_afternm = crypto_secretbox_open;
-      function crypto_box(c, m3, d, n, y2, x2) {
+      function crypto_box(c, m3, d, n, y, x2) {
         var k2 = new Uint8Array(32);
-        crypto_box_beforenm(k2, y2, x2);
+        crypto_box_beforenm(k2, y, x2);
         return crypto_box_afternm(c, m3, d, n, k2);
       }
-      function crypto_box_open(m3, c, d, n, y2, x2) {
+      function crypto_box_open(m3, c, d, n, y, x2) {
         var k2 = new Uint8Array(32);
-        crypto_box_beforenm(k2, y2, x2);
+        crypto_box_beforenm(k2, y, x2);
         return crypto_box_open_afternm(m3, c, d, n, k2);
       }
       var K2 = [
@@ -2557,12 +2557,12 @@ var require_nacl_fast = __commonJS({
         var t3 = gf(), chk = gf(), num = gf(), den = gf(), den2 = gf(), den4 = gf(), den6 = gf();
         set25519(r2[2], gf1);
         unpack25519(r2[1], p2);
-        S2(num, r2[1]);
+        S3(num, r2[1]);
         M2(den, num, D);
         Z3(num, num, r2[2]);
         A3(den, r2[2], den);
-        S2(den2, den);
-        S2(den4, den2);
+        S3(den2, den);
+        S3(den4, den2);
         M2(den6, den4, den2);
         M2(t3, den6, num);
         M2(t3, t3, den);
@@ -2571,11 +2571,11 @@ var require_nacl_fast = __commonJS({
         M2(t3, t3, den);
         M2(t3, t3, den);
         M2(r2[0], t3, den);
-        S2(chk, r2[0]);
+        S3(chk, r2[0]);
         M2(chk, chk, den);
         if (neq25519(chk, num))
           M2(r2[0], r2[0], I2);
-        S2(chk, r2[0]);
+        S3(chk, r2[0]);
         M2(chk, chk, den);
         if (neq25519(chk, num))
           return -1;
@@ -2854,13 +2854,13 @@ var require_nacl_fast = __commonJS({
         return h2;
       };
       nacl.hash.hashLength = crypto_hash_BYTES;
-      nacl.verify = function(x2, y2) {
-        checkArrayTypes(x2, y2);
-        if (x2.length === 0 || y2.length === 0)
+      nacl.verify = function(x2, y) {
+        checkArrayTypes(x2, y);
+        if (x2.length === 0 || y.length === 0)
           return false;
-        if (x2.length !== y2.length)
+        if (x2.length !== y.length)
           return false;
-        return vn2(x2, 0, y2, 0, x2.length) === 0 ? true : false;
+        return vn2(x2, 0, y, 0, x2.length) === 0 ? true : false;
       };
       nacl.setPRNG = function(fn) {
         randombytes = fn;
@@ -3956,8 +3956,8 @@ var require_bcrypt_pbkdf = __commonJS({
         2306472731
       ]);
     };
-    function F3(S2, x8, i2) {
-      return (S2[0][x8[i2 + 3]] + S2[1][x8[i2 + 2]] ^ S2[2][x8[i2 + 1]]) + S2[3][x8[i2]];
+    function F3(S3, x8, i2) {
+      return (S3[0][x8[i2 + 3]] + S3[1][x8[i2 + 2]] ^ S3[2][x8[i2 + 1]]) + S3[3][x8[i2]];
     }
     Blowfish.prototype.encipher = function(x2, x8) {
       if (x8 === void 0) {
@@ -4778,9 +4778,9 @@ var require_poly1305 = __commonJS({
         var u3 = {}, w2;
         for (w2 in b2)
           b2.hasOwnProperty(w2) && (u3[w2] = b2[w2]);
-        var x2 = "object" === typeof window, y2 = "function" === typeof importScripts, z2 = "object" === typeof process && "object" === typeof process.versions && "string" === typeof process.versions.node, B2 = "", C2, D, E, F3, G2;
+        var x2 = "object" === typeof window, y = "function" === typeof importScripts, z2 = "object" === typeof process && "object" === typeof process.versions && "string" === typeof process.versions.node, B2 = "", C2, D, E, F3, G2;
         if (z2)
-          B2 = y2 ? require("path").dirname(B2) + "/" : __dirname + "/", C2 = function(a, c) {
+          B2 = y ? require("path").dirname(B2) + "/" : __dirname + "/", C2 = function(a, c) {
             var d = H2(a);
             if (d)
               return c ? d : d.toString();
@@ -4805,8 +4805,8 @@ var require_poly1305 = __commonJS({
           }, 1 < process.argv.length && process.argv[1].replace(/\\/g, "/"), process.argv.slice(2), b2.inspect = function() {
             return "[Emscripten Module object]";
           };
-        else if (x2 || y2)
-          y2 ? B2 = self.location.href : "undefined" !== typeof document && document.currentScript && (B2 = document.currentScript.src), _scriptDir && (B2 = _scriptDir), 0 !== B2.indexOf("blob:") ? B2 = B2.substr(0, B2.lastIndexOf("/") + 1) : B2 = "", C2 = function(a) {
+        else if (x2 || y)
+          y ? B2 = self.location.href : "undefined" !== typeof document && document.currentScript && (B2 = document.currentScript.src), _scriptDir && (B2 = _scriptDir), 0 !== B2.indexOf("blob:") ? B2 = B2.substr(0, B2.lastIndexOf("/") + 1) : B2 = "", C2 = function(a) {
             try {
               var c = new XMLHttpRequest();
               c.open("GET", a, false);
@@ -4824,7 +4824,7 @@ var require_poly1305 = __commonJS({
               }
               throw f4;
             }
-          }, y2 && (E = function(a) {
+          }, y && (E = function(a) {
             try {
               var c = new XMLHttpRequest();
               c.open("GET", a, false);
@@ -4976,7 +4976,7 @@ var require_poly1305 = __commonJS({
           var a = b2.preRun.shift();
           ja.unshift(a);
         }
-        var S2 = 0, T = null, U2 = null;
+        var S3 = 0, T = null, U2 = null;
         b2.preloadedImages = {};
         b2.preloadedAudios = {};
         function K2(a) {
@@ -5010,7 +5010,7 @@ var require_poly1305 = __commonJS({
           }
         }
         function qa() {
-          if (!J2 && (x2 || y2)) {
+          if (!J2 && (x2 || y)) {
             if ("function" === typeof fetch && !W2.startsWith("file://"))
               return fetch(W2, { credentials: "same-origin" }).then(function(a) {
                 if (!a.ok)
@@ -5108,9 +5108,9 @@ var require_poly1305 = __commonJS({
             ia();
             R2 = b2.asm.j;
             ka.unshift(b2.asm.c);
-            S2--;
-            b2.monitorRunDependencies && b2.monitorRunDependencies(S2);
-            0 == S2 && (null !== T && (clearInterval(T), T = null), U2 && (f4 = U2, U2 = null, f4()));
+            S3--;
+            b2.monitorRunDependencies && b2.monitorRunDependencies(S3);
+            0 == S3 && (null !== T && (clearInterval(T), T = null), U2 && (f4 = U2, U2 = null, f4()));
           }
           function c(f4) {
             a(f4.instance);
@@ -5124,8 +5124,8 @@ var require_poly1305 = __commonJS({
             });
           }
           var e3 = { a: sa };
-          S2++;
-          b2.monitorRunDependencies && b2.monitorRunDependencies(S2);
+          S3++;
+          b2.monitorRunDependencies && b2.monitorRunDependencies(S3);
           if (b2.instantiateWasm)
             try {
               return b2.instantiateWasm(
@@ -5194,12 +5194,12 @@ var require_poly1305 = __commonJS({
               X2(la);
             }
           }
-          if (!(0 < S2)) {
+          if (!(0 < S3)) {
             if (b2.preRun)
               for ("function" == typeof b2.preRun && (b2.preRun = [b2.preRun]); b2.preRun.length; )
                 ma();
             X2(ja);
-            0 < S2 || (b2.setStatus ? (b2.setStatus("Running..."), setTimeout(function() {
+            0 < S3 || (b2.setStatus ? (b2.setStatus("Running..."), setTimeout(function() {
               setTimeout(function() {
                 b2.setStatus("");
               }, 1);
@@ -6678,7 +6678,7 @@ ${formatted}-----END ${type} KEY-----`;
         );
       };
     })();
-    function genOpenSSLDSAPub(p2, q2, g2, y2) {
+    function genOpenSSLDSAPub(p2, q2, g2, y) {
       const asnWriter = new Ber.Writer();
       asnWriter.startSequence();
       asnWriter.startSequence();
@@ -6691,14 +6691,14 @@ ${formatted}-----END ${type} KEY-----`;
       asnWriter.endSequence();
       asnWriter.startSequence(Ber.BitString);
       asnWriter.writeByte(0);
-      asnWriter.writeBuffer(y2, Ber.Integer);
+      asnWriter.writeBuffer(y, Ber.Integer);
       asnWriter.endSequence();
       asnWriter.endSequence();
       return makePEM("PUBLIC", asnWriter.buffer);
     }
-    function genOpenSSHDSAPub(p2, q2, g2, y2) {
+    function genOpenSSHDSAPub(p2, q2, g2, y) {
       const publicKey = Buffer.allocUnsafe(
-        4 + 7 + 4 + p2.length + 4 + q2.length + 4 + g2.length + 4 + y2.length
+        4 + 7 + 4 + p2.length + 4 + q2.length + 4 + g2.length + 4 + y.length
       );
       writeUInt32BE(publicKey, 7, 0);
       publicKey.utf8Write("ssh-dss", 4, 7);
@@ -6709,18 +6709,18 @@ ${formatted}-----END ${type} KEY-----`;
       publicKey.set(q2, i2 += 4);
       writeUInt32BE(publicKey, g2.length, i2 += q2.length);
       publicKey.set(g2, i2 += 4);
-      writeUInt32BE(publicKey, y2.length, i2 += g2.length);
-      publicKey.set(y2, i2 + 4);
+      writeUInt32BE(publicKey, y.length, i2 += g2.length);
+      publicKey.set(y, i2 + 4);
       return publicKey;
     }
-    function genOpenSSLDSAPriv(p2, q2, g2, y2, x2) {
+    function genOpenSSLDSAPriv(p2, q2, g2, y, x2) {
       const asnWriter = new Ber.Writer();
       asnWriter.startSequence();
       asnWriter.writeInt(0, Ber.Integer);
       asnWriter.writeBuffer(p2, Ber.Integer);
       asnWriter.writeBuffer(q2, Ber.Integer);
       asnWriter.writeBuffer(g2, Ber.Integer);
-      asnWriter.writeBuffer(y2, Ber.Integer);
+      asnWriter.writeBuffer(y, Ber.Integer);
       asnWriter.writeBuffer(x2, Ber.Integer);
       asnWriter.endSequence();
       return makePEM("DSA PRIVATE", asnWriter.buffer);
@@ -6977,15 +6977,15 @@ ${formatted}-----END ${type} KEY-----`;
               const g2 = readString(data, data._pos);
               if (g2 === void 0)
                 return new Error("Malformed OpenSSH private key");
-              const y2 = readString(data, data._pos);
-              if (y2 === void 0)
+              const y = readString(data, data._pos);
+              if (y === void 0)
                 return new Error("Malformed OpenSSH private key");
               const x2 = readString(data, data._pos);
               if (x2 === void 0)
                 return new Error("Malformed OpenSSH private key");
-              pubPEM = genOpenSSLDSAPub(p2, q2, g2, y2);
-              pubSSH = genOpenSSHDSAPub(p2, q2, g2, y2);
-              privPEM = genOpenSSLDSAPriv(p2, q2, g2, y2, x2);
+              pubPEM = genOpenSSLDSAPub(p2, q2, g2, y);
+              pubSSH = genOpenSSHDSAPub(p2, q2, g2, y);
+              privPEM = genOpenSSLDSAPriv(p2, q2, g2, y, x2);
               algo = "sha1";
               break;
             }
@@ -7299,11 +7299,11 @@ ${formatted}-----END ${type} KEY-----`;
               const g2 = reader.readString(Ber.Integer, true);
               if (g2 === null)
                 return new Error(errMsg);
-              const y2 = reader.readString(Ber.Integer, true);
-              if (y2 === null)
+              const y = reader.readString(Ber.Integer, true);
+              if (y === null)
                 return new Error(errMsg);
-              pubPEM = genOpenSSLDSAPub(p2, q2, g2, y2);
-              pubSSH = genOpenSSHDSAPub(p2, q2, g2, y2);
+              pubPEM = genOpenSSLDSAPub(p2, q2, g2, y);
+              pubSSH = genOpenSSHDSAPub(p2, q2, g2, y);
             } catch {
               return new Error(errMsg);
             }
@@ -7490,15 +7490,15 @@ ${formatted}-----END ${type} KEY-----`;
             const g2 = readString(pubBlob, pubBlob._pos);
             if (g2 === void 0)
               return new Error("Malformed PPK public key");
-            const y2 = readString(pubBlob, pubBlob._pos);
-            if (y2 === void 0)
+            const y = readString(pubBlob, pubBlob._pos);
+            if (y === void 0)
               return new Error("Malformed PPK public key");
             const x2 = readString(privBlob, 0);
             if (x2 === void 0)
               return new Error("Malformed PPK private key");
-            pubPEM = genOpenSSLDSAPub(p3, q2, g2, y2);
-            pubSSH = genOpenSSHDSAPub(p3, q2, g2, y2);
-            privPEM = genOpenSSLDSAPriv(p3, q2, g2, y2, x2);
+            pubPEM = genOpenSSLDSAPub(p3, q2, g2, y);
+            pubSSH = genOpenSSHDSAPub(p3, q2, g2, y);
+            privPEM = genOpenSSLDSAPriv(p3, q2, g2, y, x2);
             break;
           }
         }
@@ -7611,11 +7611,11 @@ ${formatted}-----END ${type} KEY-----`;
             const g2 = readString(data, data._pos);
             if (g2 === void 0)
               return new Error("Malformed RFC4716 public key");
-            const y2 = readString(data, data._pos);
-            if (y2 === void 0)
+            const y = readString(data, data._pos);
+            if (y === void 0)
               return new Error("Malformed RFC4716 public key");
-            pubPEM = genOpenSSLDSAPub(p2, q2, g2, y2);
-            pubSSH = genOpenSSHDSAPub(p2, q2, g2, y2);
+            pubPEM = genOpenSSLDSAPub(p2, q2, g2, y);
+            pubSSH = genOpenSSHDSAPub(p2, q2, g2, y);
             break;
           }
           default:
@@ -7654,11 +7654,11 @@ ${formatted}-----END ${type} KEY-----`;
           const g2 = readString(data, data._pos);
           if (g2 === void 0)
             return new Error("Malformed OpenSSH public key");
-          const y2 = readString(data, data._pos);
-          if (y2 === void 0)
+          const y = readString(data, data._pos);
+          if (y === void 0)
             return new Error("Malformed OpenSSH public key");
-          pubPEM = genOpenSSLDSAPub(p2, q2, g2, y2);
-          pubSSH = genOpenSSHDSAPub(p2, q2, g2, y2);
+          pubPEM = genOpenSSLDSAPub(p2, q2, g2, y);
+          pubSSH = genOpenSSHDSAPub(p2, q2, g2, y);
           algo = "sha1";
           break;
         }
@@ -20085,16 +20085,16 @@ var require_lib2 = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/lib/internal/streams/stream.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/stream.js
 var require_stream = __commonJS({
-  "../../../../node_modules/readable-stream/lib/internal/streams/stream.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/stream.js"(exports, module2) {
     module2.exports = require("stream");
   }
 });
 
-// ../../../../node_modules/readable-stream/lib/internal/streams/buffer_list.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/buffer_list.js
 var require_buffer_list = __commonJS({
-  "../../../../node_modules/readable-stream/lib/internal/streams/buffer_list.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/buffer_list.js"(exports, module2) {
     "use strict";
     function ownKeys(object, enumerableOnly) {
       var keys = Object.keys(object);
@@ -20348,9 +20348,9 @@ var require_buffer_list = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/lib/internal/streams/destroy.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/destroy.js
 var require_destroy = __commonJS({
-  "../../../../node_modules/readable-stream/lib/internal/streams/destroy.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/destroy.js"(exports, module2) {
     "use strict";
     function destroy(err, cb) {
       var _this = this;
@@ -20441,9 +20441,9 @@ var require_destroy = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/errors.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/errors.js
 var require_errors2 = __commonJS({
-  "../../../../node_modules/readable-stream/errors.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/errors.js"(exports, module2) {
     "use strict";
     var codes = {};
     function createErrorType(code, message, Base) {
@@ -20541,9 +20541,9 @@ var require_errors2 = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/lib/internal/streams/state.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/state.js
 var require_state = __commonJS({
-  "../../../../node_modules/readable-stream/lib/internal/streams/state.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/state.js"(exports, module2) {
     "use strict";
     var ERR_INVALID_OPT_VALUE = require_errors2().codes.ERR_INVALID_OPT_VALUE;
     function highWaterMarkFrom(options, isDuplex, duplexKey) {
@@ -20620,9 +20620,9 @@ var require_node = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/lib/_stream_writable.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/lib/_stream_writable.js
 var require_stream_writable = __commonJS({
-  "../../../../node_modules/readable-stream/lib/_stream_writable.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/lib/_stream_writable.js"(exports, module2) {
     "use strict";
     module2.exports = Writable;
     function CorkedRequest(state) {
@@ -21108,9 +21108,9 @@ var require_stream_writable = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/lib/_stream_duplex.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/lib/_stream_duplex.js
 var require_stream_duplex = __commonJS({
-  "../../../../node_modules/readable-stream/lib/_stream_duplex.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/lib/_stream_duplex.js"(exports, module2) {
     "use strict";
     var objectKeys = Object.keys || function(obj) {
       var keys2 = [];
@@ -21195,9 +21195,9 @@ var require_stream_duplex = __commonJS({
   }
 });
 
-// ../../../../node_modules/string_decoder/node_modules/safe-buffer/index.js
+// ../../../../node_modules/safe-buffer/index.js
 var require_safe_buffer = __commonJS({
-  "../../../../node_modules/string_decoder/node_modules/safe-buffer/index.js"(exports, module2) {
+  "../../../../node_modules/safe-buffer/index.js"(exports, module2) {
     var buffer = require("buffer");
     var Buffer4 = buffer.Buffer;
     function copyProps(src, dst) {
@@ -21513,9 +21513,9 @@ var require_string_decoder = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/lib/internal/streams/end-of-stream.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/end-of-stream.js
 var require_end_of_stream = __commonJS({
-  "../../../../node_modules/readable-stream/lib/internal/streams/end-of-stream.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/end-of-stream.js"(exports, module2) {
     "use strict";
     var ERR_STREAM_PREMATURE_CLOSE = require_errors2().codes.ERR_STREAM_PREMATURE_CLOSE;
     function once(callback) {
@@ -21614,9 +21614,9 @@ var require_end_of_stream = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/lib/internal/streams/async_iterator.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/async_iterator.js
 var require_async_iterator = __commonJS({
-  "../../../../node_modules/readable-stream/lib/internal/streams/async_iterator.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/async_iterator.js"(exports, module2) {
     "use strict";
     var _Object$setPrototypeO;
     function _defineProperty(obj, key, value2) {
@@ -21799,9 +21799,9 @@ var require_async_iterator = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/lib/internal/streams/from.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/from.js
 var require_from = __commonJS({
-  "../../../../node_modules/readable-stream/lib/internal/streams/from.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/from.js"(exports, module2) {
     "use strict";
     function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
       try {
@@ -21925,9 +21925,9 @@ var require_from = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/lib/_stream_readable.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/lib/_stream_readable.js
 var require_stream_readable = __commonJS({
-  "../../../../node_modules/readable-stream/lib/_stream_readable.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/lib/_stream_readable.js"(exports, module2) {
     "use strict";
     module2.exports = Readable2;
     var Duplex;
@@ -22706,9 +22706,9 @@ var require_stream_readable = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/lib/_stream_transform.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/lib/_stream_transform.js
 var require_stream_transform = __commonJS({
-  "../../../../node_modules/readable-stream/lib/_stream_transform.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/lib/_stream_transform.js"(exports, module2) {
     "use strict";
     module2.exports = Transform;
     var _require$codes = require_errors2().codes;
@@ -22814,9 +22814,9 @@ var require_stream_transform = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/lib/_stream_passthrough.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/lib/_stream_passthrough.js
 var require_stream_passthrough = __commonJS({
-  "../../../../node_modules/readable-stream/lib/_stream_passthrough.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/lib/_stream_passthrough.js"(exports, module2) {
     "use strict";
     module2.exports = PassThrough3;
     var Transform = require_stream_transform();
@@ -22832,9 +22832,9 @@ var require_stream_passthrough = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/lib/internal/streams/pipeline.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/pipeline.js
 var require_pipeline = __commonJS({
-  "../../../../node_modules/readable-stream/lib/internal/streams/pipeline.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/lib/internal/streams/pipeline.js"(exports, module2) {
     "use strict";
     var eos;
     function once(callback) {
@@ -22931,9 +22931,9 @@ var require_pipeline = __commonJS({
   }
 });
 
-// ../../../../node_modules/readable-stream/readable.js
+// ../../../../node_modules/concat-stream/node_modules/readable-stream/readable.js
 var require_readable = __commonJS({
-  "../../../../node_modules/readable-stream/readable.js"(exports, module2) {
+  "../../../../node_modules/concat-stream/node_modules/readable-stream/readable.js"(exports, module2) {
     var Stream3 = require("stream");
     if (process.env.READABLE_STREAM === "disable" && Stream3) {
       module2.exports = Stream3.Readable;
@@ -25967,14 +25967,14 @@ var require_http_errors = __commonJS({
   }
 });
 
-// ../../../../node_modules/body-parser/node_modules/ms/index.js
+// ../../../../node_modules/body-parser/node_modules/debug/node_modules/ms/index.js
 var require_ms = __commonJS({
-  "../../../../node_modules/body-parser/node_modules/ms/index.js"(exports, module2) {
+  "../../../../node_modules/body-parser/node_modules/debug/node_modules/ms/index.js"(exports, module2) {
     var s4 = 1e3;
     var m3 = s4 * 60;
     var h2 = m3 * 60;
     var d = h2 * 24;
-    var y2 = d * 365.25;
+    var y = d * 365.25;
     module2.exports = function(val, options) {
       options = options || {};
       var type = typeof val;
@@ -26006,7 +26006,7 @@ var require_ms = __commonJS({
         case "yrs":
         case "yr":
         case "y":
-          return n * y2;
+          return n * y;
         case "days":
         case "day":
         case "d":
@@ -33742,9 +33742,9 @@ var require_media_typer = __commonJS({
   }
 });
 
-// ../../../../node_modules/mime-types/node_modules/mime-db/db.json
+// ../../../../node_modules/mime-db/db.json
 var require_db = __commonJS({
-  "../../../../node_modules/mime-types/node_modules/mime-db/db.json"(exports, module2) {
+  "../../../../node_modules/mime-db/db.json"(exports, module2) {
     module2.exports = {
       "application/1d-interleaved-parityfec": {
         source: "iana"
@@ -42267,9 +42267,9 @@ var require_db = __commonJS({
   }
 });
 
-// ../../../../node_modules/mime-types/node_modules/mime-db/index.js
+// ../../../../node_modules/mime-db/index.js
 var require_mime_db = __commonJS({
-  "../../../../node_modules/mime-types/node_modules/mime-db/index.js"(exports, module2) {
+  "../../../../node_modules/mime-db/index.js"(exports, module2) {
     module2.exports = require_db();
   }
 });
@@ -42486,12 +42486,15 @@ var require_json = __commonJS({
     var JSON_SYNTAX_REGEXP = /#+/g;
     function json(options) {
       var opts = options || {};
-      var limit = typeof opts.limit !== "number" ? bytes.parse(opts.limit || "100kb") : opts.limit;
+      var limit = typeof opts.limit === "undefined" || opts.limit === null ? 102400 : bytes.parse(opts.limit);
       var inflate = opts.inflate !== false;
       var reviver = opts.reviver;
       var strict = opts.strict !== false;
       var type = opts.type || "application/json";
       var verify = opts.verify || false;
+      if (limit === null) {
+        throw new TypeError('option limit "' + String(opts.limit) + '" is invalid');
+      }
       if (verify !== false && typeof verify !== "function") {
         throw new TypeError("option verify must be function");
       }
@@ -42556,10 +42559,7 @@ var require_json = __commonJS({
       var index = str.indexOf(char);
       var partial = "";
       if (index !== -1) {
-        partial = str.substring(0, index) + JSON_SYNTAX_CHAR;
-        for (var i2 = index + 1; i2 < str.length; i2++) {
-          partial += JSON_SYNTAX_CHAR;
-        }
+        partial = str.substring(0, index) + new Array(str.length - index + 1).join(JSON_SYNTAX_CHAR);
       }
       try {
         JSON.parse(partial);
@@ -42616,9 +42616,12 @@ var require_raw = __commonJS({
     function raw2(options) {
       var opts = options || {};
       var inflate = opts.inflate !== false;
-      var limit = typeof opts.limit !== "number" ? bytes.parse(opts.limit || "100kb") : opts.limit;
+      var limit = typeof opts.limit === "undefined" || opts.limit === null ? 102400 : bytes.parse(opts.limit);
       var type = opts.type || "application/octet-stream";
       var verify = opts.verify || false;
+      if (limit === null) {
+        throw new TypeError('option limit "' + String(opts.limit) + '" is invalid');
+      }
       if (verify !== false && typeof verify !== "function") {
         throw new TypeError("option verify must be function");
       }
@@ -42674,9 +42677,12 @@ var require_text = __commonJS({
       var opts = options || {};
       var defaultCharset = opts.defaultCharset || "utf-8";
       var inflate = opts.inflate !== false;
-      var limit = typeof opts.limit !== "number" ? bytes.parse(opts.limit || "100kb") : opts.limit;
+      var limit = typeof opts.limit === "undefined" || opts.limit === null ? 102400 : bytes.parse(opts.limit);
       var type = opts.type || "text/plain";
       var verify = opts.verify || false;
+      if (limit === null) {
+        throw new TypeError('option limit "' + String(opts.limit) + '" is invalid');
+      }
       if (verify !== false && typeof verify !== "function") {
         throw new TypeError("option verify must be function");
       }
@@ -43331,9 +43337,8 @@ var require_side_channel_list = __commonJS({
           }
         },
         "delete": function(key) {
-          var root = $o && $o.next;
           var deletedNode = listDelete($o, key);
-          if (deletedNode && root && root === deletedNode) {
+          if (deletedNode && $o && !$o.next) {
             $o = void 0;
           }
           return !!deletedNode;
@@ -44298,7 +44303,8 @@ var require_side_channel = __commonJS({
       var channel = {
         assert: function(key) {
           if (!channel.has(key)) {
-            throw new $TypeError("Side channel does not contain " + inspect(key));
+            var keyDesc = key && Object(key) === key ? "the given object key" : inspect(key);
+            throw new $TypeError("Side channel does not contain " + keyDesc);
           }
         },
         "delete": function(key) {
@@ -44354,6 +44360,7 @@ var require_utils4 = __commonJS({
     "use strict";
     var formats = require_formats();
     var getSideChannel = require_side_channel();
+    var defineProperty = require_es_define_property();
     var has = Object.prototype.hasOwnProperty;
     var isArray = Array.isArray;
     var overflowChannel = getSideChannel();
@@ -44401,6 +44408,18 @@ var require_utils4 = __commonJS({
       }
       return obj;
     };
+    var setProperty = function setProperty2(obj, key, value2) {
+      if (key === "__proto__" && defineProperty) {
+        defineProperty(obj, key, {
+          configurable: true,
+          enumerable: true,
+          value: value2,
+          writable: true
+        });
+      } else {
+        obj[key] = value2;
+      }
+    };
     var merge = function merge2(target, source, options) {
       if (!source) {
         return target;
@@ -44408,7 +44427,10 @@ var require_utils4 = __commonJS({
       if (typeof source !== "object" && typeof source !== "function") {
         if (isArray(target)) {
           var nextIndex = target.length;
-          if (options && typeof options.arrayLimit === "number" && nextIndex > options.arrayLimit) {
+          if (options && typeof options.arrayLimit === "number" && nextIndex >= options.arrayLimit) {
+            if (options.throwOnLimitExceeded) {
+              throw new RangeError("Array limit exceeded. Only " + options.arrayLimit + " element" + (options.arrayLimit === 1 ? "" : "s") + " allowed in an array.");
+            }
             return markOverflow(arrayToObject(target.concat(source), options), nextIndex);
           }
           target[nextIndex] = source;
@@ -44417,6 +44439,8 @@ var require_utils4 = __commonJS({
             var newIndex = getMaxIndex(target) + 1;
             target[newIndex] = source;
             setMaxIndex(target, newIndex);
+          } else if (options && options.strictMerge) {
+            return [target, source];
           } else if (options && (options.plainObjects || options.allowPrototypes) || !has.call(Object.prototype, source)) {
             target[source] = true;
           }
@@ -44437,6 +44461,9 @@ var require_utils4 = __commonJS({
         }
         var combined = [target].concat(source);
         if (options && typeof options.arrayLimit === "number" && combined.length > options.arrayLimit) {
+          if (options.throwOnLimitExceeded) {
+            throw new RangeError("Array limit exceeded. Only " + options.arrayLimit + " element" + (options.arrayLimit === 1 ? "" : "s") + " allowed in an array.");
+          }
           return markOverflow(arrayToObject(combined, options), combined.length - 1);
         }
         return combined;
@@ -44458,14 +44485,20 @@ var require_utils4 = __commonJS({
             target[i2] = item;
           }
         });
+        if (options && typeof options.arrayLimit === "number" && target.length > options.arrayLimit) {
+          if (options.throwOnLimitExceeded) {
+            throw new RangeError("Array limit exceeded. Only " + options.arrayLimit + " element" + (options.arrayLimit === 1 ? "" : "s") + " allowed in an array.");
+          }
+          return markOverflow(arrayToObject(target, options), target.length - 1);
+        }
         return target;
       }
       return Object.keys(source).reduce(function(acc, key) {
         var value2 = source[key];
         if (has.call(acc, key)) {
-          acc[key] = merge2(acc[key], value2, options);
+          setProperty(acc, key, merge2(acc[key], value2, options));
         } else {
-          acc[key] = value2;
+          setProperty(acc, key, value2);
         }
         if (isOverflow(source) && !isOverflow(acc)) {
           markOverflow(acc, getMaxIndex(source));
@@ -44481,7 +44514,7 @@ var require_utils4 = __commonJS({
     };
     var assign = function assignSingleSource(target, source) {
       return Object.keys(source).reduce(function(acc, key) {
-        acc[key] = source[key];
+        setProperty(acc, key, source[key]);
         return acc;
       }, target);
     };
@@ -44515,6 +44548,13 @@ var require_utils4 = __commonJS({
       var out = "";
       for (var j2 = 0; j2 < string.length; j2 += limit) {
         var segment = string.length >= limit ? string.slice(j2, j2 + limit) : string;
+        if (j2 + limit < string.length) {
+          var last = segment.charCodeAt(segment.length - 1);
+          if (last >= 55296 && last <= 56319) {
+            segment = segment.slice(0, -1);
+            j2 -= 1;
+          }
+        }
         var arr = [];
         for (var i2 = 0; i2 < segment.length; ++i2) {
           var c = segment.charCodeAt(i2);
@@ -44544,7 +44584,7 @@ var require_utils4 = __commonJS({
     };
     var compact = function compact2(value2) {
       var queue = [{ obj: { o: value2 }, prop: "o" }];
-      var refs = [];
+      var refs = getSideChannel();
       for (var i2 = 0; i2 < queue.length; ++i2) {
         var item = queue[i2];
         var obj = item.obj[item.prop];
@@ -44552,9 +44592,9 @@ var require_utils4 = __commonJS({
         for (var j2 = 0; j2 < keys.length; ++j2) {
           var key = keys[j2];
           var val = obj[key];
-          if (typeof val === "object" && val !== null && refs.indexOf(val) === -1) {
+          if (typeof val === "object" && val !== null && !refs.has(val)) {
             queue[queue.length] = { obj, prop: key };
-            refs[refs.length] = val;
+            refs.set(val, true);
           }
         }
       }
@@ -44570,8 +44610,11 @@ var require_utils4 = __commonJS({
       }
       return !!(obj.constructor && obj.constructor.isBuffer && obj.constructor.isBuffer(obj));
     };
-    var combine = function combine2(a, b2, arrayLimit, plainObjects) {
+    var combine = function combine2(a, b2, arrayLimit, plainObjects, throwOnLimitExceeded) {
       if (isOverflow(a)) {
+        if (throwOnLimitExceeded) {
+          throw new RangeError("Array limit exceeded. Only " + arrayLimit + " element" + (arrayLimit === 1 ? "" : "s") + " allowed in an array.");
+        }
         var newIndex = getMaxIndex(a) + 1;
         a[newIndex] = b2;
         setMaxIndex(a, newIndex);
@@ -44579,6 +44622,9 @@ var require_utils4 = __commonJS({
       }
       var result = [].concat(a, b2);
       if (result.length > arrayLimit) {
+        if (throwOnLimitExceeded) {
+          throw new RangeError("Array limit exceeded. Only " + arrayLimit + " element" + (arrayLimit === 1 ? "" : "s") + " allowed in an array.");
+        }
         return markOverflow(arrayToObject(result, { plainObjects }), result.length - 1);
       }
       return result;
@@ -44697,7 +44743,7 @@ var require_stringify = __commonJS({
       }
       if (obj === null) {
         if (strictNullHandling) {
-          return encoder && !encodeValuesOnly ? encoder(prefix, defaults.encoder, charset, "key", format) : prefix;
+          return formatter(encoder && !encodeValuesOnly ? encoder(prefix, defaults.encoder, charset, "key", format) : prefix);
         }
         obj = "";
       }
@@ -44715,7 +44761,9 @@ var require_stringify = __commonJS({
       var objKeys;
       if (generateArrayPrefix === "comma" && isArray(obj)) {
         if (encodeValuesOnly && encoder) {
-          obj = utils.maybeMap(obj, encoder);
+          obj = utils.maybeMap(obj, function(v2) {
+            return v2 == null ? v2 : encoder(v2);
+          });
         }
         objKeys = [{ value: obj.length > 0 ? obj.join(",") || null : void 0 }];
       } else if (isArray(filter)) {
@@ -44853,6 +44901,9 @@ var require_stringify = __commonJS({
       var sideChannel = getSideChannel();
       for (var i2 = 0; i2 < objKeys.length; ++i2) {
         var key = objKeys[i2];
+        if (typeof key === "undefined" || key === null) {
+          continue;
+        }
         var value2 = obj[key];
         if (options.skipNulls && value2 === null) {
           continue;
@@ -44882,9 +44933,9 @@ var require_stringify = __commonJS({
       var prefix = options.addQueryPrefix === true ? "?" : "";
       if (options.charsetSentinel) {
         if (options.charset === "iso-8859-1") {
-          prefix += "utf8=%26%2310003%3B&";
+          prefix += "utf8=%26%2310003%3B" + options.delimiter;
         } else {
-          prefix += "utf8=%E2%9C%93&";
+          prefix += "utf8=%E2%9C%93" + options.delimiter;
         }
       }
       return joined.length > 0 ? prefix + joined : "";
@@ -44919,6 +44970,7 @@ var require_parse = __commonJS({
       parseArrays: true,
       plainObjects: false,
       strictDepth: false,
+      strictMerge: true,
       strictNullHandling: false,
       throwOnLimitExceeded: false
     };
@@ -44927,8 +44979,19 @@ var require_parse = __commonJS({
         return String.fromCharCode(parseInt(numberStr, 10));
       });
     };
-    var parseArrayValue = function(val, options, currentArrayLength) {
+    var parseArrayValue = function(val, options, currentArrayLength, isFlatArrayValue) {
       if (val && typeof val === "string" && options.comma && val.indexOf(",") > -1) {
+        if (isFlatArrayValue && options.throwOnLimitExceeded) {
+          var commaCount = 0;
+          var commaIndex = val.indexOf(",");
+          while (commaIndex > -1) {
+            commaCount += 1;
+            if (commaCount >= options.arrayLimit) {
+              throw new RangeError("Array limit exceeded. Only " + options.arrayLimit + " element" + (options.arrayLimit === 1 ? "" : "s") + " allowed in an array.");
+            }
+            commaIndex = val.indexOf(",", commaIndex + 1);
+          }
+        }
         return val.split(",");
       }
       if (options.throwOnLimitExceeded && currentArrayLength >= options.arrayLimit) {
@@ -44945,9 +45008,9 @@ var require_parse = __commonJS({
       var limit = options.parameterLimit === Infinity ? void 0 : options.parameterLimit;
       var parts = cleanStr.split(
         options.delimiter,
-        options.throwOnLimitExceeded ? limit + 1 : limit
+        options.throwOnLimitExceeded && typeof limit !== "undefined" ? limit + 1 : limit
       );
-      if (options.throwOnLimitExceeded && parts.length > limit) {
+      if (options.throwOnLimitExceeded && typeof limit !== "undefined" && parts.length > limit) {
         throw new RangeError("Parameter limit exceeded. Only " + limit + " parameter" + (limit === 1 ? "" : "s") + " allowed.");
       }
       var skipIndex = -1;
@@ -44985,7 +45048,8 @@ var require_parse = __commonJS({
               parseArrayValue(
                 part.slice(pos + 1),
                 options,
-                isArray(obj[key]) ? obj[key].length : 0
+                isArray(obj[key]) ? obj[key].length : 0,
+                part.indexOf("[]=") === -1
               ),
               function(encodedVal) {
                 return options.decoder(encodedVal, defaults.decoder, charset, "value");
@@ -45000,19 +45064,17 @@ var require_parse = __commonJS({
           val = isArray(val) ? [val] : val;
         }
         if (options.comma && isArray(val) && val.length > options.arrayLimit) {
-          if (options.throwOnLimitExceeded) {
-            throw new RangeError("Array limit exceeded. Only " + options.arrayLimit + " element" + (options.arrayLimit === 1 ? "" : "s") + " allowed in an array.");
-          }
-          val = utils.combine([], val, options.arrayLimit, options.plainObjects);
+          val = utils.combine([], val, options.arrayLimit, options.plainObjects, options.throwOnLimitExceeded);
         }
         if (key !== null) {
           var existing = has.call(obj, key);
-          if (existing && options.duplicates === "combine") {
+          if (existing && (options.duplicates === "combine" || part.indexOf("[]=") > -1)) {
             obj[key] = utils.combine(
               obj[key],
               val,
               options.arrayLimit,
-              options.plainObjects
+              options.plainObjects,
+              options.throwOnLimitExceeded
             );
           } else if (!existing || options.duplicates === "last") {
             obj[key] = val;
@@ -45039,7 +45101,8 @@ var require_parse = __commonJS({
               [],
               leaf,
               options.arrayLimit,
-              options.plainObjects
+              options.plainObjects,
+              options.throwOnLimitExceeded
             );
           }
         } else {
@@ -45066,8 +45129,8 @@ var require_parse = __commonJS({
       }
       return leaf;
     };
-    var splitKeyIntoSegments = function splitKeyIntoSegments2(givenKey, options) {
-      var key = options.allowDots ? givenKey.replace(/\.([^.[]+)/g, "[$1]") : givenKey;
+    var splitKeyIntoSegments = function splitKeyIntoSegments2(originalKey, options) {
+      var key = options.allowDots ? originalKey.replace(/\.([^.[]+)/g, "[$1]") : originalKey;
       if (options.depth <= 0) {
         if (!options.plainObjects && has.call(Object.prototype, key)) {
           if (!options.allowPrototypes) {
@@ -45076,37 +45139,56 @@ var require_parse = __commonJS({
         }
         return [key];
       }
-      var brackets = /(\[[^[\]]*])/;
-      var child = /(\[[^[\]]*])/g;
-      var segment = brackets.exec(key);
-      var parent = segment ? key.slice(0, segment.index) : key;
-      var keys = [];
+      var segments = [];
+      var first = key.indexOf("[");
+      var parent = first >= 0 ? key.slice(0, first) : key;
       if (parent) {
         if (!options.plainObjects && has.call(Object.prototype, parent)) {
           if (!options.allowPrototypes) {
             return;
           }
         }
-        keys[keys.length] = parent;
+        segments[segments.length] = parent;
       }
-      var i2 = 0;
-      while ((segment = child.exec(key)) !== null && i2 < options.depth) {
-        i2 += 1;
-        var segmentContent = segment[1].slice(1, -1);
-        if (!options.plainObjects && has.call(Object.prototype, segmentContent)) {
-          if (!options.allowPrototypes) {
-            return;
+      var n = key.length;
+      var open = first;
+      var collected = 0;
+      while (open >= 0 && collected < options.depth) {
+        var level = 1;
+        var i2 = open + 1;
+        var close = -1;
+        while (i2 < n && close < 0) {
+          var cu = key.charCodeAt(i2);
+          if (cu === 91) {
+            level += 1;
+          } else if (cu === 93) {
+            level -= 1;
+            if (level === 0) {
+              close = i2;
+            }
           }
+          i2 += 1;
         }
-        keys[keys.length] = segment[1];
+        if (close < 0) {
+          segments[segments.length] = "[" + key.slice(open) + "]";
+          return segments;
+        }
+        var seg = key.slice(open, close + 1);
+        var content = seg.slice(1, -1);
+        if (!options.plainObjects && has.call(Object.prototype, content) && !options.allowPrototypes) {
+          return;
+        }
+        segments[segments.length] = seg;
+        collected += 1;
+        open = key.indexOf("[", close + 1);
       }
-      if (segment) {
+      if (open >= 0) {
         if (options.strictDepth === true) {
           throw new RangeError("Input depth exceeded depth option of " + options.depth + " and strictDepth is true");
         }
-        keys[keys.length] = "[" + key.slice(segment.index) + "]";
+        segments[segments.length] = "[" + key.slice(open) + "]";
       }
-      return keys;
+      return segments;
     };
     var parseKeys = function parseQueryStringKeys(givenKey, val, options, valuesParsed) {
       if (!givenKey) {
@@ -45163,6 +45245,7 @@ var require_parse = __commonJS({
         parseArrays: opts.parseArrays !== false,
         plainObjects: typeof opts.plainObjects === "boolean" ? opts.plainObjects : defaults.plainObjects,
         strictDepth: typeof opts.strictDepth === "boolean" ? !!opts.strictDepth : defaults.strictDepth,
+        strictMerge: typeof opts.strictMerge === "boolean" ? !!opts.strictMerge : defaults.strictMerge,
         strictNullHandling: typeof opts.strictNullHandling === "boolean" ? opts.strictNullHandling : defaults.strictNullHandling,
         throwOnLimitExceeded: typeof opts.throwOnLimitExceeded === "boolean" ? opts.throwOnLimitExceeded : false
       };
@@ -45223,9 +45306,12 @@ var require_urlencoded = __commonJS({
       }
       var extended = opts.extended !== false;
       var inflate = opts.inflate !== false;
-      var limit = typeof opts.limit !== "number" ? bytes.parse(opts.limit || "100kb") : opts.limit;
+      var limit = typeof opts.limit === "undefined" || opts.limit === null ? 102400 : bytes.parse(opts.limit);
       var type = opts.type || "application/x-www-form-urlencoded";
       var verify = opts.verify || false;
+      if (limit === null) {
+        throw new TypeError('option limit "' + String(opts.limit) + '" is invalid');
+      }
       if (verify !== false && typeof verify !== "function") {
         throw new TypeError("option verify must be function");
       }
@@ -45321,14 +45407,14 @@ var require_urlencoded = __commonJS({
     }
     function parameterCount(body, limit) {
       var count = 0;
-      var index = 0;
-      while ((index = body.indexOf("&", index)) !== -1) {
+      var index = -1;
+      do {
         count++;
-        index++;
-        if (count === limit) {
+        if (count > limit) {
           return void 0;
         }
-      }
+        index = body.indexOf("&", index + 1);
+      } while (index !== -1);
       return count;
     }
     function parser(name2) {
@@ -45482,14 +45568,14 @@ var require_merge_descriptors = __commonJS({
   }
 });
 
-// ../../../../node_modules/finalhandler/node_modules/ms/index.js
+// ../../../../node_modules/finalhandler/node_modules/debug/node_modules/ms/index.js
 var require_ms2 = __commonJS({
-  "../../../../node_modules/finalhandler/node_modules/ms/index.js"(exports, module2) {
+  "../../../../node_modules/finalhandler/node_modules/debug/node_modules/ms/index.js"(exports, module2) {
     var s4 = 1e3;
     var m3 = s4 * 60;
     var h2 = m3 * 60;
     var d = h2 * 24;
-    var y2 = d * 365.25;
+    var y = d * 365.25;
     module2.exports = function(val, options) {
       options = options || {};
       var type = typeof val;
@@ -45521,7 +45607,7 @@ var require_ms2 = __commonJS({
         case "yrs":
         case "yr":
         case "y":
-          return n * y2;
+          return n * y;
         case "days":
         case "day":
         case "d":
@@ -46201,14 +46287,14 @@ var require_finalhandler = __commonJS({
   }
 });
 
-// ../../../../node_modules/express/node_modules/ms/index.js
+// ../../../../node_modules/express/node_modules/debug/node_modules/ms/index.js
 var require_ms3 = __commonJS({
-  "../../../../node_modules/express/node_modules/ms/index.js"(exports, module2) {
+  "../../../../node_modules/express/node_modules/debug/node_modules/ms/index.js"(exports, module2) {
     var s4 = 1e3;
     var m3 = s4 * 60;
     var h2 = m3 * 60;
     var d = h2 * 24;
-    var y2 = d * 365.25;
+    var y = d * 365.25;
     module2.exports = function(val, options) {
       options = options || {};
       var type = typeof val;
@@ -46240,7 +46326,7 @@ var require_ms3 = __commonJS({
         case "yrs":
         case "yr":
         case "y":
-          return n * y2;
+          return n * y;
         case "days":
         case "day":
         case "d":
@@ -46728,6 +46814,7 @@ var require_path_to_regexp = __commonJS({
           }
           pos = offset + match.length;
           if (match === "*") {
+            backtrack = "";
             extraOffset += 3;
             return "(.*)";
           }
@@ -46748,6 +46835,7 @@ var require_path_to_regexp = __commonJS({
             offset: offset + extraOffset
           });
           var result = "(?:" + format + slash + capture + (star ? "((?:[/" + format + "].+?)?)" : "") + ")" + optional;
+          backtrack = "";
           extraOffset += result.length - match.length;
           return result;
         }
@@ -47555,122 +47643,6 @@ var require_view = __commonJS({
   }
 });
 
-// ../../../../node_modules/express/node_modules/safe-buffer/index.js
-var require_safe_buffer2 = __commonJS({
-  "../../../../node_modules/express/node_modules/safe-buffer/index.js"(exports, module2) {
-    var buffer = require("buffer");
-    var Buffer4 = buffer.Buffer;
-    function copyProps(src, dst) {
-      for (var key in src) {
-        dst[key] = src[key];
-      }
-    }
-    if (Buffer4.from && Buffer4.alloc && Buffer4.allocUnsafe && Buffer4.allocUnsafeSlow) {
-      module2.exports = buffer;
-    } else {
-      copyProps(buffer, exports);
-      exports.Buffer = SafeBuffer;
-    }
-    function SafeBuffer(arg, encodingOrOffset, length) {
-      return Buffer4(arg, encodingOrOffset, length);
-    }
-    SafeBuffer.prototype = Object.create(Buffer4.prototype);
-    copyProps(Buffer4, SafeBuffer);
-    SafeBuffer.from = function(arg, encodingOrOffset, length) {
-      if (typeof arg === "number") {
-        throw new TypeError("Argument must not be a number");
-      }
-      return Buffer4(arg, encodingOrOffset, length);
-    };
-    SafeBuffer.alloc = function(size, fill, encoding) {
-      if (typeof size !== "number") {
-        throw new TypeError("Argument must be a number");
-      }
-      var buf = Buffer4(size);
-      if (fill !== void 0) {
-        if (typeof encoding === "string") {
-          buf.fill(fill, encoding);
-        } else {
-          buf.fill(fill);
-        }
-      } else {
-        buf.fill(0);
-      }
-      return buf;
-    };
-    SafeBuffer.allocUnsafe = function(size) {
-      if (typeof size !== "number") {
-        throw new TypeError("Argument must be a number");
-      }
-      return Buffer4(size);
-    };
-    SafeBuffer.allocUnsafeSlow = function(size) {
-      if (typeof size !== "number") {
-        throw new TypeError("Argument must be a number");
-      }
-      return buffer.SlowBuffer(size);
-    };
-  }
-});
-
-// ../../../../node_modules/content-disposition/node_modules/safe-buffer/index.js
-var require_safe_buffer3 = __commonJS({
-  "../../../../node_modules/content-disposition/node_modules/safe-buffer/index.js"(exports, module2) {
-    var buffer = require("buffer");
-    var Buffer4 = buffer.Buffer;
-    function copyProps(src, dst) {
-      for (var key in src) {
-        dst[key] = src[key];
-      }
-    }
-    if (Buffer4.from && Buffer4.alloc && Buffer4.allocUnsafe && Buffer4.allocUnsafeSlow) {
-      module2.exports = buffer;
-    } else {
-      copyProps(buffer, exports);
-      exports.Buffer = SafeBuffer;
-    }
-    function SafeBuffer(arg, encodingOrOffset, length) {
-      return Buffer4(arg, encodingOrOffset, length);
-    }
-    SafeBuffer.prototype = Object.create(Buffer4.prototype);
-    copyProps(Buffer4, SafeBuffer);
-    SafeBuffer.from = function(arg, encodingOrOffset, length) {
-      if (typeof arg === "number") {
-        throw new TypeError("Argument must not be a number");
-      }
-      return Buffer4(arg, encodingOrOffset, length);
-    };
-    SafeBuffer.alloc = function(size, fill, encoding) {
-      if (typeof size !== "number") {
-        throw new TypeError("Argument must be a number");
-      }
-      var buf = Buffer4(size);
-      if (fill !== void 0) {
-        if (typeof encoding === "string") {
-          buf.fill(fill, encoding);
-        } else {
-          buf.fill(fill);
-        }
-      } else {
-        buf.fill(0);
-      }
-      return buf;
-    };
-    SafeBuffer.allocUnsafe = function(size) {
-      if (typeof size !== "number") {
-        throw new TypeError("Argument must be a number");
-      }
-      return Buffer4(size);
-    };
-    SafeBuffer.allocUnsafeSlow = function(size) {
-      if (typeof size !== "number") {
-        throw new TypeError("Argument must be a number");
-      }
-      return buffer.SlowBuffer(size);
-    };
-  }
-});
-
 // ../../../../node_modules/content-disposition/index.js
 var require_content_disposition = __commonJS({
   "../../../../node_modules/content-disposition/index.js"(exports, module2) {
@@ -47678,7 +47650,7 @@ var require_content_disposition = __commonJS({
     module2.exports = contentDisposition;
     module2.exports.parse = parse;
     var basename = require("path").basename;
-    var Buffer4 = require_safe_buffer3().Buffer;
+    var Buffer4 = require_safe_buffer().Buffer;
     var ENCODE_URL_ATTR_CHAR_REGEXP = /[\x00-\x20"'()*,/:;<=>?@[\\\]{}\x7f]/g;
     var HEX_ESCAPE_REGEXP = /%[0-9A-Fa-f]{2}/;
     var HEX_ESCAPE_REPLACE_REGEXP = /%([0-9A-Fa-f]{2})/g;
@@ -47841,7 +47813,7 @@ var require_ms4 = __commonJS({
     var m3 = s4 * 60;
     var h2 = m3 * 60;
     var d = h2 * 24;
-    var y2 = d * 365.25;
+    var y = d * 365.25;
     module2.exports = function(val, options) {
       options = options || {};
       var type = typeof val;
@@ -47873,7 +47845,7 @@ var require_ms4 = __commonJS({
         case "yrs":
         case "yr":
         case "y":
-          return n * y2;
+          return n * y;
         case "days":
         case "day":
         case "d":
@@ -48448,7 +48420,7 @@ var require_ms5 = __commonJS({
     var h2 = m3 * 60;
     var d = h2 * 24;
     var w2 = d * 7;
-    var y2 = d * 365.25;
+    var y = d * 365.25;
     module2.exports = function(val, options) {
       options = options || {};
       var type = typeof val;
@@ -48480,7 +48452,7 @@ var require_ms5 = __commonJS({
         case "yrs":
         case "yr":
         case "y":
-          return n * y2;
+          return n * y;
         case "weeks":
         case "week":
         case "w":
@@ -50026,7 +49998,7 @@ var require_proxy_addr = __commonJS({
 var require_utils5 = __commonJS({
   "../../../../node_modules/express/lib/utils.js"(exports) {
     "use strict";
-    var Buffer4 = require_safe_buffer2().Buffer;
+    var Buffer4 = require_safe_buffer().Buffer;
     var contentDisposition = require_content_disposition();
     var contentType = require_content_type();
     var deprecate3 = require_depd()("express");
@@ -50154,7 +50126,8 @@ var require_utils5 = __commonJS({
     }
     function parseExtendedQueryString(str) {
       return qs2.parse(str, {
-        allowPrototypes: true
+        allowPrototypes: true,
+        arrayLimit: 1e3
       });
     }
     function newObject() {
@@ -51469,7 +51442,7 @@ var require_vary = __commonJS({
 var require_response = __commonJS({
   "../../../../node_modules/express/lib/response.js"(exports, module2) {
     "use strict";
-    var Buffer4 = require_safe_buffer2().Buffer;
+    var Buffer4 = require_safe_buffer().Buffer;
     var contentDisposition = require_content_disposition();
     var createError = require_http_errors();
     var deprecate3 = require_depd()("express");
@@ -56657,7 +56630,7 @@ var init_from = __esm({
   }
 });
 
-// ../../../../node_modules/node-fetch/src/utils/multipart-parser.js
+// node_modules/node-fetch/src/utils/multipart-parser.js
 var multipart_parser_exports = {};
 __export(multipart_parser_exports, {
   toFormData: () => toFormData
@@ -56751,7 +56724,7 @@ async function toFormData(Body2, ct2) {
 }
 var s, S, f2, F, LF, CR, SPACE, HYPHEN, COLON, A, Z, lower, noop, MultipartParser;
 var init_multipart_parser = __esm({
-  "../../../../node_modules/node-fetch/src/utils/multipart-parser.js"() {
+  "node_modules/node-fetch/src/utils/multipart-parser.js"() {
     init_from();
     init_esm_min();
     s = 0;
@@ -57018,7 +56991,7 @@ var import_promises4 = require("stream/promises");
 var import_ssh2_sftp_client = __toESM(require_src(), 1);
 var import_express = __toESM(require_express2(), 1);
 
-// ../../../../node_modules/node-fetch/src/index.js
+// node_modules/node-fetch/src/index.js
 var import_node_http2 = __toESM(require("node:http"), 1);
 var import_node_https = __toESM(require("node:https"), 1);
 var import_node_zlib = __toESM(require("node:zlib"), 1);
@@ -57064,14 +57037,14 @@ function dataUriToBuffer(uri) {
 }
 var dist_default = dataUriToBuffer;
 
-// ../../../../node_modules/node-fetch/src/body.js
+// node_modules/node-fetch/src/body.js
 var import_node_stream = __toESM(require("node:stream"), 1);
 var import_node_util = require("node:util");
 var import_node_buffer = require("node:buffer");
 init_fetch_blob();
 init_esm_min();
 
-// ../../../../node_modules/node-fetch/src/errors/base.js
+// node_modules/node-fetch/src/errors/base.js
 var FetchBaseError = class extends Error {
   constructor(message, type) {
     super(message);
@@ -57086,7 +57059,7 @@ var FetchBaseError = class extends Error {
   }
 };
 
-// ../../../../node_modules/node-fetch/src/errors/fetch-error.js
+// node_modules/node-fetch/src/errors/fetch-error.js
 var FetchError = class extends FetchBaseError {
   constructor(message, type, systemError) {
     super(message, type);
@@ -57097,7 +57070,7 @@ var FetchError = class extends FetchBaseError {
   }
 };
 
-// ../../../../node_modules/node-fetch/src/utils/is.js
+// node_modules/node-fetch/src/utils/is.js
 var NAME = Symbol.toStringTag;
 var isURLSearchParameters = (object) => {
   return typeof object === "object" && typeof object.append === "function" && typeof object.delete === "function" && typeof object.get === "function" && typeof object.getAll === "function" && typeof object.has === "function" && typeof object.set === "function" && typeof object.sort === "function" && object[NAME] === "URLSearchParams";
@@ -57119,7 +57092,7 @@ var isSameProtocol = (destination, original) => {
   return orig === dest;
 };
 
-// ../../../../node_modules/node-fetch/src/body.js
+// node_modules/node-fetch/src/body.js
 var pipeline = (0, import_node_util.promisify)(import_node_stream.default.pipeline);
 var INTERNALS = Symbol("Body internals");
 var Body = class {
@@ -57339,7 +57312,7 @@ var writeToStream = async (dest, { body }) => {
   }
 };
 
-// ../../../../node_modules/node-fetch/src/headers.js
+// node_modules/node-fetch/src/headers.js
 var import_node_util2 = require("node:util");
 var import_node_http = __toESM(require("node:http"), 1);
 var validateHeaderName = typeof import_node_http.default.validateHeaderName === "function" ? import_node_http.default.validateHeaderName : (name2) => {
@@ -57508,13 +57481,13 @@ function fromRawHeaders(headers = []) {
   );
 }
 
-// ../../../../node_modules/node-fetch/src/utils/is-redirect.js
+// node_modules/node-fetch/src/utils/is-redirect.js
 var redirectStatus = /* @__PURE__ */ new Set([301, 302, 303, 307, 308]);
 var isRedirect = (code) => {
   return redirectStatus.has(code);
 };
 
-// ../../../../node_modules/node-fetch/src/response.js
+// node_modules/node-fetch/src/response.js
 var INTERNALS2 = Symbol("Response internals");
 var Response = class extends Body {
   constructor(body = null, options = {}) {
@@ -57619,11 +57592,11 @@ Object.defineProperties(Response.prototype, {
   clone: { enumerable: true }
 });
 
-// ../../../../node_modules/node-fetch/src/request.js
+// node_modules/node-fetch/src/request.js
 var import_node_url = require("node:url");
 var import_node_util3 = require("node:util");
 
-// ../../../../node_modules/node-fetch/src/utils/get-search.js
+// node_modules/node-fetch/src/utils/get-search.js
 var getSearch = (parsedURL) => {
   if (parsedURL.search) {
     return parsedURL.search;
@@ -57633,7 +57606,7 @@ var getSearch = (parsedURL) => {
   return parsedURL.href[lastOffset - hash.length] === "?" ? "?" : "";
 };
 
-// ../../../../node_modules/node-fetch/src/utils/referrer.js
+// node_modules/node-fetch/src/utils/referrer.js
 var import_node_net = require("node:net");
 function stripURLForUseAsAReferrer(url, originOnly = false) {
   if (url == null) {
@@ -57773,7 +57746,7 @@ function parseReferrerPolicyFromHeader(headers) {
   return policy;
 }
 
-// ../../../../node_modules/node-fetch/src/request.js
+// node_modules/node-fetch/src/request.js
 var INTERNALS3 = Symbol("Request internals");
 var isRequest = (object) => {
   return typeof object === "object" && typeof object[INTERNALS3] === "object";
@@ -57953,14 +57926,14 @@ var getNodeRequestOptions = (request) => {
   };
 };
 
-// ../../../../node_modules/node-fetch/src/errors/abort-error.js
+// node_modules/node-fetch/src/errors/abort-error.js
 var AbortError = class extends FetchBaseError {
   constructor(message, type = "aborted") {
     super(message, type);
   }
 };
 
-// ../../../../node_modules/node-fetch/src/index.js
+// node_modules/node-fetch/src/index.js
 init_esm_min();
 init_from();
 var supportedSchemas = /* @__PURE__ */ new Set(["data:", "http:", "https:"]);
@@ -58226,7 +58199,7 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
   });
 }
 
-// node_modules/yocto-queue/index.js
+// node_modules/p-limit/node_modules/yocto-queue/index.js
 var Node = class {
   value;
   next;
@@ -58429,7 +58402,7 @@ var _ = Symbol("bufferLength");
 var bi = Symbol("bufferPush");
 var Ie = Symbol("bufferShift");
 var L = Symbol("objectMode");
-var w = Symbol("destroyed");
+var S2 = Symbol("destroyed");
 var _i = Symbol("error");
 var Oi = Symbol("emitData");
 var Is = Symbol("emitEnd");
@@ -58487,7 +58460,7 @@ var A2 = class extends import_node_events.EventEmitter {
   [Ne] = false;
   [qt] = null;
   [_] = 0;
-  [w] = false;
+  [S2] = false;
   [Jt];
   [Ce] = false;
   [Rt] = 0;
@@ -58539,7 +58512,7 @@ var A2 = class extends import_node_events.EventEmitter {
       return false;
     if (this[Q])
       throw new Error("write after end");
-    if (this[w])
+    if (this[S2])
       return this.emit("error", Object.assign(new Error("Cannot call write after a stream was destroyed"), { code: "ERR_STREAM_DESTROYED" })), true;
     typeof e3 == "function" && (i2 = e3, e3 = "utf8"), e3 || (e3 = "utf8");
     let r2 = this[Z2] ? jt : Yr;
@@ -58554,7 +58527,7 @@ var A2 = class extends import_node_events.EventEmitter {
     return this[L] ? (this[g] && this[_] !== 0 && this[Ae](true), this[g] ? this.emit("data", t3) : this[bi](t3), this[_] !== 0 && this.emit("readable"), i2 && r2(i2), this[g]) : t3.length ? (typeof t3 == "string" && !(e3 === this[z] && !this[Mt]?.lastNeed) && (t3 = Buffer.from(t3, e3)), Buffer.isBuffer(t3) && this[z] && (t3 = this[Mt].write(t3)), this[g] && this[_] !== 0 && this[Ae](true), this[g] ? this.emit("data", t3) : this[bi](t3), this[_] !== 0 && this.emit("readable"), i2 && r2(i2), this[g]) : (this[_] !== 0 && this.emit("readable"), i2 && r2(i2), this[g]);
   }
   read(t3) {
-    if (this[w])
+    if (this[S2])
       return null;
     if (this[C] = false, this[_] === 0 || t3 === 0 || t3 && t3 > this[_])
       return this[J](), null;
@@ -58575,7 +58548,7 @@ var A2 = class extends import_node_events.EventEmitter {
     return typeof t3 == "function" && (i2 = t3, t3 = void 0), typeof e3 == "function" && (i2 = e3, e3 = "utf8"), t3 !== void 0 && this.write(t3, e3), i2 && this.once("end", i2), this[Q] = true, this.writable = false, (this[g] || !this[Qt]) && this[J](), this;
   }
   [Bt]() {
-    this[w] || (!this[Rt] && !this[N].length && (this[C] = true), this[Qt] = false, this[g] = true, this.emit("resume"), this[b].length ? this[Ae]() : this[Q] ? this[J]() : this.emit("drain"));
+    this[S2] || (!this[Rt] && !this[N].length && (this[C] = true), this[Qt] = false, this[g] = true, this.emit("resume"), this[b].length ? this[Ae]() : this[Q] ? this[J]() : this.emit("drain"));
   }
   resume() {
     return this[Bt]();
@@ -58584,7 +58557,7 @@ var A2 = class extends import_node_events.EventEmitter {
     this[g] = false, this[Qt] = true, this[C] = false;
   }
   get destroyed() {
-    return this[w];
+    return this[S2];
   }
   get flowing() {
     return this[g];
@@ -58608,7 +58581,7 @@ var A2 = class extends import_node_events.EventEmitter {
     return this.emit("data", t3), this[g];
   }
   pipe(t3, e3) {
-    if (this[w])
+    if (this[S2])
       return t3;
     this[C] = false;
     let i2 = this[nt];
@@ -58650,18 +58623,18 @@ var A2 = class extends import_node_events.EventEmitter {
     return this[nt];
   }
   [J]() {
-    !this[De] && !this[nt] && !this[w] && this[b].length === 0 && this[Q] && (this[De] = true, this.emit("end"), this.emit("prefinish"), this.emit("finish"), this[Ne] && this.emit("close"), this[De] = false);
+    !this[De] && !this[nt] && !this[S2] && this[b].length === 0 && this[Q] && (this[De] = true, this.emit("end"), this.emit("prefinish"), this.emit("finish"), this[Ne] && this.emit("close"), this[De] = false);
   }
   emit(t3, ...e3) {
     let i2 = e3[0];
-    if (t3 !== "error" && t3 !== "close" && t3 !== w && this[w])
+    if (t3 !== "error" && t3 !== "close" && t3 !== S2 && this[S2])
       return false;
     if (t3 === "data")
       return !this[L] && !i2 ? false : this[Z2] ? (jt(() => this[Oi](i2)), true) : this[Oi](i2);
     if (t3 === "end")
       return this[Is]();
     if (t3 === "close") {
-      if (this[Ne] = true, !this[nt] && !this[w])
+      if (this[Ne] = true, !this[nt] && !this[S2])
         return false;
       let n = super.emit("close");
       return this.removeAllListeners("close"), n;
@@ -58718,7 +58691,7 @@ var A2 = class extends import_node_events.EventEmitter {
   }
   async promise() {
     return new Promise((t3, e3) => {
-      this.on(w, () => e3(new Error("stream destroyed"))), this.on("error", (i2) => e3(i2)), this.on("end", () => t3());
+      this.on(S2, () => e3(new Error("stream destroyed"))), this.on("error", (i2) => e3(i2)), this.on("end", () => t3());
     });
   }
   [Symbol.asyncIterator]() {
@@ -58733,14 +58706,14 @@ var A2 = class extends import_node_events.EventEmitter {
       if (this[Q])
         return e3();
       let n, o, h2 = (d) => {
-        this.off("data", a), this.off("end", l), this.off(w, c), e3(), o(d);
+        this.off("data", a), this.off("end", l), this.off(S2, c), e3(), o(d);
       }, a = (d) => {
-        this.off("error", h2), this.off("end", l), this.off(w, c), this.pause(), n({ value: d, done: !!this[Q] });
+        this.off("error", h2), this.off("end", l), this.off(S2, c), this.pause(), n({ value: d, done: !!this[Q] });
       }, l = () => {
-        this.off("error", h2), this.off("data", a), this.off(w, c), e3(), n({ done: true, value: void 0 });
+        this.off("error", h2), this.off("data", a), this.off(S2, c), e3(), n({ done: true, value: void 0 });
       }, c = () => h2(new Error("stream destroyed"));
-      return new Promise((d, S2) => {
-        o = S2, n = d, this.once(w, c), this.once("error", h2), this.once("end", l), this.once("data", a);
+      return new Promise((d, y) => {
+        o = y, n = d, this.once(S2, c), this.once("error", h2), this.once("end", l), this.once("data", a);
       });
     }, throw: e3, return: e3, [Symbol.asyncIterator]() {
       return this;
@@ -58749,23 +58722,23 @@ var A2 = class extends import_node_events.EventEmitter {
   }
   [Symbol.iterator]() {
     this[C] = false;
-    let t3 = false, e3 = () => (this.pause(), this.off(_i, e3), this.off(w, e3), this.off("end", e3), t3 = true, { done: true, value: void 0 }), i2 = () => {
+    let t3 = false, e3 = () => (this.pause(), this.off(_i, e3), this.off(S2, e3), this.off("end", e3), t3 = true, { done: true, value: void 0 }), i2 = () => {
       if (t3)
         return e3();
       let r2 = this.read();
       return r2 === null ? e3() : { done: false, value: r2 };
     };
-    return this.once("end", e3), this.once(_i, e3), this.once(w, e3), { next: i2, throw: e3, return: e3, [Symbol.iterator]() {
+    return this.once("end", e3), this.once(_i, e3), this.once(S2, e3), { next: i2, throw: e3, return: e3, [Symbol.iterator]() {
       return this;
     }, [Symbol.dispose]: () => {
     } };
   }
   destroy(t3) {
-    if (this[w])
-      return t3 ? this.emit("error", t3) : this.emit(w), this;
-    this[w] = true, this[C] = true, this[b].length = 0, this[_] = 0;
+    if (this[S2])
+      return t3 ? this.emit("error", t3) : this.emit(S2), this;
+    this[S2] = true, this[C] = true, this[b].length = 0, this[_] = 0;
     let e3 = this;
-    return typeof e3.close == "function" && !this[Ne] && e3.close(), t3 ? this.emit("error", t3) : this.emit(w), this;
+    return typeof e3.close == "function" && !this[Ne] && e3.close(), t3 ? this.emit("error", t3) : this.emit(S2), this;
   }
   static get isStream() {
     return Wr;
@@ -58775,7 +58748,7 @@ var Jr = import_fs.default.writev;
 var ht = Symbol("_autoClose");
 var H = Symbol("_close");
 var te = Symbol("_ended");
-var u = Symbol("_fd");
+var m2 = Symbol("_fd");
 var Ni = Symbol("_finished");
 var tt = Symbol("_flags");
 var Ai = Symbol("_flush");
@@ -58802,7 +58775,7 @@ var Me = Symbol("_defaultFlag");
 var bt = Symbol("_errored");
 var _t = class extends A2 {
   [bt] = false;
-  [u];
+  [m2];
   [U];
   [Ci];
   [j] = false;
@@ -58812,10 +58785,10 @@ var _t = class extends A2 {
   constructor(t3, e3) {
     if (e3 = e3 || {}, super(e3), this.readable = true, this.writable = false, typeof t3 != "string")
       throw new TypeError("path must be a string");
-    this[bt] = false, this[u] = typeof e3.fd == "number" ? e3.fd : void 0, this[U] = t3, this[Ci] = e3.readSize || 16 * 1024 * 1024, this[j] = false, this[Fi] = typeof e3.size == "number" ? e3.size : 1 / 0, this[ee] = this[Fi], this[ht] = typeof e3.autoClose == "boolean" ? e3.autoClose : true, typeof this[u] == "number" ? this[zt]() : this[at]();
+    this[bt] = false, this[m2] = typeof e3.fd == "number" ? e3.fd : void 0, this[U] = t3, this[Ci] = e3.readSize || 16 * 1024 * 1024, this[j] = false, this[Fi] = typeof e3.size == "number" ? e3.size : 1 / 0, this[ee] = this[Fi], this[ht] = typeof e3.autoClose == "boolean" ? e3.autoClose : true, typeof this[m2] == "number" ? this[zt]() : this[at]();
   }
   get fd() {
-    return this[u];
+    return this[m2];
   }
   get path() {
     return this[U];
@@ -58830,7 +58803,7 @@ var _t = class extends A2 {
     import_fs.default.open(this[U], "r", (t3, e3) => this[Ht](t3, e3));
   }
   [Ht](t3, e3) {
-    t3 ? this[Ut](t3) : (this[u] = e3, this.emit("open", e3), this[zt]());
+    t3 ? this[Ut](t3) : (this[m2] = e3, this.emit("open", e3), this[zt]());
   }
   [vi]() {
     return Buffer.allocUnsafe(Math.min(this[Ci], this[ee]));
@@ -58841,16 +58814,16 @@ var _t = class extends A2 {
       let t3 = this[vi]();
       if (t3.length === 0)
         return process.nextTick(() => this[Ii](null, 0, t3));
-      import_fs.default.read(this[u], t3, 0, t3.length, null, (e3, i2, r2) => this[Ii](e3, i2, r2));
+      import_fs.default.read(this[m2], t3, 0, t3.length, null, (e3, i2, r2) => this[Ii](e3, i2, r2));
     }
   }
   [Ii](t3, e3, i2) {
     this[j] = false, t3 ? this[Ut](t3) : this[ki](e3, i2) && this[zt]();
   }
   [H]() {
-    if (this[ht] && typeof this[u] == "number") {
-      let t3 = this[u];
-      this[u] = void 0, import_fs.default.close(t3, (e3) => e3 ? this.emit("error", e3) : this.emit("close"));
+    if (this[ht] && typeof this[m2] == "number") {
+      let t3 = this[m2];
+      this[m2] = void 0, import_fs.default.close(t3, (e3) => e3 ? this.emit("error", e3) : this.emit("close"));
     }
   }
   [Ut](t3) {
@@ -58866,7 +58839,7 @@ var _t = class extends A2 {
       case "finish":
         return false;
       case "drain":
-        return typeof this[u] == "number" && this[zt](), false;
+        return typeof this[m2] == "number" && this[zt](), false;
       case "error":
         return this[bt] ? false : (this[bt] = true, super.emit(t3, ...e3));
       default:
@@ -58889,7 +58862,7 @@ var Be = class extends _t {
       if (!this[j]) {
         this[j] = true;
         do {
-          let e3 = this[vi](), i2 = e3.length === 0 ? 0 : import_fs.default.readSync(this[u], e3, 0, e3.length, null);
+          let e3 = this[vi](), i2 = e3.length === 0 ? 0 : import_fs.default.readSync(this[m2], e3, 0, e3.length, null);
           if (!this[ki](i2, e3))
             break;
         } while (true);
@@ -58901,9 +58874,9 @@ var Be = class extends _t {
     }
   }
   [H]() {
-    if (this[ht] && typeof this[u] == "number") {
-      let t3 = this[u];
-      this[u] = void 0, import_fs.default.closeSync(t3), this.emit("close");
+    if (this[ht] && typeof this[m2] == "number") {
+      let t3 = this[m2];
+      this[m2] = void 0, import_fs.default.closeSync(t3), this.emit("close");
     }
   }
 };
@@ -58918,15 +58891,15 @@ var et = class extends import_events.default {
   [U];
   [ie];
   [ht];
-  [u];
+  [m2];
   [Me];
   [tt];
   [Ni] = false;
   [ot];
   constructor(t3, e3) {
-    e3 = e3 || {}, super(e3), this[U] = t3, this[u] = typeof e3.fd == "number" ? e3.fd : void 0, this[ie] = e3.mode === void 0 ? 438 : e3.mode, this[ot] = typeof e3.start == "number" ? e3.start : void 0, this[ht] = typeof e3.autoClose == "boolean" ? e3.autoClose : true;
+    e3 = e3 || {}, super(e3), this[U] = t3, this[m2] = typeof e3.fd == "number" ? e3.fd : void 0, this[ie] = e3.mode === void 0 ? 438 : e3.mode, this[ot] = typeof e3.start == "number" ? e3.start : void 0, this[ht] = typeof e3.autoClose == "boolean" ? e3.autoClose : true;
     let i2 = this[ot] !== void 0 ? "r+" : "w";
-    this[Me] = e3.flags === void 0, this[tt] = e3.flags === void 0 ? i2 : e3.flags, this[u] === void 0 && this[at]();
+    this[Me] = e3.flags === void 0, this[tt] = e3.flags === void 0 ? i2 : e3.flags, this[m2] === void 0 && this[at]();
   }
   emit(t3, ...e3) {
     if (t3 === "error") {
@@ -58937,7 +58910,7 @@ var et = class extends import_events.default {
     return super.emit(t3, ...e3);
   }
   get fd() {
-    return this[u];
+    return this[m2];
   }
   get path() {
     return this[U];
@@ -58949,16 +58922,16 @@ var et = class extends import_events.default {
     import_fs.default.open(this[U], this[tt], this[ie], (t3, e3) => this[Ht](t3, e3));
   }
   [Ht](t3, e3) {
-    this[Me] && this[tt] === "r+" && t3 && t3.code === "ENOENT" ? (this[tt] = "w", this[at]()) : t3 ? this[Ut](t3) : (this[u] = e3, this.emit("open", e3), this[gt] || this[Ai]());
+    this[Me] && this[tt] === "r+" && t3 && t3.code === "ENOENT" ? (this[tt] = "w", this[at]()) : t3 ? this[Ut](t3) : (this[m2] = e3, this.emit("open", e3), this[gt] || this[Ai]());
   }
   end(t3, e3) {
-    return t3 && this.write(t3, e3), this[te] = true, !this[gt] && !this[Y].length && typeof this[u] == "number" && this[Pt](null, 0), this;
+    return t3 && this.write(t3, e3), this[te] = true, !this[gt] && !this[Y].length && typeof this[m2] == "number" && this[Pt](null, 0), this;
   }
   write(t3, e3) {
-    return typeof t3 == "string" && (t3 = Buffer.from(t3, e3)), this[te] ? (this.emit("error", new Error("write() after end()")), false) : this[u] === void 0 || this[gt] || this[Y].length ? (this[Y].push(t3), this[ke] = true, false) : (this[gt] = true, this[ve](t3), true);
+    return typeof t3 == "string" && (t3 = Buffer.from(t3, e3)), this[te] ? (this.emit("error", new Error("write() after end()")), false) : this[m2] === void 0 || this[gt] || this[Y].length ? (this[Y].push(t3), this[ke] = true, false) : (this[gt] = true, this[ve](t3), true);
   }
   [ve](t3) {
-    import_fs.default.write(this[u], t3, 0, t3.length, this[ot], (e3, i2) => this[Pt](e3, i2));
+    import_fs.default.write(this[m2], t3, 0, t3.length, this[ot], (e3, i2) => this[Pt](e3, i2));
   }
   [Pt](t3, e3) {
     t3 ? this[Ut](t3) : (this[ot] !== void 0 && typeof e3 == "number" && (this[ot] += e3), this[Y].length ? this[Ai]() : (this[gt] = false, this[te] && !this[Ni] ? (this[Ni] = true, this[H](), this.emit("finish")) : this[ke] && (this[ke] = false, this.emit("drain"))));
@@ -58970,13 +58943,13 @@ var et = class extends import_events.default {
       this[ve](this[Y].pop());
     else {
       let t3 = this[Y];
-      this[Y] = [], Jr(this[u], t3, this[ot], (e3, i2) => this[Pt](e3, i2));
+      this[Y] = [], Jr(this[m2], t3, this[ot], (e3, i2) => this[Pt](e3, i2));
     }
   }
   [H]() {
-    if (this[ht] && typeof this[u] == "number") {
-      let t3 = this[u];
-      this[u] = void 0, import_fs.default.close(t3, (e3) => e3 ? this.emit("error", e3) : this.emit("close"));
+    if (this[ht] && typeof this[m2] == "number") {
+      let t3 = this[m2];
+      this[m2] = void 0, import_fs.default.close(t3, (e3) => e3 ? this.emit("error", e3) : this.emit("close"));
     }
   }
 };
@@ -58996,15 +58969,15 @@ var Wt = class extends et {
     this[Ht](null, t3);
   }
   [H]() {
-    if (this[ht] && typeof this[u] == "number") {
-      let t3 = this[u];
-      this[u] = void 0, import_fs.default.closeSync(t3), this.emit("close");
+    if (this[ht] && typeof this[m2] == "number") {
+      let t3 = this[m2];
+      this[m2] = void 0, import_fs.default.closeSync(t3), this.emit("close");
     }
   }
   [ve](t3) {
     let e3 = true;
     try {
-      this[Pt](null, import_fs.default.writeSync(this[u], t3, 0, t3.length, this[ot])), e3 = false;
+      this[Pt](null, import_fs.default.writeSync(this[m2], t3, 0, t3.length, this[ot])), e3 = false;
     } finally {
       if (e3)
         try {
@@ -59282,7 +59255,7 @@ var dn = (s4) => Ve.has(s4);
 var Ui = /* @__PURE__ */ new Set(["0", "", "1", "2", "3", "4", "5", "6", "7", "D"]);
 var oe = /* @__PURE__ */ new Map([["0", "File"], ["", "OldFile"], ["1", "Link"], ["2", "SymbolicLink"], ["3", "CharacterDevice"], ["4", "BlockDevice"], ["5", "Directory"], ["6", "FIFO"], ["7", "ContiguousFile"], ["g", "GlobalExtendedHeader"], ["x", "ExtendedHeader"], ["A", "SolarisACL"], ["D", "GNUDumpDir"], ["I", "Inode"], ["K", "NextFileHasLongLinkpath"], ["L", "NextFileHasLongPath"], ["M", "ContinuationFile"], ["N", "OldGnuLongPath"], ["S", "SparseFile"], ["V", "TapeVolumeHeader"], ["X", "OldExtendedHeader"]]);
 var Ve = new Map(Array.from(oe).map((s4) => [s4[1], s4[0]]));
-var mn = (s4) => s4 === void 0 || s4 < 0 ? void 0 : s4;
+var un = (s4) => s4 === void 0 || s4 < 0 ? void 0 : s4;
 var F2 = class {
   cksumValid = false;
   needPax = false;
@@ -59312,7 +59285,7 @@ var F2 = class {
     if (e3 || (e3 = 0), !t3 || !(t3.length >= e3 + 512))
       throw new Error("need 512 bytes for header");
     let n = xt(t3, e3 + 156, 1), o = Ui.has(n), h2 = o ? i2 : void 0, a = o ? r2 : void 0;
-    if (this.path = h2?.path ?? xt(t3, e3, 100), this.mode = h2?.mode ?? a?.mode ?? lt(t3, e3 + 100, 8), this.uid = h2?.uid ?? a?.uid ?? lt(t3, e3 + 108, 8), this.gid = h2?.gid ?? a?.gid ?? lt(t3, e3 + 116, 8), this.size = mn(h2?.size ?? a?.size ?? lt(t3, e3 + 124, 12)), this.mtime = h2?.mtime ?? a?.mtime ?? Wi(t3, e3 + 136, 12), this.cksum = lt(t3, e3 + 148, 12), a && this.#i(a, true), h2 && this.#i(h2), ne(n) && (this.#t = n || "0"), this.#t === "0" && this.path.slice(-1) === "/" && (this.#t = "5"), this.#t === "5" && (this.size = 0), this.linkpath = xt(t3, e3 + 157, 100), t3.subarray(e3 + 257, e3 + 265).toString() === "ustar\x0000")
+    if (this.path = h2?.path ?? xt(t3, e3, 100), this.mode = h2?.mode ?? a?.mode ?? lt(t3, e3 + 100, 8), this.uid = h2?.uid ?? a?.uid ?? lt(t3, e3 + 108, 8), this.gid = h2?.gid ?? a?.gid ?? lt(t3, e3 + 116, 8), this.size = un(h2?.size ?? a?.size ?? lt(t3, e3 + 124, 12)), this.mtime = h2?.mtime ?? a?.mtime ?? Wi(t3, e3 + 136, 12), this.cksum = lt(t3, e3 + 148, 12), a && this.#i(a, true), h2 && this.#i(h2), ne(n) && (this.#t = n || "0"), this.#t === "0" && this.path.slice(-1) === "/" && (this.#t = "5"), this.#t === "5" && (this.size = 0), this.linkpath = xt(t3, e3 + 157, 100), t3.subarray(e3 + 257, e3 + 265).toString() === "ustar\x0000")
       if (this.uname = h2?.uname ?? a?.uname ?? xt(t3, e3 + 265, 32), this.gname = h2?.gname ?? a?.gname ?? xt(t3, e3 + 297, 32), this.devmaj = h2?.devmaj ?? a?.devmaj ?? lt(t3, e3 + 329, 8) ?? 0, this.devmin = h2?.devmin ?? a?.devmin ?? lt(t3, e3 + 337, 8) ?? 0, t3[e3 + 475] !== 0) {
         let c = xt(t3, e3 + 345, 155);
         this.path = c + "/" + this.path;
@@ -59333,7 +59306,7 @@ var F2 = class {
   encode(t3, e3 = 0) {
     if (t3 || (t3 = this.block = Buffer.alloc(512)), this.#t === "Unsupported" && (this.#t = "0"), !(t3.length >= e3 + 512))
       throw new Error("need 512 bytes for header");
-    let i2 = this.ctime || this.atime ? 130 : 155, r2 = un(this.path || "", i2), n = r2[0], o = r2[1];
+    let i2 = this.ctime || this.atime ? 130 : 155, r2 = mn(this.path || "", i2), n = r2[0], o = r2[1];
     this.needPax = !!r2[2], this.needPax = Lt(t3, e3, 100, n) || this.needPax, this.needPax = ct(t3, e3 + 100, 8, this.mode) || this.needPax, this.needPax = ct(t3, e3 + 108, 8, this.uid) || this.needPax, this.needPax = ct(t3, e3 + 116, 8, this.gid) || this.needPax, this.needPax = ct(t3, e3 + 124, 12, this.size) || this.needPax, this.needPax = Gi(t3, e3 + 136, 12, this.mtime) || this.needPax, t3[e3 + 156] = Number(this.#t.codePointAt(0)), this.needPax = Lt(t3, e3 + 157, 100, this.linkpath) || this.needPax, t3.write("ustar\x0000", e3 + 257, 8), this.needPax = Lt(t3, e3 + 265, 32, this.uname) || this.needPax, this.needPax = Lt(t3, e3 + 297, 32, this.gname) || this.needPax, this.needPax = ct(t3, e3 + 329, 8, this.devmaj) || this.needPax, this.needPax = ct(t3, e3 + 337, 8, this.devmin) || this.needPax, this.needPax = Lt(t3, e3 + 345, i2, o) || this.needPax, t3[e3 + 475] !== 0 ? this.needPax = Lt(t3, e3 + 345, 155, o) || this.needPax : (this.needPax = Lt(t3, e3 + 345, 130, o) || this.needPax, this.needPax = Gi(t3, e3 + 476, 12, this.atime) || this.needPax, this.needPax = Gi(t3, e3 + 488, 12, this.ctime) || this.needPax);
     let h2 = 256;
     for (let a = e3; a < e3 + 148; a++)
@@ -59358,7 +59331,7 @@ var F2 = class {
       throw new TypeError("invalid entry type: " + t3);
   }
 };
-var un = (s4, t3) => {
+var mn = (s4, t3) => {
   let i2 = s4, r2 = "", n, o = import_node_path2.posix.parse(s4).root || ".";
   if (Buffer.byteLength(i2) < 100)
     n = [i2, r2, false];
@@ -59560,10 +59533,10 @@ var dt = Symbol("meta");
 var Ys = Symbol("emitMeta");
 var p = Symbol("buffer");
 var st = Symbol("queue");
-var mt = Symbol("ended");
+var ut = Symbol("ended");
 var Yi = Symbol("emittedEnd");
 var At = Symbol("emit");
-var y = Symbol("unzip");
+var w = Symbol("unzip");
 var Xe = Symbol("consumeChunk");
 var qe = Symbol("consumeChunkSub");
 var Ki = Symbol("consumeBody");
@@ -59602,8 +59575,8 @@ var rt = class extends import_events2.EventEmitter {
   [dt] = "";
   [V];
   [he];
-  [mt] = false;
-  [y];
+  [ut] = false;
+  [w];
   [$] = false;
   [It];
   [je] = false;
@@ -59723,7 +59696,13 @@ var rt = class extends import_events2.EventEmitter {
     }
   }
   abort(t3) {
-    this[$] || (this[$] = true, this.emit("abort", t3), this.warn("TAR_ABORT", t3, { recoverable: false }));
+    if (!this[$]) {
+      if (this[w]) {
+        let e3 = this[w];
+        e3.write = () => true, e3.end = () => e3, e3.emit = () => false, e3.destroy?.();
+      }
+      this[$] = true, this.emit("abort", t3), this.warn("TAR_ABORT", t3, { recoverable: false });
+    }
   }
   [Xs](t3) {
     this[$i] += t3.length;
@@ -59733,13 +59712,13 @@ var rt = class extends import_events2.EventEmitter {
   write(t3, e3, i2) {
     if (typeof e3 == "function" && (i2 = e3, e3 = void 0), typeof t3 == "string" && (t3 = Buffer.from(t3, typeof e3 == "string" ? e3 : "utf8")), this[$])
       return i2?.(), false;
-    if ((this[y] === void 0 || this.brotli === void 0 && this[y] === false) && t3) {
+    if ((this[w] === void 0 || this.brotli === void 0 && this[w] === false) && t3) {
       if (this[p] && (t3 = Buffer.concat([this[p], t3]), this[p] = void 0), t3.length < An)
         return this[p] = t3, i2?.(), true;
-      for (let a = 0; this[y] === void 0 && a < Xi.length; a++)
-        t3[a] !== Xi[a] && (this[y] = false);
+      for (let a = 0; this[w] === void 0 && a < Xi.length; a++)
+        t3[a] !== Xi[a] && (this[w] = false);
       let o = false;
-      if (this[y] === false && this.zstd !== false) {
+      if (this[w] === false && this.zstd !== false) {
         o = true;
         for (let a = 0; a < qi.length; a++)
           if (t3[a] !== qi[a]) {
@@ -59748,9 +59727,9 @@ var rt = class extends import_events2.EventEmitter {
           }
       }
       let h2 = this.brotli === void 0 && !o;
-      if (this[y] === false && h2)
+      if (this[w] === false && h2)
         if (t3.length < 512)
-          if (this[mt])
+          if (this[ut])
             this.brotli = true;
           else
             return this[p] = t3, i2?.(), true;
@@ -59760,20 +59739,20 @@ var rt = class extends import_events2.EventEmitter {
           } catch {
             this.brotli = true;
           }
-      if (this[y] === void 0 || this[y] === false && (this.brotli || o)) {
-        let a = this[mt];
-        this[mt] = false, this[y] = this[y] === void 0 ? new Ue({}) : o ? new Ke({}) : new Ge({}), this[y].on("data", (c) => {
+      if (this[w] === void 0 || this[w] === false && (this.brotli || o)) {
+        let a = this[ut];
+        this[ut] = false, this[w] = this[w] === void 0 ? new Ue({}) : o ? new Ke({}) : new Ge({}), this[w].on("data", (c) => {
           this[Xs](c) && this[Xe](c);
-        }), this[y].on("error", (c) => {
+        }), this[w].on("error", (c) => {
           this[$] || this.abort(c);
-        }), this[y].on("end", () => {
-          this[mt] = true, this[Xe]();
+        }), this[w].on("end", () => {
+          this[ut] = true, this[Xe]();
         }), this[Yt] = true, this[le] += t3.length;
-        let l = !!this[y][a ? "end" : "write"](t3);
+        let l = !!this[w][a ? "end" : "write"](t3);
         return this[Yt] = false, i2?.(), l;
       }
     }
-    this[Yt] = true, this[y] ? (this[le] += t3.length, this[y].write(t3)) : this[Xe](t3), this[Yt] = false;
+    this[Yt] = true, this[w] ? (this[le] += t3.length, this[w].write(t3)) : this[Xe](t3), this[Yt] = false;
     let n = this[st].length > 0 ? false : this[it] ? this[it].flowing : true;
     return !n && this[st].length === 0 && this[it]?.once("drain", () => this.emit("drain")), i2?.(), n;
   }
@@ -59781,7 +59760,7 @@ var rt = class extends import_events2.EventEmitter {
     t3 && !this[$] && (this[p] = this[p] ? Buffer.concat([this[p], t3]) : t3);
   }
   [Qe]() {
-    if (this[mt] && !this[Yi] && !this[$] && !this[ae]) {
+    if (this[ut] && !this[Yi] && !this[$] && !this[ae]) {
       this[Yi] = true;
       let t3 = this[Nt];
       if (t3?.blockRemain) {
@@ -59809,7 +59788,7 @@ var rt = class extends import_events2.EventEmitter {
       }
       this[ae] = false;
     }
-    (!this[p] || this[mt]) && this[Qe]();
+    (!this[p] || this[ut]) && this[Qe]();
   }
   [qe](t3) {
     let e3 = 0, i2 = t3.length;
@@ -59832,10 +59811,10 @@ var rt = class extends import_events2.EventEmitter {
     e3 < i2 && (this[p] = this[p] ? Buffer.concat([t3.subarray(e3), this[p]]) : t3.subarray(e3));
   }
   end(t3, e3, i2) {
-    return typeof t3 == "function" && (i2 = t3, e3 = void 0, t3 = void 0), typeof e3 == "function" && (i2 = e3, e3 = void 0), typeof t3 == "string" && (t3 = Buffer.from(t3, e3)), i2 && this.once("finish", i2), this[$] || (this[y] ? (t3 && (this[le] += t3.length, this[y].write(t3)), this[y].end()) : (this[mt] = true, (this.brotli === void 0 || this.zstd === void 0) && (t3 = t3 || Buffer.alloc(0)), t3 && this.write(t3), this[Qe]())), this;
+    return typeof t3 == "function" && (i2 = t3, e3 = void 0, t3 = void 0), typeof e3 == "function" && (i2 = e3, e3 = void 0), typeof t3 == "string" && (t3 = Buffer.from(t3, e3)), i2 && this.once("finish", i2), this[$] || (this[w] ? (t3 && (this[le] += t3.length, this[w].write(t3)), this[w].end()) : (this[ut] = true, (this.brotli === void 0 || this.zstd === void 0) && (t3 = t3 || Buffer.alloc(0)), t3 && this.write(t3), this[Qe]())), this;
   }
 };
-var ut = (s4) => {
+var mt = (s4) => {
   let t3 = s4.length - 1, e3 = -1;
   for (; t3 > -1 && s4.charAt(t3) === "/"; )
     e3 = t3, t3--;
@@ -59848,17 +59827,19 @@ var vn = (s4) => {
   } : (e3) => e3.resume();
 };
 var Qi = (s4, t3) => {
-  let e3 = new Map(t3.map((n) => [ut(n), true])), i2 = s4.filter, r2 = (n, o = "") => {
-    let h2 = o || (0, import_path.parse)(n).root || ".", a;
-    if (n === h2)
-      a = false;
+  let e3 = new Map(t3.map((o) => [mt(o), true])), i2 = s4.filter, r2 = 100, n = (o, h2 = "", a = 0) => {
+    if (a >= r2)
+      return e3.set(o, false), false;
+    let l = h2 || (0, import_path.parse)(o).root || ".", c;
+    if (o === l)
+      c = false;
     else {
-      let l = e3.get(n);
-      a = l !== void 0 ? l : r2((0, import_path.dirname)(n), h2);
+      let d = e3.get(o);
+      c = d !== void 0 ? d : n((0, import_path.dirname)(o), l, a + 1);
     }
-    return e3.set(n, a), a;
+    return e3.set(o, c), c;
   };
-  s4.filter = i2 ? (n, o) => i2(n, o) && r2(ut(n)) : (n) => r2(ut(n));
+  s4.filter = i2 ? (o, h2) => i2(o, h2) && n(mt(o)) : (o) => n(mt(o));
 };
 var Mn = (s4) => {
   let t3 = new rt(s4), e3 = s4.file, i2;
@@ -59918,7 +59899,7 @@ var Un = new Map(ei.map((s4, t3) => [s4, ji[t3]]));
 var Hn = new Map(ji.map((s4, t3) => [s4, ei[t3]]));
 var ts = (s4) => ei.reduce((t3, e3) => t3.split(e3).join(Un.get(e3)), s4);
 var Qs = (s4) => ji.reduce((t3, e3) => t3.split(e3).join(Hn.get(e3)), s4);
-var rr = (s4, t3) => t3 ? (s4 = f3(s4).replace(/^\.(\/|$)/, ""), ut(t3) + "/" + s4) : f3(s4);
+var rr = (s4, t3) => t3 ? (s4 = f3(s4).replace(/^\.(\/|$)/, ""), mt(t3) + "/" + s4) : f3(s4);
 var Wn = 16 * 1024 * 1024;
 var tr = Symbol("process");
 var er = Symbol("file");
@@ -60405,16 +60386,16 @@ var hi = class s3 {
   }
 };
 function Zn(s4, t3, e3) {
-  let i2 = t3, r2 = t3 ? t3.next : s4.head, n = new me(e3, i2, r2, s4);
+  let i2 = t3, r2 = t3 ? t3.next : s4.head, n = new ue(e3, i2, r2, s4);
   return n.next === void 0 && (s4.tail = n), n.prev === void 0 && (s4.head = n), s4.length++, n;
 }
 function Yn(s4, t3) {
-  s4.tail = new me(t3, s4.tail, void 0, s4), s4.head || (s4.head = s4.tail), s4.length++;
+  s4.tail = new ue(t3, s4.tail, void 0, s4), s4.head || (s4.head = s4.tail), s4.length++;
 }
 function Kn(s4, t3) {
-  s4.head = new me(t3, void 0, s4.head, s4), s4.tail || (s4.tail = s4.head), s4.length++;
+  s4.head = new ue(t3, void 0, s4.head, s4), s4.tail || (s4.tail = s4.head), s4.length++;
 }
-var me = class {
+var ue = class {
   list;
   next;
   prev;
@@ -60439,7 +60420,7 @@ var pi = class {
 };
 var nr = Buffer.alloc(1024);
 var li = Symbol("onStat");
-var ue = Symbol("ended");
+var me = Symbol("ended");
 var W = Symbol("queue");
 var pe = Symbol("pendingLinks");
 var Et = Symbol("current");
@@ -60451,12 +60432,12 @@ var ls = Symbol("jobDone");
 var ci = Symbol("addFSEntry");
 var or = Symbol("addTarEntry");
 var ds = Symbol("stat");
-var ms = Symbol("readdir");
+var us = Symbol("readdir");
 var fi = Symbol("onreaddir");
 var di = Symbol("pipe");
 var hr = Symbol("entry");
 var cs = Symbol("entryOpt");
-var mi = Symbol("writeEntryClass");
+var ui = Symbol("writeEntryClass");
 var lr = Symbol("write");
 var fs2 = Symbol("ondrain");
 var wt = class extends A2 {
@@ -60480,15 +60461,15 @@ var wt = class extends A2 {
   mtime;
   filter;
   jobs;
-  [mi];
+  [ui];
   onWriteEntry;
   [W];
   [pe] = /* @__PURE__ */ new Map();
   [G] = 0;
   [Ee] = false;
-  [ue] = false;
+  [me] = false;
   constructor(t3 = {}) {
-    if (super(), this.opt = t3, this.file = t3.file || "", this.cwd = t3.cwd || process.cwd(), this.maxReadSize = t3.maxReadSize, this.preservePaths = !!t3.preservePaths, this.strict = !!t3.strict, this.noPax = !!t3.noPax, this.prefix = f3(t3.prefix || ""), this.linkCache = t3.linkCache || /* @__PURE__ */ new Map(), this.statCache = t3.statCache || /* @__PURE__ */ new Map(), this.readdirCache = t3.readdirCache || /* @__PURE__ */ new Map(), this.onWriteEntry = t3.onWriteEntry, this[mi] = de, typeof t3.onwarn == "function" && this.on("warn", t3.onwarn), this.portable = !!t3.portable, t3.gzip || t3.brotli || t3.zstd) {
+    if (super(), this.opt = t3, this.file = t3.file || "", this.cwd = t3.cwd || process.cwd(), this.maxReadSize = t3.maxReadSize, this.preservePaths = !!t3.preservePaths, this.strict = !!t3.strict, this.noPax = !!t3.noPax, this.prefix = f3(t3.prefix || ""), this.linkCache = t3.linkCache || /* @__PURE__ */ new Map(), this.statCache = t3.statCache || /* @__PURE__ */ new Map(), this.readdirCache = t3.readdirCache || /* @__PURE__ */ new Map(), this.onWriteEntry = t3.onWriteEntry, this[ui] = de, typeof t3.onwarn == "function" && this.on("warn", t3.onwarn), this.portable = !!t3.portable, t3.gzip || t3.brotli || t3.zstd) {
       if ((t3.gzip ? 1 : 0) + (t3.brotli ? 1 : 0) + (t3.zstd ? 1 : 0) > 1)
         throw new TypeError("gzip, brotli, zstd are mutually exclusive");
       if (t3.gzip && (typeof t3.gzip != "object" && (t3.gzip = {}), this.portable && (t3.gzip.portable = true), this.zip = new ze(t3.gzip)), t3.brotli && (typeof t3.brotli != "object" && (t3.brotli = {}), this.zip = new We(t3.brotli)), t3.zstd && (typeof t3.zstd != "object" && (t3.zstd = {}), this.zip = new Ye(t3.zstd)), !this.zip)
@@ -60497,7 +60478,7 @@ var wt = class extends A2 {
       e3.on("data", (i2) => super.write(i2)), e3.on("end", () => super.end()), e3.on("drain", () => this[fs2]()), this.on("resume", () => e3.resume());
     } else
       this.on("drain", this[fs2]);
-    this.noDirRecurse = !!t3.noDirRecurse, this.follow = !!t3.follow, this.noMtime = !!t3.noMtime, t3.mtime && (this.mtime = t3.mtime), this.filter = typeof t3.filter == "function" ? t3.filter : () => true, this[W] = new hi(), this[G] = 0, this.jobs = Number(t3.jobs) || 4, this[Ee] = false, this[ue] = false;
+    this.noDirRecurse = !!t3.noDirRecurse, this.follow = !!t3.follow, this.noMtime = !!t3.noMtime, t3.mtime && (this.mtime = t3.mtime), this.filter = typeof t3.filter == "function" ? t3.filter : () => true, this[W] = new hi(), this[G] = 0, this.jobs = Number(t3.jobs) || 4, this[Ee] = false, this[me] = false;
   }
   [lr](t3) {
     return super.write(t3);
@@ -60506,10 +60487,10 @@ var wt = class extends A2 {
     return this.write(t3), this;
   }
   end(t3, e3, i2) {
-    return typeof t3 == "function" && (i2 = t3, t3 = void 0), typeof e3 == "function" && (i2 = e3, e3 = void 0), t3 && this.add(t3), this[ue] = true, this[Ft](), i2 && i2(), this;
+    return typeof t3 == "function" && (i2 = t3, t3 = void 0), typeof e3 == "function" && (i2 = e3, e3 = void 0), t3 && this.add(t3), this[me] = true, this[Ft](), i2 && i2(), this;
   }
   write(t3) {
-    if (this[ue])
+    if (this[me])
       throw new Error("write after end");
     return typeof t3 == "string" ? this[ci](t3) : this[or](t3), this.flowing;
   }
@@ -60546,7 +60527,7 @@ var wt = class extends A2 {
       }
     this[Ft]();
   }
-  [ms](t3) {
+  [us](t3) {
     t3.pending = true, this[G] += 1, import_fs2.default.readdir(t3.absolute, (e3, i2) => {
       if (t3.pending = false, this[G] -= 1, e3)
         return this.emit("error", e3);
@@ -60564,7 +60545,7 @@ var wt = class extends A2 {
           let e3 = t3.next;
           this[W].removeNode(t3), t3.next = e3;
         }
-      this[Ee] = false, this[ue] && this[W].length === 0 && this[G] === 0 && (this.zip ? this.zip.end(nr) : (super.write(nr), super.end()));
+      this[Ee] = false, this[me] && this[W].length === 0 && this[G] === 0 && (this.zip ? this.zip.end(nr) : (super.write(nr), super.end()));
     }
   }
   get [Et]() {
@@ -60596,7 +60577,7 @@ var wt = class extends A2 {
       if (t3.stat && !t3.ignore) {
         if (!this.noDirRecurse && t3.stat.isDirectory() && !t3.readdir) {
           let e3 = this.readdirCache.get(t3.absolute);
-          if (e3 ? this[fi](t3, e3) : this[ms](t3), !t3.readdir)
+          if (e3 ? this[fi](t3, e3) : this[us](t3), !t3.readdir)
             return;
         }
         if (t3.entry = this[hr](t3), !t3.entry) {
@@ -60613,7 +60594,7 @@ var wt = class extends A2 {
   [hr](t3) {
     this[G] += 1;
     try {
-      return new this[mi](t3.path, this[cs](t3)).on("end", () => this[ls](t3)).on("error", (i2) => this.emit("error", i2));
+      return new this[ui](t3.path, this[cs](t3)).on("end", () => this[ls](t3)).on("error", (i2) => this.emit("error", i2));
     } catch (e3) {
       this.emit("error", e3);
     }
@@ -60645,7 +60626,7 @@ var wt = class extends A2 {
 var kt = class extends wt {
   sync = true;
   constructor(t3) {
-    super(t3), this[mi] = ni;
+    super(t3), this[ui] = ni;
   }
   pause() {
   }
@@ -60655,7 +60636,7 @@ var kt = class extends wt {
     let e3 = this.follow ? "statSync" : "lstatSync";
     this[li](t3, import_fs2.default[e3](t3.absolute));
   }
-  [ms](t3) {
+  [us](t3) {
     this[fi](t3, import_fs2.default.readdirSync(t3.absolute));
   }
   [di](t3) {
@@ -60710,13 +60691,13 @@ var Qn = K(Vn, $n, Xn, qn, (s4, t3) => {
 });
 var Jn = process.env.__FAKE_PLATFORM__ || process.platform;
 var Er = Jn === "win32";
-var { O_CREAT: wr, O_NOFOLLOW: mr, O_TRUNC: Sr, O_WRONLY: yr } = import_fs4.default.constants;
+var { O_CREAT: wr, O_NOFOLLOW: ur, O_TRUNC: Sr, O_WRONLY: yr } = import_fs4.default.constants;
 var Rr = Number(process.env.__FAKE_FS_O_FILENAME__) || import_fs4.default.constants.UV_FS_O_FILEMAP || 0;
 var jn = Er && !!Rr;
 var to = 512 * 1024;
 var eo = Rr | Sr | wr | yr;
-var ur = !Er && typeof mr == "number" ? mr | Sr | wr | yr : null;
-var us = ur !== null ? () => ur : jn ? (s4) => s4 < to ? eo : "w" : () => "w";
+var mr = !Er && typeof ur == "number" ? ur | Sr | wr | yr : null;
+var ms = mr !== null ? () => mr : jn ? (s4) => s4 < to ? eo : "w" : () => "w";
 var ps = (s4, t3, e3) => {
   try {
     return import_node_fs5.default.lchownSync(s4, t3, e3);
@@ -60814,15 +60795,15 @@ var no = (s4, t3) => {
 };
 var gr = (s4, t3, e3) => {
   s4 = f3(s4);
-  let i2 = t3.umask ?? 18, r2 = t3.mode | 448, n = (r2 & i2) !== 0, o = t3.uid, h2 = t3.gid, a = typeof o == "number" && typeof h2 == "number" && (o !== t3.processUid || h2 !== t3.processGid), l = t3.preserve, c = t3.unlink, d = f3(t3.cwd), S2 = (E, x2) => {
-    E ? e3(E) : x2 && a ? Es(x2, o, h2, (Le) => S2(Le)) : n ? import_node_fs6.default.chmod(s4, r2, e3) : e3();
+  let i2 = t3.umask ?? 18, r2 = t3.mode | 448, n = (r2 & i2) !== 0, o = t3.uid, h2 = t3.gid, a = typeof o == "number" && typeof h2 == "number" && (o !== t3.processUid || h2 !== t3.processGid), l = t3.preserve, c = t3.unlink, d = f3(t3.cwd), y = (E, x2) => {
+    E ? e3(E) : x2 && a ? Es(x2, o, h2, (Le) => y(Le)) : n ? import_node_fs6.default.chmod(s4, r2, e3) : e3();
   };
   if (s4 === d)
-    return no(s4, S2);
+    return no(s4, y);
   if (l)
-    return import_promises.default.mkdir(s4, { mode: r2, recursive: true }).then((E) => S2(null, E ?? void 0), S2);
+    return import_promises.default.mkdir(s4, { mode: r2, recursive: true }).then((E) => y(null, E ?? void 0), y);
   let D = f3(import_node_path7.default.relative(d, s4)).split("/");
-  Ss(d, D, r2, c, d, void 0, S2);
+  Ss(d, D, r2, c, d, void 0, y);
 };
 var Ss = (s4, t3, e3, i2, r2, n, o) => {
   if (t3.length === 0)
@@ -60911,7 +60892,7 @@ var yi = class {
   #i = /* @__PURE__ */ new Map();
   #s = /* @__PURE__ */ new Set();
   reserve(t3, e3) {
-    t3 = ao ? ["win32 parallelization disabled"] : t3.map((r2) => ut((0, import_node_path8.join)(Tr(r2))));
+    t3 = ao ? ["win32 parallelization disabled"] : t3.map((r2) => mt((0, import_node_path8.join)(Tr(r2))));
     let i2 = new Set(t3.map((r2) => lo(r2)).reduce((r2, n) => r2.concat(n)));
     this.#i.set(e3, { dirs: i2, paths: t3 });
     for (let r2 of t3) {
@@ -61009,8 +60990,8 @@ var _e = Symbol("gid");
 var Oe = Symbol("checkedCwd");
 var fo = process.env.TESTING_TAR_FAKE_PLATFORM || process.platform;
 var Te = fo === "win32";
-var mo = 1024;
-var uo = (s4, t3) => {
+var uo = 1024;
+var mo = (s4, t3) => {
   if (!Te)
     return import_node_fs4.default.unlink(s4, t3);
   let e3 = s4 + ".DELETE." + (0, import_node_crypto.randomBytes)(16).toString("hex");
@@ -61067,7 +61048,7 @@ var Xt = class extends rt {
       this.uid = t3.uid, this.gid = t3.gid, this.setOwner = true;
     } else
       this.uid = void 0, this.gid = void 0, this.setOwner = false;
-    this.preserveOwner = t3.preserveOwner === void 0 && typeof t3.uid != "number" ? process.getuid?.() === 0 : !!t3.preserveOwner, this.processUid = (this.preserveOwner || this.setOwner) && process.getuid ? process.getuid() : void 0, this.processGid = (this.preserveOwner || this.setOwner) && process.getgid ? process.getgid() : void 0, this.maxDepth = typeof t3.maxDepth == "number" ? t3.maxDepth : mo, this.forceChown = t3.forceChown === true, this.win32 = !!t3.win32 || Te, this.newer = !!t3.newer, this.keep = !!t3.keep, this.noMtime = !!t3.noMtime, this.preservePaths = !!t3.preservePaths, this.unlink = !!t3.unlink, this.cwd = f3(import_node_path5.default.resolve(t3.cwd || process.cwd())), this.strip = Number(t3.strip) || 0, this.processUmask = this.chmod ? typeof t3.processUmask == "number" ? t3.processUmask : Lr() : 0, this.umask = typeof t3.umask == "number" ? t3.umask : this.processUmask, this.dmode = t3.dmode || 511 & ~this.umask, this.fmode = t3.fmode || 438 & ~this.umask, this.on("entry", (e3) => this[Dr](e3));
+    this.preserveOwner = t3.preserveOwner === void 0 && typeof t3.uid != "number" ? process.getuid?.() === 0 : !!t3.preserveOwner, this.processUid = (this.preserveOwner || this.setOwner) && process.getuid ? process.getuid() : void 0, this.processGid = (this.preserveOwner || this.setOwner) && process.getgid ? process.getgid() : void 0, this.maxDepth = typeof t3.maxDepth == "number" ? t3.maxDepth : uo, this.forceChown = t3.forceChown === true, this.win32 = !!t3.win32 || Te, this.newer = !!t3.newer, this.keep = !!t3.keep, this.noMtime = !!t3.noMtime, this.preservePaths = !!t3.preservePaths, this.unlink = !!t3.unlink, this.cwd = f3(import_node_path5.default.resolve(t3.cwd || process.cwd())), this.strip = Number(t3.strip) || 0, this.processUmask = this.chmod ? typeof t3.processUmask == "number" ? t3.processUmask : Lr() : 0, this.umask = typeof t3.umask == "number" ? t3.umask : this.processUmask, this.dmode = t3.dmode || 511 & ~this.umask, this.fmode = t3.fmode || 438 & ~this.umask, this.on("entry", (e3) => this[Dr](e3));
   }
   warn(t3, e3, i2 = {}) {
     return (t3 === "TAR_BAD_ARCHIVE" || t3 === "TAR_ABORT") && (i2.recoverable = false), super.warn(t3, e3, i2);
@@ -61152,7 +61133,7 @@ var Xt = class extends rt {
     return vr(this.gid, t3.gid, this.processGid);
   }
   [Ts](t3, e3) {
-    let i2 = typeof t3.mode == "number" ? t3.mode & 4095 : this.fmode, r2 = new et(String(t3.absolute), { flags: us(t3.size), mode: i2, autoClose: false });
+    let i2 = typeof t3.mode == "number" ? t3.mode & 4095 : this.fmode, r2 = new et(String(t3.absolute), { flags: ms(t3.size), mode: i2, autoClose: false });
     r2.on("error", (a) => {
       r2.fd && import_node_fs4.default.close(r2.fd, () => {
       }), r2.write = () => true, this[O](a, t3), e3();
@@ -61172,12 +61153,12 @@ var Xt = class extends rt {
       if (typeof l == "number" && t3.mtime && !this.noMtime) {
         n++;
         let c = t3.atime || new Date(), d = t3.mtime;
-        import_node_fs4.default.futimes(l, c, d, (S2) => S2 ? import_node_fs4.default.utimes(a, c, d, (T) => o(T && S2)) : o());
+        import_node_fs4.default.futimes(l, c, d, (y) => y ? import_node_fs4.default.utimes(a, c, d, (T) => o(T && y)) : o());
       }
       if (typeof l == "number" && this[ge](t3)) {
         n++;
         let c = this[be](t3), d = this[_e](t3);
-        typeof c == "number" && typeof d == "number" && import_node_fs4.default.fchown(l, c, d, (S2) => S2 ? import_node_fs4.default.chown(a, c, d, (T) => o(T && S2)) : o());
+        typeof c == "number" && typeof d == "number" && import_node_fs4.default.fchown(l, c, d, (y) => y ? import_node_fs4.default.chown(a, c, d, (T) => o(T && y)) : o());
       }
       o();
     });
@@ -61286,7 +61267,7 @@ var Xt = class extends rt {
         }
         if (t3.absolute === this.cwd)
           return this[P](null, t3, i2);
-        uo(String(t3.absolute), (l) => this[P](l ?? null, t3, i2));
+        mo(String(t3.absolute), (l) => this[P](l ?? null, t3, i2));
       });
     };
     this[Oe] ? n() : r2();
@@ -61373,7 +61354,7 @@ var xe = class extends Xt {
       (h2 || a) && this[O](h2 || a, t3), e3();
     }, n;
     try {
-      n = import_node_fs4.default.openSync(String(t3.absolute), us(t3.size), i2);
+      n = import_node_fs4.default.openSync(String(t3.absolute), ms(t3.size), i2);
     } catch (h2) {
       return r2(h2);
     }
@@ -61530,11 +61511,11 @@ var go = (s4, t3) => {
     }, l = 0;
     if (o === 0)
       return a(null, 0);
-    let c = 0, d = Buffer.alloc(512), S2 = (T, D) => {
+    let c = 0, d = Buffer.alloc(512), y = (T, D) => {
       if (T || D === void 0)
         return a(T);
       if (c += D, c < 512 && D)
-        return import_node_fs7.default.read(n, d, c, d.length - c, l + c, S2);
+        return import_node_fs7.default.read(n, d, c, d.length - c, l + c, y);
       if (l === 0 && d[0] === 31 && d[1] === 139)
         return a(new Error("cannot append to compressed archives"));
       if (c < 512)
@@ -61545,9 +61526,9 @@ var go = (s4, t3) => {
       let x2 = 512 * Math.ceil((E.size ?? 0) / 512);
       if (l + x2 + 512 > o || (l += x2 + 512, l >= o))
         return a(null, l);
-      s4.mtimeCache && E.mtime && s4.mtimeCache.set(String(E.path), E.mtime), c = 0, import_node_fs7.default.read(n, d, 0, 512, l, S2);
+      s4.mtimeCache && E.mtime && s4.mtimeCache.set(String(E.path), E.mtime), c = 0, import_node_fs7.default.read(n, d, 0, 512, l, y);
     };
-    import_node_fs7.default.read(n, d, 0, 512, l, S2);
+    import_node_fs7.default.read(n, d, 0, 512, l, y);
   };
   return new Promise((n, o) => {
     e3.on("error", o);
@@ -61556,10 +61537,10 @@ var go = (s4, t3) => {
         return h2 = "w+", import_node_fs7.default.open(s4.file, h2, a);
       if (l || !c)
         return o(l);
-      import_node_fs7.default.fstat(c, (d, S2) => {
+      import_node_fs7.default.fstat(c, (d, y) => {
         if (d)
           return import_node_fs7.default.close(c, () => o(d));
-        i2(c, S2.size, (T, D) => {
+        i2(c, y.size, (T, D) => {
           if (T)
             return o(T);
           let E = new et(s4.file, { fd: c, start: D });
@@ -61630,6 +61611,26 @@ async function addFilesToWorkVersion(workId, workVersionId, files, handshake, ba
     throw new Error(`Failed to add files to work version: ${response.status} ${response.statusText}`);
   }
 }
+async function mergeContainsIntoWorkAndVersion(workId, workVersionId, contains, handshake, baseUrl, fetchFn = fetch, loggingOnlyMode = false) {
+  if (contains.length === 0)
+    return;
+  const url = `${baseUrl.replace(/\/$/, "")}/works/${workId}/versions/${workVersionId}/contains`;
+  if (loggingOnlyMode) {
+    console.log("[loggingOnlyMode] Skipping PATCH merge contains", url, contains);
+    return;
+  }
+  const response = await fetchFn(url, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...handshake ? { Authorization: `Bearer ${handshake}` } : {}
+    },
+    body: JSON.stringify({ contains })
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to merge contains on work version: ${response.status} ${response.statusText}`);
+  }
+}
 
 // ../../../../packages/scms-tasks/dist/uploads.js
 var import_node_crypto2 = require("node:crypto");
@@ -61638,11 +61639,61 @@ var import_node_path10 = __toESM(require("node:path"), 1);
 var import_node_stream4 = require("node:stream");
 var EXT_TO_MIME = {
   ".pdf": "application/pdf",
-  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".json": "application/json",
+  ".js": "application/javascript",
+  ".mjs": "application/javascript",
+  ".css": "text/css",
+  ".html": "text/html",
+  ".htm": "text/html",
+  ".txt": "text/plain",
+  ".md": "text/markdown",
+  ".xml": "application/xml",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".ttf": "font/ttf",
+  ".otf": "font/otf",
+  ".inv": "text/plain",
+  ".map": "application/json"
 };
 function getContentType(localPath) {
   const ext = import_node_path10.default.extname(localPath).toLowerCase();
   return EXT_TO_MIME[ext] ?? "application/octet-stream";
+}
+function listFolderRelativePaths(from, to2 = "") {
+  const directory = import_node_fs8.default.readdirSync(from);
+  const files = [];
+  const folders = [];
+  for (const name2 of directory) {
+    if (import_node_fs8.default.statSync(import_node_path10.default.join(from, name2)).isDirectory())
+      folders.push(name2);
+    else
+      files.push(name2);
+  }
+  const outputFiles = files.map((f4) => ({
+    localPath: import_node_path10.default.join(from, f4),
+    to: to2 ? `${to2}/${f4}` : f4
+  }));
+  const outputFolders = folders.flatMap((f4) => listFolderRelativePaths(import_node_path10.default.join(from, f4), to2 ? `${to2}/${f4}` : f4));
+  return [...outputFiles, ...outputFolders];
+}
+async function mapWithConcurrency(items, concurrency, fn) {
+  let index = 0;
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (index < items.length) {
+      const current = index;
+      index += 1;
+      await fn(items[current]);
+    }
+  });
+  await Promise.all(workers);
 }
 function makeFileInfo(localPath) {
   const content = import_node_fs8.default.readFileSync(localPath);
@@ -61829,6 +61880,59 @@ async function uploadSingleFileToCdn(baseUrl, getAuthHeaders, opts, fetchFn = fe
   const pathResult = `${cdnKey}/${storagePath}`;
   return { path: pathResult };
 }
+async function uploadFolderToCdn(baseUrl, getAuthHeaders, opts, fetchFn = fetch) {
+  const { cdn, cdnKey, localFolder, loggingOnlyMode = false, resume = false, concurrency = 10 } = opts;
+  if (!cdn?.trim() || !cdnKey?.trim()) {
+    throw new Error("uploadFolderToCdn: cdn and cdnKey are required");
+  }
+  const entries = listFolderRelativePaths(localFolder);
+  if (entries.length === 0) {
+    throw new Error(`uploadFolderToCdn: no files found in ${localFolder}`);
+  }
+  if (loggingOnlyMode) {
+    console.log("[loggingOnlyMode] Skipping uploadFolderToCdn", {
+      localFolder,
+      fileCount: entries.length,
+      cdnKey
+    });
+    return { cdnKey, fileCount: entries.length };
+  }
+  const prepared = entries.map(({ localPath, to: to2 }) => {
+    const { md5, size, contentType } = makeFileInfo(localPath);
+    return { localPath, to: to2, md5, size, contentType };
+  });
+  const stageRequest = {
+    files: prepared.map(({ to: to2, md5, size, contentType }) => ({
+      path: to2,
+      content_type: contentType,
+      md5,
+      size
+    }))
+  };
+  const staged = await stageUploadRequest(baseUrl, getAuthHeaders, stageRequest, fetchFn);
+  const byPath = new Map(prepared.map((f4) => [f4.to, f4]));
+  await mapWithConcurrency(staged.upload_items, concurrency, async (uploadItem) => {
+    const local = byPath.get(uploadItem.path);
+    if (!local) {
+      throw new Error(`uploadFolderToCdn: staged path not found locally: ${uploadItem.path}`);
+    }
+    const protocol = uploadItem.upload?.protocol ?? "gcs-resumable";
+    if (protocol === "gcs-resumable") {
+      await performResumableUpload(uploadItem.signed_url, local.localPath, local.contentType, local.size, getAuthHeaders, fetchFn, resume);
+    } else {
+      await performSimplePutUpload(uploadItem.upload?.url ?? uploadItem.signed_url, local.localPath, local.contentType, local.size, fetchFn, uploadItem.upload?.headers);
+    }
+  });
+  const files = [
+    ...staged.cached_items,
+    ...staged.upload_items.map((f4) => {
+      const { signed_url, upload: _upload, ...rest } = f4;
+      return rest;
+    })
+  ];
+  await commitUploads(baseUrl, getAuthHeaders, { cdn, cdnKey, files }, fetchFn);
+  return { cdnKey, fileCount: files.length };
+}
 
 // ../../../../packages/scms-tasks/dist/utils.js
 var import_node_fs9 = __toESM(require("node:fs"), 1);
@@ -61971,11 +62075,16 @@ var SCMSClient = class {
     this.submissions = createSubmissionsHandler(this.statusUrl, this.handshake, this.loggingOnlyMode);
     this.works = {
       getBaseUrl: () => this.baseUrl,
-      addFilesToWorkVersion: (workId, workVersionId, files) => addFilesToWorkVersion(workId, workVersionId, files, this.handshake, this.baseUrl, fetch, this.loggingOnlyMode)
+      addFilesToWorkVersion: (workId, workVersionId, files) => addFilesToWorkVersion(workId, workVersionId, files, this.handshake, this.baseUrl, fetch, this.loggingOnlyMode),
+      mergeContainsIntoWorkAndVersion: (workId, workVersionId, contains) => mergeContainsIntoWorkAndVersion(workId, workVersionId, contains, this.handshake, this.baseUrl, fetch, this.loggingOnlyMode)
     };
     const getAuthHeaders = () => Promise.resolve(this.handshake ? { Authorization: `Bearer ${this.handshake}` } : {});
     this.uploads = {
       uploadSingleFileToCdn: (opts) => uploadSingleFileToCdn(this.baseUrl, getAuthHeaders, {
+        ...opts,
+        loggingOnlyMode: this.loggingOnlyMode
+      }),
+      uploadFolderToCdn: (opts) => uploadFolderToCdn(this.baseUrl, getAuthHeaders, {
         ...opts,
         loggingOnlyMode: this.loggingOnlyMode
       })
@@ -62207,20 +62316,6 @@ var doi = {
   isOpenFunderRegistry
 };
 
-// ../../../../node_modules/pmc-utils/dist/schema/pmc.js
-var KNOWN_FUNDERS = [
-  "nih",
-  "ahrq",
-  "aspr",
-  "cdc",
-  "epa",
-  "fda",
-  "hhmi",
-  "nasa",
-  "nist",
-  "va"
-];
-
 // ../../../../node_modules/stringify-entities/lib/core.js
 var defaultSubsetRegex = /["&'<>`]/g;
 var surrogatePairsRegex = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g;
@@ -62443,7 +62538,7 @@ function toXml(tree, options) {
   return one(node, state);
 }
 
-// ../../../../node_modules/pmc-utils/node_modules/unist-builder/lib/index.js
+// ../../../../node_modules/unist-builder/lib/index.js
 function u2(type, props, value2) {
   const node = { type: String(type) };
   if ((value2 === void 0 || value2 === null) && (typeof props === "string" || Array.isArray(props))) {
@@ -62458,6 +62553,42 @@ function u2(type, props, value2) {
   }
   return node;
 }
+
+// ../../../../node_modules/pmc-node-utils/dist/buildDeposit.js
+function preparePMCManifestText(manifest) {
+  const text2 = ["bulksub_meta_xml	bulk_meta.xml\n"];
+  const manuscripts = manifest.files.filter((f4) => f4.type === "manuscript");
+  if (manuscripts.length === 1) {
+    text2.push(`manuscript	${manuscripts[0].filename}
+`);
+  } else {
+    manuscripts.forEach((f4, i2) => {
+      var _a;
+      text2.push(`manuscript	${(_a = f4.label) !== null && _a !== void 0 ? _a : i2 + 1}	${f4.filename}
+`);
+    });
+  }
+  const others = manifest.files.filter((f4) => f4.type !== "manuscript");
+  others.forEach((f4) => {
+    text2.push(`${f4.type}	${f4.label}	${f4.filename}
+`);
+  });
+  return text2.join("");
+}
+
+// ../../../../node_modules/pmc-utils/dist/schema/pmc.js
+var KNOWN_FUNDERS = [
+  "nih",
+  "ahrq",
+  "aspr",
+  "cdc",
+  "epa",
+  "fda",
+  "hhmi",
+  "nasa",
+  "nist",
+  "va"
+];
 
 // ../../../../node_modules/pmc-utils/dist/utils.js
 function formatZodErrorForStatus(error) {
@@ -62533,7 +62664,8 @@ function treeFromManifest(manifest) {
     ]),
     e2("grants", [
       ...manifest.metadata.grants.map((grant) => {
-        return e2("grant", { id: grant.id, funder: grant.funder });
+        const piChildren = grant.pi ? [e2("PI", { fname: grant.pi.fname, lname: grant.pi.lname, email: grant.pi.email })] : void 0;
+        return e2("grant", { id: grant.id, funder: grant.funder }, piChildren);
       })
     ])
   ];
@@ -66517,9 +66649,15 @@ var authorSchema = external_exports.object({
   email: external_exports.string().email(),
   contactType: external_exports.enum(["reviewer", "author"])
 });
+var grantPiSchema = external_exports.object({
+  fname: external_exports.string().min(1),
+  lname: external_exports.string().min(1),
+  email: external_exports.string().email()
+});
 var grantSchema = external_exports.object({
   funder: external_exports.string().min(1),
-  id: external_exports.string().optional()
+  id: external_exports.string().optional(),
+  pi: grantPiSchema.optional()
 });
 var metadataSchema = external_exports.object({
   title: external_exports.string().min(1),
@@ -66534,28 +66672,6 @@ var AAMDepositManifestSchema = external_exports.object({
   doi: external_exports.string().optional(),
   metadata: metadataSchema
 });
-
-// ../../../../node_modules/pmc-node-utils/dist/buildDeposit.js
-function preparePMCManifestText(manifest) {
-  const text2 = ["bulksub_meta_xml	bulk_meta.xml\n"];
-  const manuscripts = manifest.files.filter((f4) => f4.type === "manuscript");
-  if (manuscripts.length === 1) {
-    text2.push(`manuscript	${manuscripts[0].filename}
-`);
-  } else {
-    manuscripts.forEach((f4, i2) => {
-      var _a;
-      text2.push(`manuscript	${(_a = f4.label) !== null && _a !== void 0 ? _a : i2 + 1}	${f4.filename}
-`);
-    });
-  }
-  const others = manifest.files.filter((f4) => f4.type !== "manuscript");
-  others.forEach((f4) => {
-    text2.push(`${f4.type}	${f4.label}	${f4.filename}
-`);
-  });
-  return text2.join("");
-}
 
 // src/service.ts
 function createService() {
@@ -66657,7 +66773,10 @@ function createService() {
         await sftpClient.end();
         console.log("Disconnected from SFTP server");
         const { successState, userId } = ctx.attributes;
-        await client.submissions.putStatus(successState, userId, res);
+        if (!successState) {
+          throw new Error("successState attribute is required to report submission status");
+        }
+        await client.submissions.putStatus(successState, userId);
         await client.jobs.completed(res, "FTP upload completed successfully", {
           taskId: id,
           tarFileName,
@@ -66666,8 +66785,8 @@ function createService() {
         });
       },
       {
-        onFailure: async (client, failureState, userId, res) => {
-          await client.submissions.putStatus(failureState, userId, res);
+        onFailure: async (client, failureState, userId) => {
+          await client.submissions.putStatus(failureState, userId);
         }
       }
     )
