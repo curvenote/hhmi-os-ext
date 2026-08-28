@@ -37,22 +37,37 @@ export function resolveActiveTransitionAfterLoad(
   return incoming;
 }
 
-export type CompletedJobOutcome = 'pending' | 'success' | 'stuck';
+export type StuckTransitionCheckOutcome = 'pending' | 'cleared' | 'stuck';
 
 /**
- * Decide the toast after a COMPLETED job once loader data has actually refreshed.
- *
- * `loaderEpoch` must advance after the job completed (new loader props). Until then
- * the outcome is `pending` — otherwise we false-positive "stuck" on stale transition.
+ * After a COMPLETED job we toast success immediately. Separately, detect a stuck
+ * transition only after loader/revalidate epochs have advanced enough that we're
+ * not looking at stale props (and not racing putStatus vs COMPLETED visibility).
  */
-export function decideCompletedJobOutcome(opts: {
+export function decideStuckTransitionCheck(opts: {
   completedJobId: string;
   loaderTransition: WorkflowTransition | null | undefined;
   loaderEpochAtComplete: number;
   currentLoaderEpoch: number;
-}): CompletedJobOutcome {
-  const { completedJobId, loaderTransition, loaderEpochAtComplete, currentLoaderEpoch } = opts;
-  if (currentLoaderEpoch <= loaderEpochAtComplete) return 'pending';
-  if (getTransitionJobId(loaderTransition) === completedJobId) return 'stuck';
-  return 'success';
+  /** Epochs that must elapse while the jobId is still present before "stuck" (default 2). */
+  minEpochsForStuck?: number;
+}): StuckTransitionCheckOutcome {
+  const {
+    completedJobId,
+    loaderTransition,
+    loaderEpochAtComplete,
+    currentLoaderEpoch,
+    minEpochsForStuck = 2,
+  } = opts;
+
+  if (getTransitionJobId(loaderTransition) !== completedJobId) {
+    return 'cleared';
+  }
+
+  const epochsElapsed = currentLoaderEpoch - loaderEpochAtComplete;
+  if (epochsElapsed < minEpochsForStuck) {
+    return 'pending';
+  }
+
+  return 'stuck';
 }

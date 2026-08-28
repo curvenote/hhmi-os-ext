@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildManifestGrants, grantPiFromScientistRecord } from './pmc-deposit-grants.js';
+import { buildManifestGrants, grantPiFromScientistRecord, assertHhmiGrantReadyForDeposit } from './pmc-deposit-grants.js';
 import type { GrantEntry } from '../../common/metadata.schema.js';
 import type { HHMIScientist } from '../hhmi-grants.server.js';
 
@@ -113,5 +113,36 @@ describe('buildManifestGrants', () => {
     await expect(
       buildManifestGrants([{ id: '1', funderKey: 'hhmi', grantId: 'GRANT_Alpha_A' }]),
     ).rejects.toThrow(/email is missing/);
+  });
+
+  it('includes work/submission ids in deposit-time errors', async () => {
+    mockGetScientist.mockResolvedValue(null);
+
+    await expect(
+      buildManifestGrants([{ id: '1', funderKey: 'hhmi', grantId: 'GRANT_Unknown' }], {
+        workVersionId: 'wv-1',
+        submissionId: 'sub-1',
+      }),
+    ).rejects.toThrow(/workVersion wv-1.*submission sub-1/);
+  });
+});
+
+describe('assertHhmiGrantReadyForDeposit', () => {
+  beforeEach(() => {
+    mockGetScientist.mockReset();
+  });
+
+  it('resolves when the contact record has complete PI fields', async () => {
+    mockGetScientist.mockResolvedValue(completeScientist);
+    await expect(assertHhmiGrantReadyForDeposit('GRANT_Alpha_A')).resolves.toEqual(
+      completeScientist,
+    );
+  });
+
+  it('throws before deposit when PI email is missing', async () => {
+    mockGetScientist.mockResolvedValue({ ...completeScientist, email: ' ' });
+    await expect(
+      assertHhmiGrantReadyForDeposit('GRANT_Alpha_A', { workVersionId: 'wv-9' }),
+    ).rejects.toThrow(/email is missing.*workVersion wv-9/);
   });
 });

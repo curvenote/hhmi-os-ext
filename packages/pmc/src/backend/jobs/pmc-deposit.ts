@@ -125,6 +125,7 @@ export async function buildAAMDepositManifest(
   metadata: PMCWorkVersionMetadata,
   storageBackend: StorageBackend,
   sourceBucket: KnownBuckets,
+  context?: { workVersionId?: string; submissionId?: string },
 ): Promise<AAMDepositManifest> {
   const { pmc, files = {} } = metadata;
 
@@ -255,7 +256,7 @@ export async function buildAAMDepositManifest(
               contactType: 'reviewer' as const,
             },
       ],
-      grants: await buildManifestGrants(pmc.grants || []),
+      grants: await buildManifestGrants(pmc.grants || [], context),
     },
   };
 
@@ -321,6 +322,7 @@ export async function pmcDepositHandler(ctx: Context, data: CreateJob) {
       workVersion.metadata as PMCWorkVersionMetadata,
       storageBackend,
       sourceBucket,
+      { workVersionId: workVersion.id, submissionId },
     );
     rollingLog.push({ message: 'manifest built', data: manifest });
 

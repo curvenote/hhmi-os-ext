@@ -10,7 +10,7 @@ import type { Prisma } from '@curvenote/scms-db';
 import { EllipsisVertical } from 'lucide-react';
 import { SplitButton } from './SplitButton.js';
 import {
-  decideCompletedJobOutcome,
+  decideStuckTransitionCheck,
   getTransitionJobId,
   resolveActiveTransitionAfterLoad,
   shouldPollJobTransition,
@@ -66,10 +66,12 @@ export function ActionsAreaForm({
   onActiveTransitionChange,
 }: ActionsAreaProps) {
   const handledTerminalJobIdsRef = useRef<Set<string>>(new Set());
-  const pendingOutcomeJobIdRef = useRef<string | null>(null);
+  const pendingStuckJobIdRef = useRef<string | null>(null);
   const loaderEpochRef = useRef(0);
   const loaderEpochAtCompleteRef = useRef(0);
-  const toastedOutcomeJobIdsRef = useRef<Set<string>>(new Set());
+  const toastedStuckJobIdsRef = useRef<Set<string>>(new Set());
+  const sawRevalidateLoadingRef = useRef(false);
+  const [outcomeEpoch, setOutcomeEpoch] = useState(0);
 
   const [activeTransition, setActiveTransition] = useState<WorkflowTransition | null>(() =>
     resolveActiveTransitionAfterLoad(
@@ -79,10 +81,31 @@ export function ActionsAreaForm({
   );
   const revalidator = useRevalidator();
 
-  // Advance epoch whenever loader transition data changes — used to avoid toasting on stale props
-  useEffect(() => {
+  const bumpLoaderEpoch = useCallback(() => {
     loaderEpochRef.current += 1;
-  }, [submissionVersion.id, submissionVersion.transition]);
+    setOutcomeEpoch(loaderEpochRef.current);
+  }, []);
+
+  // Advance epoch when loader transition identity changes
+  useEffect(() => {
+    bumpLoaderEpoch();
+  }, [submissionVersion.id, submissionVersion.transition, bumpLoaderEpoch]);
+
+  // Also advance epoch when a revalidation finishes while we are watching for a stuck transition
+  useEffect(() => {
+    if (!pendingStuckJobIdRef.current) {
+      sawRevalidateLoadingRef.current = false;
+      return;
+    }
+    if (revalidator.state === 'loading') {
+      sawRevalidateLoadingRef.current = true;
+      return;
+    }
+    if (revalidator.state === 'idle' && sawRevalidateLoadingRef.current) {
+      sawRevalidateLoadingRef.current = false;
+      bumpLoaderEpoch();
+    }
+  }, [revalidator.state, bumpLoaderEpoch]);
 
   // Sync from loader; never restore a transition for a job we already saw as terminal
   useEffect(() => {
@@ -92,31 +115,29 @@ export function ActionsAreaForm({
     );
   }, [submissionVersion.id, submissionVersion.transition]);
 
-  // Toast only after loader epoch advances past the COMPLETED snapshot (fresh loader data)
+  // Stuck check only — success toast is fired immediately on job COMPLETED
   useEffect(() => {
-    const jobId = pendingOutcomeJobIdRef.current;
-    if (!jobId || toastedOutcomeJobIdsRef.current.has(jobId)) return;
+    const jobId = pendingStuckJobIdRef.current;
+    if (!jobId || toastedStuckJobIdsRef.current.has(jobId)) return;
 
-    const outcome = decideCompletedJobOutcome({
+    const outcome = decideStuckTransitionCheck({
       completedJobId: jobId,
       loaderTransition: submissionVersion.transition as WorkflowTransition | null,
       loaderEpochAtComplete: loaderEpochAtCompleteRef.current,
       currentLoaderEpoch: loaderEpochRef.current,
+      minEpochsForStuck: 2,
     });
     if (outcome === 'pending') return;
 
-    toastedOutcomeJobIdsRef.current.add(jobId);
-    pendingOutcomeJobIdRef.current = null;
-    setActiveTransition(null);
+    pendingStuckJobIdRef.current = null;
+    if (outcome === 'cleared') return;
 
-    if (outcome === 'stuck') {
-      ui.toastError(
-        'Deposit job finished but submission status was not updated. Refresh the page or contact support if this persists.',
-      );
-    } else {
-      ui.toastSuccess('Action completed successfully');
-    }
-  }, [submissionVersion.id, submissionVersion.transition]);
+    toastedStuckJobIdsRef.current.add(jobId);
+    setActiveTransition(null);
+    ui.toastError(
+      'Deposit job finished but submission status was not updated. Refresh the page or contact support if this persists.',
+    );
+  }, [submissionVersion.id, submissionVersion.transition, outcomeEpoch]);
 
   useEffect(() => {
     onActiveTransitionChange?.(activeTransition);
@@ -170,17 +191,23 @@ export function ActionsAreaForm({
       if (job.status === JobStatus.FAILED) {
         const errorMessage = `Job failed: ${job.messages?.join(', ') || 'Unknown error'}`;
         ui.toastError(errorMessage);
-        if (completedJobId) toastedOutcomeJobIdsRef.current.add(completedJobId);
         revalidator.revalidate();
         return;
       }
 
-      // Snapshot epoch before revalidate; toast only after loader props actually refresh
+      // Success is based on the job finishing; stuck detection is a separate follow-up
+      ui.toastSuccess('Action completed successfully');
       if (completedJobId) {
-        pendingOutcomeJobIdRef.current = completedJobId;
+        pendingStuckJobIdRef.current = completedJobId;
         loaderEpochAtCompleteRef.current = loaderEpochRef.current;
       }
       revalidator.revalidate();
+      // Second look after settle — bumps epoch via loading→idle even if transition stays null
+      window.setTimeout(() => {
+        if (pendingStuckJobIdRef.current === completedJobId) {
+          revalidator.revalidate();
+        }
+      }, 400);
     },
     [revalidator, jobId],
   );

@@ -5,7 +5,7 @@ import {
   getTransitionJobId,
   shouldPollJobTransition,
   resolveActiveTransitionAfterLoad,
-  decideCompletedJobOutcome,
+  decideStuckTransitionCheck,
 } from './jobTransitionPolling.js';
 
 function transition(overrides: Partial<WorkflowTransition> = {}): WorkflowTransition {
@@ -39,36 +39,38 @@ describe('jobTransitionPolling', () => {
     expect(resolveActiveTransitionAfterLoad(null, new Set(['job-1']))).toBeNull();
   });
 
-  describe('decideCompletedJobOutcome', () => {
-    it('stays pending until loader epoch advances (avoids stale-transition false stuck)', () => {
+  describe('decideStuckTransitionCheck', () => {
+    it('reports cleared when loader no longer references the job', () => {
       expect(
-        decideCompletedJobOutcome({
+        decideStuckTransitionCheck({
+          completedJobId: 'job-1',
+          loaderTransition: null,
+          loaderEpochAtComplete: 3,
+          currentLoaderEpoch: 3,
+        }),
+      ).toBe('cleared');
+    });
+
+    it('stays pending while the jobId remains until enough epochs elapse', () => {
+      expect(
+        decideStuckTransitionCheck({
           completedJobId: 'job-1',
           loaderTransition: transition(),
           loaderEpochAtComplete: 3,
-          currentLoaderEpoch: 3,
+          currentLoaderEpoch: 4,
+          minEpochsForStuck: 2,
         }),
       ).toBe('pending');
     });
 
-    it('reports success when loader refreshed and transition no longer references the job', () => {
+    it('reports stuck only after enough epochs with the same job transition', () => {
       expect(
-        decideCompletedJobOutcome({
-          completedJobId: 'job-1',
-          loaderTransition: null,
-          loaderEpochAtComplete: 3,
-          currentLoaderEpoch: 4,
-        }),
-      ).toBe('success');
-    });
-
-    it('reports stuck only after loader refresh still shows the same job transition', () => {
-      expect(
-        decideCompletedJobOutcome({
+        decideStuckTransitionCheck({
           completedJobId: 'job-1',
           loaderTransition: transition(),
           loaderEpochAtComplete: 3,
-          currentLoaderEpoch: 4,
+          currentLoaderEpoch: 5,
+          minEpochsForStuck: 2,
         }),
       ).toBe('stuck');
     });

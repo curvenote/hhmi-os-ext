@@ -10,8 +10,6 @@ import type { Funder } from './funders.js';
 import { PMC_FUNDERS_MAP } from './funders.js';
 import type { HHMIGrantOption } from '../backend/hhmi-grants.server.js';
 
-type GrantOption = ui.ComboBoxOption;
-
 // Component for the initial HHMI grant row (first bullet point)
 function InitialHHMIGrantRow({
   grantOptions,
@@ -22,7 +20,7 @@ function InitialHHMIGrantRow({
   disabled,
   readonly = false,
 }: {
-  grantOptions: GrantOption[];
+  grantOptions: HHMIGrantOption[];
   value?: string;
   onSelect?: (grantId: string, investigatorName: string) => void;
   onClear?: (grantId: string, investigatorName: string) => void;
@@ -89,7 +87,7 @@ function HHMIGrantSelect({
   onSelect,
   error,
 }: {
-  grantOptions: GrantOption[];
+  grantOptions: HHMIGrantOption[];
   value?: string;
   defaultValue?: string;
   disabled?: boolean;
@@ -132,7 +130,7 @@ function GrantEntryForm({
   error,
 }: {
   funders: Funder[];
-  grantOptions: GrantOption[];
+  grantOptions: HHMIGrantOption[];
   disabled?: boolean;
   error?: string;
 }) {
@@ -243,7 +241,7 @@ function GrantEntryRow({
   grant: GrantEntry;
   canDelete?: boolean;
   isInitialHHMI?: boolean;
-  grantOptions: GrantOption[];
+  grantOptions: HHMIGrantOption[];
   readonly?: boolean;
 }) {
   const removeFetcher = useFetcher();

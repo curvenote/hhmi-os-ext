@@ -1,10 +1,7 @@
 import type { AAMDepositManifest } from 'pmc-utils';
 import type { GrantEntry } from '../../common/metadata.schema.js';
 import { normalizeGrantId } from '../../common/validation.js';
-import {
-  getHHMIScientistByGrantId,
-  type HHMIScientist,
-} from '../hhmi-grants.server.js';
+import { getHHMIScientistByGrantId, type HHMIScientist } from '../hhmi-grants.server.js';
 
 export type ManifestGrant = AAMDepositManifest['metadata']['grants'][number];
 
@@ -26,8 +23,48 @@ export function grantPiFromScientistRecord(scientist: HHMIScientist) {
   return { fname, lname, email };
 }
 
-export async function buildManifestGrants(grants: GrantEntry[]): Promise<ManifestGrant[]> {
+/**
+ * Ensure an HHMI grant can be deposited (synced contact + complete PI fields).
+ * Call at grant-selection time so users see the problem before submitting.
+ */
+export async function assertHhmiGrantReadyForDeposit(
+  grantId: string,
+  context?: { workVersionId?: string },
+): Promise<HHMIScientist> {
+  const id = normalizeGrantId(grantId);
+  if (!id) {
+    throw new Error('Grant ID is required for HHMI funding');
+  }
+
+  const scientist = await getHHMIScientistByGrantId(id);
+  const suffix = context?.workVersionId ? ` (workVersion ${context.workVersionId})` : '';
+
+  if (!scientist) {
+    throw new Error(`Grant ${id}: no matching grant contact record found${suffix}`);
+  }
+
+  try {
+    grantPiFromScientistRecord(scientist);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`${message}${suffix}`);
+  }
+
+  return scientist;
+}
+
+export async function buildManifestGrants(
+  grants: GrantEntry[],
+  context?: { workVersionId?: string; submissionId?: string },
+): Promise<ManifestGrant[]> {
   const manifestGrants: ManifestGrant[] = [];
+  const ctxSuffix = [
+    context?.workVersionId ? `workVersion ${context.workVersionId}` : null,
+    context?.submissionId ? `submission ${context.submissionId}` : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const suffix = ctxSuffix ? ` (${ctxSuffix})` : '';
 
   for (const grant of grants) {
     const id = normalizeGrantId(grant.grantId);
@@ -39,19 +76,20 @@ export async function buildManifestGrants(grants: GrantEntry[]): Promise<Manifes
     }
 
     if (!id) {
-      throw new Error('Grant ID is required for PMC deposit');
+      throw new Error(`Grant ID is required for PMC deposit${suffix}`);
     }
 
-    const scientist = await getHHMIScientistByGrantId(id);
-    if (!scientist) {
-      throw new Error(`Grant ${id}: no matching grant contact record found`);
+    try {
+      const scientist = await assertHhmiGrantReadyForDeposit(id);
+      manifestGrants.push({
+        funder,
+        id,
+        pi: grantPiFromScientistRecord(scientist),
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(suffix && !message.includes(ctxSuffix) ? `${message}${suffix}` : message);
     }
-
-    manifestGrants.push({
-      funder,
-      id,
-      pi: grantPiFromScientistRecord(scientist),
-    });
   }
 
   return manifestGrants;
