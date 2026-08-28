@@ -44,6 +44,11 @@ import {
   partitionSyncJobsForDisplay,
 } from './grants-job-display.js';
 import { parseSyncStrategy } from '../common/grants-sync-strategy.js';
+import {
+  classifyDuplicateGrantGroups,
+  countDuplicateSummary,
+  type DuplicateGrantGroup,
+} from '../common/duplicate-funding-ids.js';
 import { shouldResetReplaceExistingData } from './sync-button-state.js';
 
 type JobResults = {
@@ -346,6 +351,130 @@ function MissingFieldsSummary({ scientists }: { scientists: HHMIScientist[] }) {
   );
 }
 
+function DuplicateFundingIdGroupRows({
+  groups,
+  badgeClassName,
+}: {
+  groups: DuplicateGrantGroup[];
+  badgeClassName: string;
+}) {
+  return (
+    <>
+      {groups.flatMap((group) =>
+        group.scientists.map((scientist) => (
+          <tr key={`${group.grantId}-${scientist.id}`}>
+            <td className="px-3 py-1.5 whitespace-nowrap align-top">
+              <ui.Badge variant="outline" className={badgeClassName}>
+                {group.grantId}
+              </ui.Badge>
+            </td>
+            <td className="px-3 py-1.5 align-top">
+              <FieldValue value={scientist.fullName} missingLabel="Missing" />
+            </td>
+            <td className="px-3 py-1.5 align-top">
+              <FieldValue value={scientist.firstName} missingLabel="Missing" />
+            </td>
+            <td className="px-3 py-1.5 align-top">
+              <FieldValue value={scientist.lastName} missingLabel="Missing" />
+            </td>
+            <td className="px-3 py-1.5 align-top">
+              <FieldValue
+                value={scientist.email}
+                missingLabel="Missing"
+                asLink={
+                  scientist.email?.trim() ? { href: `mailto:${scientist.email.trim()}` } : undefined
+                }
+              />
+            </td>
+          </tr>
+        )),
+      )}
+    </>
+  );
+}
+
+function DuplicateFundingIdCard({
+  groups,
+  tone,
+  titleSuffix,
+}: {
+  groups: DuplicateGrantGroup[];
+  tone: 'warn' | 'info';
+  titleSuffix: string;
+}) {
+  if (groups.length === 0) return null;
+
+  const { fundingIdCount, recordCount } = countDuplicateSummary(groups);
+  const isWarn = tone === 'warn';
+  const cardClass = isWarn
+    ? 'overflow-hidden border-red-200 bg-red-50/40'
+    : 'overflow-hidden border-amber-200 bg-amber-50/40';
+  const headerBorder = isWarn ? 'border-b border-red-100' : 'border-b border-amber-100';
+  const titleClass = isWarn
+    ? 'text-sm font-medium text-red-800'
+    : 'text-sm font-medium text-amber-900';
+  const theadClass = isWarn ? 'bg-red-50' : 'bg-amber-50';
+  const thClass = isWarn
+    ? 'px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-red-700'
+    : 'px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-amber-800';
+  const tbodyClass = isWarn
+    ? 'divide-y divide-red-100 bg-white/70'
+    : 'divide-y divide-amber-100 bg-white/70';
+  const badgeClass = isWarn
+    ? 'border-red-300 font-mono text-xs text-red-700'
+    : 'border-amber-300 font-mono text-xs text-amber-900';
+
+  const idLabel = fundingIdCount === 1 ? 'funding ID' : 'funding IDs';
+  const recordLabel = recordCount === 1 ? 'record' : 'records';
+
+  return (
+    <primitives.Card className={cardClass}>
+      <div className={`${headerBorder} px-3 py-2`}>
+        <p className={titleClass}>
+          {fundingIdCount} {idLabel} duplicated across {recordCount} {recordLabel} — {titleSuffix}
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className={theadClass}>
+            <tr>
+              <th className={thClass}>Funding ID</th>
+              <th className={thClass}>Investigator</th>
+              <th className={thClass}>First</th>
+              <th className={thClass}>Last</th>
+              <th className={thClass}>Email</th>
+            </tr>
+          </thead>
+          <tbody className={tbodyClass}>
+            <DuplicateFundingIdGroupRows groups={groups} badgeClassName={badgeClass} />
+          </tbody>
+        </table>
+      </div>
+    </primitives.Card>
+  );
+}
+
+function DuplicateFundingIdSummary({ scientists }: { scientists: HHMIScientist[] }) {
+  const { unresolved, resolved } = classifyDuplicateGrantGroups(scientists);
+
+  if (unresolved.length === 0 && resolved.length === 0) return null;
+
+  return (
+    <>
+      <DuplicateFundingIdCard
+        groups={unresolved}
+        tone="warn"
+        titleSuffix="investigator name does not uniquely resolve"
+      />
+      <DuplicateFundingIdCard
+        groups={resolved}
+        tone="info"
+        titleSuffix="resolved by investigator name"
+      />
+    </>
+  );
+}
+
 function GrantsTable({ scientists }: { scientists: HHMIScientist[] }) {
   if (scientists.length === 0) {
     return (
@@ -359,6 +488,7 @@ function GrantsTable({ scientists }: { scientists: HHMIScientist[] }) {
   return (
     <div className="flex flex-col gap-4">
       <MissingFieldsSummary scientists={scientists} />
+      <DuplicateFundingIdSummary scientists={scientists} />
       <primitives.Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
