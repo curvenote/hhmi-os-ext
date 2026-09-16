@@ -28,6 +28,7 @@ import { PMC_STATE_NAMES, PMC_WORKSPACE_SITE_NAME } from '../../workflows.js';
 import type { PMCWorkVersionMetadata } from '../../common/validate.js';
 import { collectPmcDepositFiles } from '../../common/fileMappings.js';
 import { buildManifestGrants } from './pmc-deposit-grants.js';
+import type { SubmissionVersionMetadataWithPMC } from '../../common/metadata.schema.js';
 
 async function getWorkVersionFromSubmissionVersion(submissionVersionId: string) {
   const prisma = await getPrismaClient();
@@ -119,13 +120,20 @@ export function getJournalInfo(
   throw new Error(`Journal info not found for ${journalName || issn || 'unknown'}`);
 }
 
+/** NIHMS manuscript ID reused on subsequent deposits, if already stored on the SV. */
+export function resolveManuscriptIdForDeposit(
+  metadata: SubmissionVersionMetadataWithPMC | null | undefined,
+): string | undefined {
+  return metadata?.pmc?.emailProcessing?.manuscriptId;
+}
+
 export async function buildAAMDepositManifest(
   taskId: string,
   agency: string,
   metadata: PMCWorkVersionMetadata,
   storageBackend: StorageBackend,
   sourceBucket: KnownBuckets,
-  context?: { workVersionId?: string; submissionId?: string },
+  context?: { workVersionId?: string; submissionId?: string; manuscriptId?: string },
 ): Promise<AAMDepositManifest> {
   const { pmc, files = {} } = metadata;
 
@@ -258,6 +266,7 @@ export async function buildAAMDepositManifest(
       ],
       grants: await buildManifestGrants(pmc.grants || [], context),
     },
+    ...(context?.manuscriptId ? { manuscriptId: context.manuscriptId } : {}),
   };
 
   if (pmc.doiUrl) {
@@ -313,6 +322,15 @@ export async function pmcDepositHandler(ctx: Context, data: CreateJob) {
   storageBackend.ensureConnection(sourceBucket);
   rollingLog.push({ message: 'storageBackend ensured connection', data: sourceBucket });
 
+  const prisma = await getPrismaClient();
+  const submissionVersionForManifest = await prisma.submissionVersion.findUnique({
+    where: { id: submission_version_id },
+    select: { metadata: true },
+  });
+  const manuscriptId = resolveManuscriptIdForDeposit(
+    submissionVersionForManifest?.metadata as SubmissionVersionMetadataWithPMC | null | undefined,
+  );
+
   let attributes: Record<string, string> | undefined;
   let manifest: AAMDepositManifest | undefined;
   try {
@@ -322,7 +340,7 @@ export async function pmcDepositHandler(ctx: Context, data: CreateJob) {
       workVersion.metadata as PMCWorkVersionMetadata,
       storageBackend,
       sourceBucket,
-      { workVersionId: workVersion.id, submissionId },
+      { workVersionId: workVersion.id, submissionId, manuscriptId },
     );
     rollingLog.push({ message: 'manifest built', data: manifest });
 
@@ -341,7 +359,6 @@ export async function pmcDepositHandler(ctx: Context, data: CreateJob) {
     });
 
     // Get the submission version to access its current transition and add the job id
-    const prisma = await getPrismaClient();
     const submissionVersion = await prisma.submissionVersion.update({
       where: { id: submission_version_id },
       data: {

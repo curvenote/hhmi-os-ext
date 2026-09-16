@@ -8,16 +8,22 @@ const {
   mockUpdateSubmissionMetadataAndStatusIfChanged,
   mockUpdateSubmissionStatusOnReceivingEmail,
   mockGetEmailTemplates,
+  mockResolveSubmissionVersionForManuscriptId,
 } = vi.hoisted(() => ({
   mockGetPrismaClient: vi.fn(),
   mockUpdateMessageStatus: vi.fn(),
   mockUpdateSubmissionMetadataAndStatusIfChanged: vi.fn(),
   mockUpdateSubmissionStatusOnReceivingEmail: vi.fn(),
   mockGetEmailTemplates: vi.fn(() => ({ mocked: true })),
+  mockResolveSubmissionVersionForManuscriptId: vi.fn(),
 }));
 
 vi.mock('@curvenote/scms-server', () => ({
   getPrismaClient: mockGetPrismaClient,
+}));
+
+vi.mock('../src/backend/email/manuscript-routing.server.js', () => ({
+  resolveSubmissionVersionForManuscriptId: mockResolveSubmissionVersionForManuscriptId,
 }));
 
 vi.mock('../src/backend/email/email-db.server.js', () => ({
@@ -437,9 +443,6 @@ We have moved the manuscript back to a state where you can upload files.`;
       }) as any;
 
     const buildPrisma = () => ({
-      submissionVersion: {
-        findFirst: vi.fn(),
-      },
       user: {
         findUnique: vi.fn(),
       },
@@ -472,8 +475,8 @@ We have moved the manuscript back to a state where you can upload files.`;
     it('returns IGNORED when manuscript ID exists but no matching submission is found', async () => {
       const ctx = buildCtx();
       const prisma = buildPrisma();
-      prisma.submissionVersion.findFirst.mockResolvedValue(null);
       mockGetPrismaClient.mockResolvedValue(prisma);
+      mockResolveSubmissionVersionForManuscriptId.mockResolvedValue(null);
 
       const payload = buildPayload(
         '(NIHMS2109555)\n\nDear Howard Hughes Medical Institute,\n\nMissing files.\n\nTo access the manuscript record.',
@@ -484,7 +487,7 @@ We have moved the manuscript back to a state where you can upload files.`;
       expect(result.status).toBe('IGNORED');
       expect(result.processedDeposits).toBe(0);
       expect(result.errors).toEqual(['No submission found for NIHMS manuscript ID: 2109555']);
-      expect(prisma.submissionVersion.findFirst).toHaveBeenCalledTimes(1);
+      expect(mockResolveSubmissionVersionForManuscriptId).toHaveBeenCalledWith('2109555');
       expect(mockUpdateMessageStatus).toHaveBeenCalledWith(
         ctx,
         messageId,
@@ -498,7 +501,7 @@ We have moved the manuscript back to a state where you can upload files.`;
     it('returns SUCCESS and sends submitter notification when submission is found', async () => {
       const ctx = buildCtx();
       const prisma = buildPrisma();
-      prisma.submissionVersion.findFirst.mockResolvedValue({
+      mockResolveSubmissionVersionForManuscriptId.mockResolvedValue({
         id: 'submission-version-1',
         work_version_id: 'work-version-1',
         submitted_by_id: 'user-1',
@@ -552,7 +555,7 @@ We have moved the manuscript back to a state where you can upload files.`;
     it('skips status update when submission is already REQUEST_NEW_VERSION', async () => {
       const ctx = buildCtx();
       const prisma = buildPrisma();
-      prisma.submissionVersion.findFirst.mockResolvedValue({
+      mockResolveSubmissionVersionForManuscriptId.mockResolvedValue({
         id: 'submission-version-1',
         work_version_id: 'work-version-1',
         submitted_by_id: 'user-1',
@@ -576,10 +579,47 @@ We have moved the manuscript back to a state where you can upload files.`;
       expect(mockUpdateSubmissionStatusOnReceivingEmail).not.toHaveBeenCalled();
     });
 
+
+    it('routes files-request to prior work_version when latest is DRAFT (via resolver)', async () => {
+      const ctx = buildCtx();
+      const prisma = buildPrisma();
+      mockResolveSubmissionVersionForManuscriptId.mockResolvedValue({
+        id: 'prior-sv',
+        work_version_id: 'prior-wv',
+        submitted_by_id: 'user-1',
+        status: 'REQUEST_NEW_VERSION',
+        date_created: '2026-01-01',
+        work_version: { work_id: 'work-1' },
+      });
+      prisma.user.findUnique.mockResolvedValue({
+        email: 'submitter@example.org',
+        display_name: 'Submitter Name',
+      });
+      mockGetPrismaClient.mockResolvedValue(prisma);
+      mockUpdateSubmissionMetadataAndStatusIfChanged.mockResolvedValue(false);
+
+      const payload = buildPayload(
+        '(NIHMS2109555)\n\nDear Howard Hughes Medical Institute,\n\nThe files are missing from the submission.\n\nTo access the manuscript record, please log in.',
+      );
+
+      const result = await nihmsFilesRequestHandler.process(ctx, payload, messageId);
+
+      expect(result.status).toBe('SUCCESS');
+      expect(mockResolveSubmissionVersionForManuscriptId).toHaveBeenCalledWith('2109555');
+      expect(mockUpdateSubmissionMetadataAndStatusIfChanged).toHaveBeenCalledWith(
+        ctx,
+        'prior-wv',
+        expect.objectContaining({ packageId: 'prior-wv', manuscriptId: '2109555' }),
+        messageId,
+        'SUBMITTERS_FILES_REQUESTED',
+        'nihms-files-request',
+      );
+    });
+
     it('sends support notification when submitter email is missing and metadata changed', async () => {
       const ctx = buildCtx();
       const prisma = buildPrisma();
-      prisma.submissionVersion.findFirst.mockResolvedValue({
+      mockResolveSubmissionVersionForManuscriptId.mockResolvedValue({
         id: 'submission-version-1',
         work_version_id: 'work-version-1',
         submitted_by_id: 'user-1',

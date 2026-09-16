@@ -72,12 +72,16 @@ const PMC_STATE_ORDER = [
 /**
  * When the submission's current status is in this list, the Airtable sync will not update
  * the submission status (status update is skipped). Metadata and activity updates still apply.
+ * DRAFT/PENDING are pre-handoff guards: once manuscript IDs are copied onto new versions,
+ * Airtable milestones for the live NIHMS record must not overwrite a not-yet-deposited draft.
  */
 export const PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC: readonly string[] = [
   PMC_STATE_NAMES.NO_ACTION_NEEDED,
   PMC_STATE_NAMES.REQUEST_NEW_VERSION,
   PMC_STATE_NAMES.CANCELLED,
   PMC_STATE_NAMES.FAILED,
+  PMC_STATE_NAMES.DRAFT,
+  PMC_STATE_NAMES.PENDING,
 ];
 
 /**

@@ -10,8 +10,8 @@ import {
   updateSubmissionMetadataAndStatusIfChanged,
 } from '../email-db.server.js';
 import { getPrismaClient } from '@curvenote/scms-server';
-import { Prisma } from '@curvenote/scms-db';
 import { extractManuscriptId } from './email-parsing-utils.server.js';
+import { resolveSubmissionVersionForManuscriptId } from '../manuscript-routing.server.js';
 
 /**
  * Result of parsing a catch-all email
@@ -51,47 +51,32 @@ async function findSubmissionsByManuscriptId(manuscriptId: string): Promise<
     packageId: string;
   }>
 > {
-  const prisma = await getPrismaClient();
+  const resolved = await resolveSubmissionVersionForManuscriptId(manuscriptId);
+  if (!resolved) return [];
 
-  // Search for submissions where the manuscript ID appears in the emailProcessing metadata
-  const submissions = await prisma.submissionVersion.findMany({
-    where: {
-      submission: {
-        site: {
-          name: 'pmc',
-        },
-      },
-      metadata: {
-        path: ['pmc', 'emailProcessing'],
-        not: Prisma.JsonNull,
-      },
-    },
-    include: {
-      submission: true,
+  const prisma = await getPrismaClient();
+  const withSubmission = await prisma.submissionVersion.findUnique({
+    where: { id: resolved.id },
+    select: {
+      id: true,
+      submission_id: true,
+      work_version_id: true,
+      metadata: true,
     },
   });
+  if (!withSubmission) return [];
 
-  const matchingSubmissions: Array<{
-    submissionId: string;
-    submissionVersionId: string;
-    packageId: string;
-  }> = [];
+  const metadata = withSubmission.metadata as any;
+  const packageId =
+    metadata?.pmc?.emailProcessing?.packageId || withSubmission.work_version_id || 'unknown';
 
-  for (const submissionVersion of submissions) {
-    const metadata = submissionVersion.metadata as any;
-    const emailProcessing = metadata?.pmc?.emailProcessing;
-
-    // Check the email processing record for the manuscript ID (single record structure)
-    if (emailProcessing && emailProcessing.manuscriptId === manuscriptId) {
-      matchingSubmissions.push({
-        submissionId: submissionVersion.submission_id,
-        submissionVersionId: submissionVersion.id,
-        packageId: emailProcessing.packageId || 'unknown',
-      });
-    }
-  }
-
-  return matchingSubmissions;
+  return [
+    {
+      submissionId: withSubmission.submission_id,
+      submissionVersionId: withSubmission.id,
+      packageId,
+    },
+  ];
 }
 
 /**
