@@ -115,7 +115,8 @@ const PMC_STATUS_LOOKUP: Record<string, string> = {
     PMC_STATE_NAMES.REVIEWER_REJECTED_INITIAL,
   "NIHMS Revision of PMC Documents Following Reviewer's Rejection":
     PMC_STATE_NAMES.REVIEWER_REJECTED_INITIAL,
-  "Submitter's Files(s) Requested": PMC_STATE_NAMES.REMOVED_FROM_PROCESSING,
+  "Submitter's Files(s) Requested": PMC_STATE_NAMES.SUBMITTERS_FILES_REQUESTED,
+  "Submitter's File(s) Requested": PMC_STATE_NAMES.SUBMITTERS_FILES_REQUESTED,
   'NIHMS Submission Review and File Preparation': PMC_STATE_NAMES.REVIEWER_APPROVED_INITIAL,
   "Reviewer's Final Approval Requested": PMC_STATE_NAMES.NIHMS_CONVERSION_COMPLETE,
   'NIHMS Conversion to PMC Documents': PMC_STATE_NAMES.REVIEWER_APPROVED_FINAL,
@@ -126,7 +127,6 @@ const PMC_STATUS_LOOKUP: Record<string, string> = {
   // 'Pending Final Citation Data': '',
   // 'NLM Verification of Journal Information': '',
   // "Reviewer's Approval of the Submission Statement Requested": '',
-  // "Submitter's File(s) Requested": '',
   // "Submitter's Action Requested Prior to File Upload": '',
 };
 
