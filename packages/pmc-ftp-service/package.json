@@ -15,8 +15,8 @@
   "scripts": {
     "gcp-build": "bun run build",
     "clean": "rm -rf dist",
-    "build": "esbuild src/index.ts --outfile=dist/index.js --bundle --platform=node --external:fsevents --loader:.node=copy",
-    "build:watch": "esbuild src/index.ts --outfile=dist/index.js --bundle --platform=node --watch --external:fsevents",
+    "build": "esbuild src/index.ts --outfile=dist/index.js --bundle --platform=node --external:fsevents --external:cpu-features --loader:.node=copy",
+    "build:watch": "esbuild src/index.ts --outfile=dist/index.js --bundle --platform=node --watch --external:fsevents --external:cpu-features",
     "start": "node ./dist/index.js",
     "dev": "bun run clean; bun run build; NODE_ENV=development concurrently \"bun run build:watch\" \"nodemon\"",
     "lint": "eslint \"src/**/*.ts\" -c ./.eslintrc.cjs",
