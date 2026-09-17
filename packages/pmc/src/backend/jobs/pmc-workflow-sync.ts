@@ -6,6 +6,7 @@ import { fetchRecordsByManuscriptIds } from '../airtable-config.server.js';
 import { formatDate } from '@curvenote/common';
 import { uuidv7 } from 'uuidv7';
 import { PMC_STATE_NAMES } from '../../workflows.js';
+import { hasManuscriptHandoffOccurred } from '../email/manuscript-routing.server.js';
 import { plural } from 'myst-common';
 // PMC metadata types are used for documentation but not directly in the code
 // since we're using Prisma.JsonValue for database compatibility
@@ -71,28 +72,39 @@ const PMC_STATE_ORDER = [
 
 /**
  * When the submission's current status is in this list, the Airtable sync will not update
- * the submission status (status update is skipped). Metadata and activity updates still apply.
- * DRAFT/PENDING are pre-handoff guards: once manuscript IDs are copied onto new versions,
- * Airtable milestones for the live NIHMS record must not overwrite a not-yet-deposited draft.
+ * the submission status (status update is skipped).
+ *
+ * Terminal / special statuses stay frozen after handoff. Pre-handoff statuses (DRAFT through
+ * DEPOSIT_REJECTED_BY_PMC, plus FAILED/CANCELLED) are gated separately via
+ * {@link hasManuscriptHandoffOccurred} so a cloned manuscript ID cannot pull the prior NIHMS
+ * record's status onto a not-yet-confirmed latest version.
  */
 export const PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC: readonly string[] = [
   PMC_STATE_NAMES.NO_ACTION_NEEDED,
   PMC_STATE_NAMES.REQUEST_NEW_VERSION,
   PMC_STATE_NAMES.CANCELLED,
   PMC_STATE_NAMES.FAILED,
-  PMC_STATE_NAMES.DRAFT,
-  PMC_STATE_NAMES.PENDING,
 ];
 
 /**
  * Returns whether the submission status should be updated during sync.
- * When current status is in PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC, we do not overwrite it.
+ * Skips when status is unchanged, frozen, or the latest version has not yet reached
+ * manuscript-ID handoff (`DEPOSIT_CONFIRMED_BY_PMC`+).
  */
 export function shouldUpdateStatusOnSync(currentStatus: string, resolvedStatus: string): boolean {
   return (
     resolvedStatus !== currentStatus &&
+    hasManuscriptHandoffOccurred(currentStatus) &&
     !PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC.includes(currentStatus)
   );
+}
+
+/**
+ * Airtable date-field milestones belong to the live NIHMS record. Until the latest SV reaches
+ * handoff, those milestones may still describe a prior version — do not attach them.
+ */
+export function shouldApplyAirtableActivitiesOnSync(currentStatus: string): boolean {
+  return hasManuscriptHandoffOccurred(currentStatus);
 }
 
 // Placeholder mapping for milestoneType to PMC_STATE_NAME
@@ -410,8 +422,12 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
           continue;
         }
 
-        // First, get activity entries from the Airtable date fields
-        const activities = activitiesFromAirtableDateFields(airtableRecord);
+        // First, get activity entries from the Airtable date fields (only after handoff —
+        // pre-handoff milestones still describe the prior live NIHMS package).
+        const applyAirtableActivities = shouldApplyAirtableActivitiesOnSync(latestVersion.status);
+        const activities = applyAirtableActivities
+          ? activitiesFromAirtableDateFields(airtableRecord)
+          : [];
 
         // Next, handle the PMID and PMCID fields
         const metadataUpdates = metadataFromAirtableIdFields(
@@ -420,8 +436,13 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
           activities,
         );
 
-        // Finally, resolve the current submission status
-        const status = resolveSubmissionStatus(latestVersion, airtableRecord, activities);
+        // Finally, resolve the current submission status. When pre-handoff, pass a disposable
+        // bucket so resolveSubmissionStatus cannot append status activities onto the write list.
+        const status = resolveSubmissionStatus(
+          latestVersion,
+          airtableRecord,
+          applyAirtableActivities ? activities : [],
+        );
         const shouldUpdateStatus = shouldUpdateStatusOnSync(latestVersion.status, status);
 
         // get all activites from the database for this submission version
