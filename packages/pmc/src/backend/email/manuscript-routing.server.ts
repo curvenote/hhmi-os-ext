@@ -4,6 +4,9 @@ import { PMC_STATE_NAMES, PMC_WORKSPACE_SITE_NAME } from '../../workflows.js';
 /**
  * Statuses at or after NIHMS bulk confirm — the latest SV with this manuscript ID
  * owns subsequent manuscript-ID-keyed updates.
+ *
+ * `REQUEST_NEW_VERSION` / `NO_ACTION_NEEDED` can also be reached from failed/rejected
+ * deposits that never confirmed; those require `manuscriptConfirmed !== false`.
  */
 export const PMC_MANUSCRIPT_HANDOFF_STATUSES: readonly string[] = [
   PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC,
@@ -19,25 +22,55 @@ export const PMC_MANUSCRIPT_HANDOFF_STATUSES: readonly string[] = [
   PMC_STATE_NAMES.NO_ACTION_NEEDED,
 ];
 
-export function hasManuscriptHandoffOccurred(status: string): boolean {
-  return PMC_MANUSCRIPT_HANDOFF_STATUSES.includes(status);
+/** Terminal statuses reachable without NIHMS bulk confirm. */
+const PMC_AMBIGUOUS_HANDOFF_STATUSES: readonly string[] = [
+  PMC_STATE_NAMES.REQUEST_NEW_VERSION,
+  PMC_STATE_NAMES.NO_ACTION_NEEDED,
+];
+
+export type ManuscriptHandoffVersion = {
+  id: string;
+  status: string;
+  date_created: string | Date;
+  /** Set true on bulk confirm; false on clone. `undefined` = legacy row (treat as confirmed). */
+  manuscriptConfirmed?: boolean | null;
+};
+
+/**
+ * Whether this version has taken ownership of the NIHMS manuscript inbox.
+ * Ambiguous terminals only count when not explicitly unconfirmed (cloned / never confirmed).
+ */
+export function hasManuscriptHandoffOccurred(
+  status: string,
+  manuscriptConfirmed?: boolean | null,
+): boolean {
+  if (!PMC_MANUSCRIPT_HANDOFF_STATUSES.includes(status)) return false;
+  if (PMC_AMBIGUOUS_HANDOFF_STATUSES.includes(status)) {
+    return manuscriptConfirmed !== false;
+  }
+  return true;
 }
 
 /**
  * Pick which submission version should receive manuscript-ID-keyed updates.
- * Before the latest version reaches handoff, prefer the prior version that still
- * owns the live NIHMS record; after handoff, always use the latest.
+ * Before the latest version reaches handoff, prefer the most recent prior version
+ * that owns the live NIHMS record; after handoff, always use the latest.
  */
-export function pickSubmissionVersionForManuscriptId<
-  T extends { id: string; status: string; date_created: string | Date },
->(versions: T[]): T | undefined {
+export function pickSubmissionVersionForManuscriptId<T extends ManuscriptHandoffVersion>(
+  versions: T[],
+): T | undefined {
   if (versions.length === 0) return undefined;
   const sorted = [...versions].sort(
     (a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime(),
   );
   const [latest, ...rest] = sorted;
-  if (hasManuscriptHandoffOccurred(latest.status) || rest.length === 0) return latest;
-  return rest[0];
+  if (
+    hasManuscriptHandoffOccurred(latest.status, latest.manuscriptConfirmed) ||
+    rest.length === 0
+  ) {
+    return latest;
+  }
+  return rest.find((v) => hasManuscriptHandoffOccurred(v.status, v.manuscriptConfirmed)) ?? latest;
 }
 
 export type ResolvedManuscriptSubmissionVersion = {
@@ -46,8 +79,16 @@ export type ResolvedManuscriptSubmissionVersion = {
   submitted_by_id: string;
   status: string;
   date_created: string | Date;
+  manuscriptConfirmed?: boolean | null;
   work_version: { work_id: string };
 };
+
+function manuscriptConfirmedFromMetadata(metadata: unknown): boolean | undefined {
+  if (!metadata || typeof metadata !== 'object') return undefined;
+  const pmc = (metadata as { pmc?: { emailProcessing?: { manuscriptConfirmed?: unknown } } }).pmc;
+  const value = pmc?.emailProcessing?.manuscriptConfirmed;
+  return typeof value === 'boolean' ? value : undefined;
+}
 
 /**
  * Resolve the submission version that should receive updates for a NIHMS manuscript ID.
@@ -74,9 +115,15 @@ export async function resolveSubmissionVersionForManuscriptId(
       submitted_by_id: true,
       status: true,
       date_created: true,
+      metadata: true,
       work_version: { select: { work_id: true } },
     },
   });
 
-  return pickSubmissionVersionForManuscriptId(matches) ?? null;
+  const withConfirmFlag = matches.map(({ metadata, ...rest }) => ({
+    ...rest,
+    manuscriptConfirmed: manuscriptConfirmedFromMetadata(metadata),
+  }));
+
+  return pickSubmissionVersionForManuscriptId(withConfirmFlag) ?? null;
 }
