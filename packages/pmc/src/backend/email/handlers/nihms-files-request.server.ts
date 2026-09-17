@@ -14,6 +14,7 @@ import {
 import { extractManuscriptId } from './email-parsing-utils.server.js';
 import { getEmailTemplates } from '../../../client.js';
 import { PMC_NIHMS_FILES_REQUESTED } from '../../emails/nihms-files-requested.js';
+import { resolveSubmissionVersionForManuscriptId } from '../manuscript-routing.server.js';
 
 /**
  * Strips all HTML tags and decodes HTML entities from text
@@ -260,27 +261,9 @@ export const nihmsFilesRequestHandler: InboundEmailHandler = {
         };
       }
 
-      // Find the submission version associated with this manuscript ID
+      // Find the submission version associated with this manuscript ID (handoff-aware)
       const prisma = await getPrismaClient();
-      const submissionVersion = await prisma.submissionVersion.findFirst({
-        where: {
-          metadata: {
-            path: ['pmc', 'emailProcessing', 'manuscriptId'],
-            equals: manuscriptId,
-          },
-        },
-        select: {
-          id: true,
-          work_version_id: true,
-          submitted_by_id: true,
-          status: true,
-          work_version: {
-            select: {
-              work_id: true,
-            },
-          },
-        },
-      });
+      const submissionVersion = await resolveSubmissionVersionForManuscriptId(manuscriptId);
 
       if (!submissionVersion) {
         errors.push(`No submission found for NIHMS manuscript ID: ${manuscriptId}`);
