@@ -99,23 +99,27 @@ export function StatusTramline({
     return stop.completed ? index : lastIndex;
   }, -1);
 
-  // Responsive container width
+  // Responsive container width — measure via ResizeObserver so we pick up
+  // layout that settles after first paint (sidebar, fonts, async content).
+  // A one-shot offsetWidth + window resize misses that and can leave the
+  // centered SVG wider than its card until the next navigation/refresh.
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(832);
-  const [isMounted, setIsMounted] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(0);
 
   useEffect(() => {
-    setIsMounted(true);
-    if (containerRef.current) {
-      setContainerWidth(containerRef.current.offsetWidth);
-    }
-    const handleResize = () => {
-      if (containerRef.current) {
-        setContainerWidth(containerRef.current.offsetWidth);
-      }
+    const el = containerRef.current;
+    if (!el) return;
+
+    const updateWidth = () => {
+      const width = el.offsetWidth;
+      if (width > 0) setContainerWidth(width);
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    updateWidth();
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   // Calculate label area width and node positions
@@ -177,10 +181,10 @@ export function StatusTramline({
   return (
     <div
       ref={containerRef}
-      className="relative flex flex-col items-center w-full py-6 bg-white border rounded-sm"
+      className="relative flex flex-col items-center w-full overflow-hidden py-6 bg-white border rounded-sm"
       style={{ minHeight: 180 }}
     >
-      {isMounted && (
+      {containerWidth > 0 && (
         <>
           {/* Title row - ABOVE the tram line */}
           <div style={{ width: '100%', padding: `0 ${sidePadding}px`, marginBottom: 8 }}>
@@ -222,7 +226,7 @@ export function StatusTramline({
             width={svgWidth}
             height={2 * NODE_RADIUS + 8}
             viewBox={`0 0 ${svgWidth} ${2 * NODE_RADIUS + 8}`}
-            className="block"
+            className="block max-w-full"
             aria-label="Submission status tramline"
             style={{ zIndex: 1, display: 'block' }}
           >
