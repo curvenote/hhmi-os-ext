@@ -12,7 +12,12 @@ import { useFetcher, redirect, data } from 'react-router';
 import { PublicationInfoCard } from '../components/PublicationInfoCard.js';
 import { FilesSection } from '../components/FilesSection.js';
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from 'react-router';
-import { withSecureWorkContext, sites, SiteContextWithUser } from '@curvenote/scms-server';
+import {
+  withSecureWorkContext,
+  sites,
+  SiteContextWithUser,
+  getUserById,
+} from '@curvenote/scms-server';
 import type { UserWithRolesDBO, WorkVersionDBO } from '@curvenote/scms-server';
 import { confirmPMC } from '../backend/metadata/confirm.server.js';
 import { syncManuscriptFileMappings } from '../backend/fileMappings.server.js';
@@ -196,11 +201,23 @@ export async function action(args: ActionFunctionArgs) {
         );
       }
 
-      // Automatically transition PENDING → DEPOSITED via send_to_pmc (invokes PMC_DEPOSIT_FTP job)
+      // Automatically transition PENDING → DEPOSITED via send_to_pmc (invokes PMC_DEPOSIT_FTP job).
+      // Run as the platform submissions service account so depositors without
+      // site:submissions:update still get auto-deposit (SYSTEM_SERVICE → system:admin).
       try {
         const site = await sites.dbGetSite('pmc');
         if (site) {
+          const serviceAccountId = ctx.$config.api.submissionsServiceAccount?.id;
+          const serviceAccountUser = serviceAccountId
+            ? await getUserById(serviceAccountId)
+            : null;
+          if (!serviceAccountUser) {
+            throw new Error(
+              `submissionsServiceAccount not found (id=${serviceAccountId ?? 'undefined'})`,
+            );
+          }
           const siteCtx = new SiteContextWithUser(ctx, site);
+          siteCtx.user = { email_verified: true, ...serviceAccountUser };
           const submissionVersionForTransition =
             await sites.submissions.versions.dbGetLatestSubmissionVersionFromSubmission(
               'pmc',
