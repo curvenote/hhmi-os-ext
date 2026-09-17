@@ -87,7 +87,6 @@ const MERMAID: string | undefined = `graph TD
     FAILED -->|mark_no_action_needed_from_failed| NO_ACTION
     REMOVED_FROM_PROCESSING -->|request_new_version_from_removed| REQUEST_NEW
     REMOVED_FROM_PROCESSING -->|mark_no_action_needed_from_removed| NO_ACTION
-    REQUEST_NEW -->|complete_cloning| DRAFT
 
     %% Style end states
     classDef endState fill:#e5f5e5,stroke:#2d5a2d,stroke-width:2px
@@ -778,19 +777,6 @@ export const PMC_DEPOSIT_WORKFLOW = {
       labels: MARK_NO_ACTION_NEEDED_LABELS,
       userTriggered: true,
       help: 'Mark this deposit as no action needed from the removed from processing state.',
-      requiredScopes: ['site:submissions:update'],
-      requiresJob: false,
-    },
-    {
-      version: 1,
-      name: 'complete_cloning',
-      sourceStateName: PMC_STATE_NAMES.REQUEST_NEW_VERSION,
-      targetStateName: PMC_STATE_NAMES.DRAFT,
-      labels: {
-        success: 'Deposit has been marked as draft',
-      },
-      userTriggered: false,
-      help: 'System transition: A new version has been requested, creating a new draft.',
       requiredScopes: ['site:submissions:update'],
       requiresJob: false,
     },
