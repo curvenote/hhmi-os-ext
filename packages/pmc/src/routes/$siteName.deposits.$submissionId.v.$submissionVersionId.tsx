@@ -336,7 +336,10 @@ export default function PMCDetailsPage({ loaderData }: { loaderData: LoaderData 
           )}
           {error && <ui.ErrorMessage error={error} />}
         </div>
-        <PublicationInfoCard workVersionId={thisWorkVersion?.id} />
+        <PublicationInfoCard
+          showPmcIdentifiers
+          packageId={thisWorkVersion?.id}
+        />
         <PreviewMetadataSection pmc={metadata.pmc} showContactLinks />
         <FilesSection cdnKey={cdnKey} readonly hideEmpty hideAlerts />
         <SectionWithHeading heading="Versions" icon={GitBranch}>
