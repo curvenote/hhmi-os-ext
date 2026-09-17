@@ -58,7 +58,9 @@ export function getWorkCreateOptions(): WorkCreateOption[] {
       icon: PMCIcon,
       metadataKey: 'pmc',
       startPath: '/app/works/pmc',
-      formPathIncludes: '/site/pmc/',
+      // Only the deposit form hides work secondary nav. Status/details
+      // (`.../site/pmc/submission/...`) must keep the nav visible.
+      formPathIncludes: '/site/pmc/deposit',
       mode: 'standalone',
       order: 10,
     },
