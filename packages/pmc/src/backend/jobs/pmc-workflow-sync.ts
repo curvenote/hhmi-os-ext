@@ -91,10 +91,14 @@ export const PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC: readonly string[] = [
  * Skips when status is unchanged, frozen, or the latest version has not yet reached
  * manuscript-ID handoff (`DEPOSIT_CONFIRMED_BY_PMC`+).
  */
-export function shouldUpdateStatusOnSync(currentStatus: string, resolvedStatus: string): boolean {
+export function shouldUpdateStatusOnSync(
+  currentStatus: string,
+  resolvedStatus: string,
+  manuscriptConfirmed?: boolean | null,
+): boolean {
   return (
     resolvedStatus !== currentStatus &&
-    hasManuscriptHandoffOccurred(currentStatus) &&
+    hasManuscriptHandoffOccurred(currentStatus, manuscriptConfirmed) &&
     !PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC.includes(currentStatus)
   );
 }
@@ -103,8 +107,11 @@ export function shouldUpdateStatusOnSync(currentStatus: string, resolvedStatus: 
  * Airtable date-field milestones belong to the live NIHMS record. Until the latest SV reaches
  * handoff, those milestones may still describe a prior version — do not attach them.
  */
-export function shouldApplyAirtableActivitiesOnSync(currentStatus: string): boolean {
-  return hasManuscriptHandoffOccurred(currentStatus);
+export function shouldApplyAirtableActivitiesOnSync(
+  currentStatus: string,
+  manuscriptConfirmed?: boolean | null,
+): boolean {
+  return hasManuscriptHandoffOccurred(currentStatus, manuscriptConfirmed);
 }
 
 // Placeholder mapping for milestoneType to PMC_STATE_NAME
@@ -282,6 +289,20 @@ export function extractManuscriptId(submissionVersion: SubmissionVersion): strin
 }
 
 /**
+ * Whether NIHMS bulk-confirmed this package (false when ID was only cloned).
+ */
+export function extractManuscriptConfirmed(
+  submissionVersion: SubmissionVersion,
+): boolean | undefined {
+  const metadata = submissionVersion.metadata;
+  if (!metadata || typeof metadata !== 'object' || metadata === null) {
+    return undefined;
+  }
+  const value = (metadata as Record<string, any>).pmc?.emailProcessing?.manuscriptConfirmed;
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+/**
  * Finds any PMC Airtable update job older than 5 minutes with status RUNNING and marks them as FAILED
  */
 export async function invalidateOldRunningJobs(): Promise<void> {
@@ -424,7 +445,11 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
 
         // First, get activity entries from the Airtable date fields (only after handoff —
         // pre-handoff milestones still describe the prior live NIHMS package).
-        const applyAirtableActivities = shouldApplyAirtableActivitiesOnSync(latestVersion.status);
+        const manuscriptConfirmed = extractManuscriptConfirmed(latestVersion);
+        const applyAirtableActivities = shouldApplyAirtableActivitiesOnSync(
+          latestVersion.status,
+          manuscriptConfirmed,
+        );
         const activities = applyAirtableActivities
           ? activitiesFromAirtableDateFields(airtableRecord)
           : [];
@@ -443,7 +468,11 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
           airtableRecord,
           applyAirtableActivities ? activities : [],
         );
-        const shouldUpdateStatus = shouldUpdateStatusOnSync(latestVersion.status, status);
+        const shouldUpdateStatus = shouldUpdateStatusOnSync(
+          latestVersion.status,
+          status,
+          manuscriptConfirmed,
+        );
 
         // get all activites from the database for this submission version
         const existingActivities = await prisma.activity.findMany({

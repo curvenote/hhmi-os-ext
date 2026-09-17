@@ -68,6 +68,8 @@ const emailProcessingRecordSchema = z.object({
   messageId: z.string(), // Reference to Message.id - links to the raw message record
   lastProcessedAt: z.string(), // ISO timestamp - when this was last updated
   manuscriptId: z.string().optional(), // NIHMS manuscript ID - the key mapping we need
+  /** True after NIHMS bulk confirm for this package; false when ID was only cloned. */
+  manuscriptConfirmed: z.boolean().optional(),
   packageId: z.string(), // Our package ID (work version ID) - for verification
   status: z.string().refine((val) => val === 'ok' || val === 'warning' || val === 'error', {
     message: 'Status must be ok, warning, or error',

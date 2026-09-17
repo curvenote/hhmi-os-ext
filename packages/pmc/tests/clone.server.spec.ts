@@ -8,11 +8,13 @@ describe('buildClonedPmcSubmissionMetadata', () => {
       pmc: {
         emailProcessing: {
           manuscriptId: 'NIHMS123',
+          manuscriptConfirmed: true,
         },
       },
     } as any);
 
     expect(result.pmc?.emailProcessing?.manuscriptId).toBe('NIHMS123');
+    expect(result.pmc?.emailProcessing?.manuscriptConfirmed).toBe(false);
   });
 
   it('copies top-level pmc.manuscriptId when emailProcessing is absent', () => {
@@ -21,6 +23,7 @@ describe('buildClonedPmcSubmissionMetadata', () => {
     });
 
     expect(result.pmc?.emailProcessing?.manuscriptId).toBe('NIHMS456');
+    expect(result.pmc?.emailProcessing?.manuscriptConfirmed).toBe(false);
   });
 
   it('leaves pmc empty when source has no manuscriptId', () => {
