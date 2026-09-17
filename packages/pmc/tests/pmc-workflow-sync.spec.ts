@@ -236,11 +236,25 @@ describe('PMC Airtable Functions', () => {
       expect(shouldUpdateStatusOnSync(currentStatus, resolvedStatus)).toBe(false);
     });
 
-    it('should update status when current status is DRAFT and Airtable resolves to a different status', () => {
-      const currentStatus = PMC_STATE_NAMES.DRAFT;
-      const resolvedStatus = PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC;
+    it('does not update status on sync when current status is DRAFT', () => {
+      expect(
+        shouldUpdateStatusOnSync(PMC_STATE_NAMES.DRAFT, PMC_STATE_NAMES.REVIEWER_APPROVED_INITIAL),
+      ).toBe(false);
+    });
 
-      expect(shouldUpdateStatusOnSync(currentStatus, resolvedStatus)).toBe(true);
+    it('does not update status on sync when current status is PENDING', () => {
+      expect(
+        shouldUpdateStatusOnSync(PMC_STATE_NAMES.PENDING, PMC_STATE_NAMES.AVAILABLE_ON_PMC),
+      ).toBe(false);
+    });
+
+    it('still updates when DEPOSITED and not frozen', () => {
+      expect(
+        shouldUpdateStatusOnSync(
+          PMC_STATE_NAMES.DEPOSITED,
+          PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC,
+        ),
+      ).toBe(true);
     });
 
     it('should not update status when current and resolved status are the same', () => {
