@@ -217,6 +217,9 @@ export async function action(args: ActionFunctionArgs) {
       // Automatically transition PENDING → DEPOSITED via send_to_pmc (invokes PMC_DEPOSIT_FTP job).
       // Run as the platform submissions service account so depositors without
       // site:submissions:update still get auto-deposit (SYSTEM_SERVICE → system:admin).
+      // Inject the SA onto the work context *before* constructing SiteContextWithUser so the
+      // constructor picks it up (same pattern as pmc-workflow-sync); assigning after construct
+      // is easy to get wrong with SiteContextWithUser's $user field shadowing.
       try {
         const site = await sites.dbGetSite('pmc');
         if (site) {
@@ -227,26 +230,38 @@ export async function action(args: ActionFunctionArgs) {
               `submissionsServiceAccount not found (id=${serviceAccountId ?? 'undefined'})`,
             );
           }
-          const siteCtx = new SiteContextWithUser(ctx, site);
-          siteCtx.user = { email_verified: true, ...serviceAccountUser };
-          const submissionVersionForTransition =
-            await sites.submissions.versions.dbGetLatestSubmissionVersionFromSubmission(
-              'pmc',
-              confirmResult.submissionId,
-              'PENDING',
-            );
-          if (submissionVersionForTransition) {
-            const workflow = getWorkflow(
-              ctx.$config,
-              [getWorkflows()],
-              submissionVersionForTransition.submission.collection.workflow,
-            );
-            await sites.submissions.versions.transition(
-              siteCtx,
-              submissionVersionForTransition,
-              workflow,
-              PMC_STATE_NAMES.DEPOSITED,
-            );
+          const actor = { email_verified: true as const, ...serviceAccountUser };
+          console.info('PMC auto-deposit actor', {
+            id: actor.id,
+            email: actor.email,
+            system_role: actor.system_role,
+            system_scopes: actor.system_scopes,
+          });
+          const previousUser = ctx.user;
+          ctx.user = actor;
+          try {
+            const siteCtx = new SiteContextWithUser(ctx, site);
+            const submissionVersionForTransition =
+              await sites.submissions.versions.dbGetLatestSubmissionVersionFromSubmission(
+                'pmc',
+                confirmResult.submissionId,
+                'PENDING',
+              );
+            if (submissionVersionForTransition) {
+              const workflow = getWorkflow(
+                ctx.$config,
+                [getWorkflows()],
+                submissionVersionForTransition.submission.collection.workflow,
+              );
+              await sites.submissions.versions.transition(
+                siteCtx,
+                submissionVersionForTransition,
+                workflow,
+                PMC_STATE_NAMES.DEPOSITED,
+              );
+            }
+          } finally {
+            ctx.user = previousUser;
           }
         }
       } catch (autoTransitionError) {
