@@ -7,6 +7,7 @@ import {
   PMC_FILTERS,
 } from '../../components/ClientListingHelpers.js';
 import { SubmissionCard } from './SubmissionCard.js';
+import { formatManuscriptId } from '../../components/utils.js';
 
 import type { ListingPromise, ResolvedListing } from './types.js';
 
@@ -97,7 +98,9 @@ export function SubmissionList({
               const issn = wvMetadata?.pmc?.issn ?? '';
               // Get manuscript ID from email processing record (single record structure)
               const emailProcessing = svMetadata.pmc?.emailProcessing;
-              const manuscriptId = emailProcessing?.manuscriptId ?? '';
+              // Matched in its displayed `NIHMS…` form so searching what the card
+              // shows works, as well as the bare stored number.
+              const manuscriptId = formatManuscriptId(emailProcessing?.manuscriptId) ?? '';
               const pmid = svMetadata.pmc?.pmid ?? '';
               const pmcid = svMetadata.pmc?.pmcid ?? '';
               const submittedBy = submission.submitted_by.display_name ?? '';

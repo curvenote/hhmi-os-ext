@@ -2,7 +2,7 @@ import { useLoaderData } from 'react-router';
 import { ExternalLink } from 'lucide-react';
 import { primitives, cn, formatDate } from '@curvenote/scms-core';
 import type { PMCCombinedMetadataSection } from '../common/metadata.schema.js';
-import { formatAuthors } from './utils.js';
+import { formatAuthors, formatManuscriptId } from './utils.js';
 
 export interface PublicationInfoCardProps {
   /**
@@ -43,7 +43,9 @@ export function PublicationInfoCard({
   const emailProcessing = pmcMetadata?.emailProcessing;
   const pmid = showPmcIdentifiers ? pmcMetadata?.pmid : undefined;
   const pmcId = showPmcIdentifiers ? pmcMetadata?.pmcid : undefined;
-  const manuscriptId = showPmcIdentifiers ? emailProcessing?.manuscriptId : undefined;
+  const manuscriptId = showPmcIdentifiers
+    ? formatManuscriptId(emailProcessing?.manuscriptId)
+    : undefined;
 
   const showIdentifiersBlock = !!packageId || !!(manuscriptId || pmid || pmcId);
 
