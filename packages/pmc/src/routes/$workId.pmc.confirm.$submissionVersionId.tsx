@@ -36,6 +36,10 @@ import { GrantsInfo } from '../components/GrantsInfo.js';
 import { formatDistanceToNow } from 'date-fns';
 import { PMC_STATE_NAMES } from '../workflows.js';
 import type { PMCWorkVersionMetadata } from '../common/validate.js';
+import type {
+  PMCCombinedMetadataSection,
+  SubmissionVersionMetadataWithPMC,
+} from '../common/metadata.schema.js';
 import { validatePMCMetadata } from '../common/validate.js';
 import { validateJournalAgainstNIH } from '../backend/services/nih-journal.server.js';
 import { signPmcDisplayMetadata } from '../backend/metadata/utils.server.js';
@@ -50,7 +54,7 @@ interface LoaderData {
   numSubmissionVersions: number;
   parentSubmissionVersionId: string | null;
   cdnKey: string | null;
-  metadata: PMCWorkVersionMetadata;
+  metadata: PMCCombinedMetadataSection;
   user: UserWithRolesDBO;
   canPreview?: boolean;
   validationErrors: GeneralError[];
@@ -128,6 +132,15 @@ export const loader = async (args: LoaderFunctionArgs): Promise<LoaderData | Res
 
   const metadataWithSigned = await signPmcDisplayMetadata(typedMetadata, cdn ?? '', ctx);
 
+  // Identifiers live on submission-version metadata, so a redeposit can show the
+  // NIHMS manuscript ID it inherited from the previous version.
+  const submissionVersionPmc = (submissionVersion.metadata as SubmissionVersionMetadataWithPMC)
+    ?.pmc;
+  const displayMetadata: PMCCombinedMetadataSection = {
+    ...metadataWithSigned,
+    pmc: { ...metadataWithSigned.pmc, ...submissionVersionPmc },
+  };
+
   // Get HHMI grant options for the UI
   const grantOptions = await getHHMIGrantOptions();
 
@@ -148,7 +161,7 @@ export const loader = async (args: LoaderFunctionArgs): Promise<LoaderData | Res
     numSubmissionVersions,
     parentSubmissionVersionId,
     cdnKey: cdn_key,
-    metadata: metadataWithSigned,
+    metadata: displayMetadata,
     user: ctx.user,
     canPreview: result.success && !journalValidationError,
     validationErrors: [result.error, journalValidationError].filter(
@@ -208,9 +221,7 @@ export async function action(args: ActionFunctionArgs) {
         const site = await sites.dbGetSite('pmc');
         if (site) {
           const serviceAccountId = ctx.$config.api.submissionsServiceAccount?.id;
-          const serviceAccountUser = serviceAccountId
-            ? await getUserById(serviceAccountId)
-            : null;
+          const serviceAccountUser = serviceAccountId ? await getUserById(serviceAccountId) : null;
           if (!serviceAccountUser) {
             throw new Error(
               `submissionsServiceAccount not found (id=${serviceAccountId ?? 'undefined'})`,
@@ -350,7 +361,7 @@ export default function PMCConfirm({ loaderData }: { loaderData: LoaderData }) {
       )}
       <div className="space-y-6">
         <h2>Publication Information</h2>
-        <PublicationInfoCard />
+        <PublicationInfoCard showPmcIdentifiers />
       </div>
       <GrantsInfo readonly />
       <FilesSection cdnKey={cdnKey} readonly hideEmpty />

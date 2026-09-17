@@ -89,6 +89,12 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Res
   if (!thisSubmissionVersion) {
     return redirect(`/app/works/${ctx.work.id}`);
   }
+  if (thisSubmissionVersion.work_version.work_id !== ctx.work.id) {
+    console.warn(
+      `Submission version ${thisSubmissionVersionId} does not belong to work ${ctx.work.id}`,
+    );
+    return redirect(`/app/works/${ctx.work.id}`);
+  }
 
   const thisWorkVersionsMetadata = (thisSubmissionVersion.work_version.metadata ||
     {}) as PMCWorkVersionMetadata;
@@ -137,8 +143,12 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Res
   // Map to include combined WV+SV metadata (incl. manuscriptId/pmid/pmcid), signed files
   const submissionVersions = await mapToDepositSubmissionDetails(submissionVersionsRaw, ctx);
   const thisSubmissionDetails = submissionVersions.find((sv) => sv.id === thisSubmissionVersionId);
-  const displayMetadata: PMCCombinedMetadataSection =
-    thisSubmissionDetails?.metadata ?? thisWorkVersionsMetadata;
+  if (!thisSubmissionDetails) {
+    // Only reachable if the version belongs to a non-PMC submission; the work version
+    // metadata alone would render unsigned file URLs, so bail out instead.
+    return redirect(`/app/works/${ctx.work.id}`);
+  }
+  const displayMetadata: PMCCombinedMetadataSection = thisSubmissionDetails.metadata;
 
   // Check if we should show the Create New Version button
   // only when the latest version has a request for a new version
