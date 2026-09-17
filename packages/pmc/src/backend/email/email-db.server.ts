@@ -118,9 +118,7 @@ export async function updateSubmissionVersionMetadata(
       // Create new message
       const newMessage = {
         type: (emailResult.status === 'success' ? 'info' : emailResult.status) as
-          | 'info'
-          | 'warning'
-          | 'error',
+          'info' | 'warning' | 'error',
         message: emailResult.message || '',
         timestamp: new Date().toISOString(),
         fromStatus: submissionVersion.status,

@@ -375,7 +375,9 @@ export const PMC_DEPOSIT_WORKFLOW = {
       },
       userTriggered: true,
       help: 'Send this deposit to PMC for processing',
-      requiredScopes: ['site:submissions:update'], // TODO dedicated PMC scopes and roles
+      // No site:submissions:update — depositor confirm already authorizes deposit; auto-send
+      // runs as the confirming user. Admin inbox "Send to PMC" remains gated by site route auth.
+      requiredScopes: [],
       requiresJob: true,
       options: {
         jobType: 'PMC_DEPOSIT_FTP',

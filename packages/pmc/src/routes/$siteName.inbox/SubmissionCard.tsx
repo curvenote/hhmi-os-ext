@@ -5,6 +5,7 @@ import { ExternalLink } from 'lucide-react';
 import type { Workflow, GeneralError, WorkflowTransition } from '@curvenote/scms-core';
 import { ui } from '@curvenote/scms-core';
 import { ActionsAreaForm, ActionsAreaActiveTransition } from '../../components/ActionsArea.js';
+import { formatManuscriptId } from '../../components/utils.js';
 import { getAvailableTransitionsForAdmin } from '../../workflows.js';
 import type { ResolvedListing } from './types.js';
 import type { PMCWorkVersionMetadataSection } from '../../common/metadata.schema.js';
@@ -63,7 +64,7 @@ export function SubmissionCard({ submission, workflows, siteName }: SubmissionCa
   const doi = workVersionMetadata?.pmc?.doiUrl;
 
   // Get manuscript ID from email processing record (single record structure)
-  const manuscriptId = emailProcessing?.manuscriptId;
+  const manuscriptId = formatManuscriptId(emailProcessing?.manuscriptId);
 
   // Get the email processing status (single record structure)
   const emailProcessingStatus = emailProcessing?.status;
@@ -125,7 +126,7 @@ export function SubmissionCard({ submission, workflows, siteName }: SubmissionCa
                 </a>
               </ui.Badge>
             )}
-            {manuscriptId && <ui.Badge variant="outline">NIHMSID: {manuscriptId}</ui.Badge>}
+            {manuscriptId && <ui.Badge variant="outline">{manuscriptId}</ui.Badge>}
             {pmid && (
               <ui.Badge variant="outline" asChild>
                 <a

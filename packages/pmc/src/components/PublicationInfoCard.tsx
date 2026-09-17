@@ -2,13 +2,25 @@ import { useLoaderData } from 'react-router';
 import { ExternalLink } from 'lucide-react';
 import { primitives, cn, formatDate } from '@curvenote/scms-core';
 import type { PMCCombinedMetadataSection } from '../common/metadata.schema.js';
-import { formatAuthors } from './utils.js';
+import { formatAuthors, formatManuscriptId } from './utils.js';
 
-interface PublicationInfoCardProps {
-  workVersionId?: string;
+export interface PublicationInfoCardProps {
+  /**
+   * When true, show Manuscript ID / PMID / PMCID from submission metadata when present.
+   * These IDs live on submission-version metadata (merged into loader `metadata.pmc`).
+   */
+  showPmcIdentifiers?: boolean;
+  /**
+   * Optional work-version id shown as "Package ID" (admin deposits only).
+   * Does not control whether PMC identifiers are shown — use `showPmcIdentifiers` for that.
+   */
+  packageId?: string;
 }
 
-export function PublicationInfoCard({ workVersionId }: PublicationInfoCardProps) {
+export function PublicationInfoCard({
+  showPmcIdentifiers = false,
+  packageId,
+}: PublicationInfoCardProps) {
   const { metadata } = useLoaderData<{ metadata: PMCCombinedMetadataSection }>();
 
   const haveSomeMetadata =
@@ -27,16 +39,15 @@ export function PublicationInfoCard({ workVersionId }: PublicationInfoCardProps)
   const issnType = metadata?.pmc?.issnType;
   const doiUrl = metadata?.pmc?.doiUrl;
 
-  // Admin details
   const pmcMetadata = metadata?.pmc;
   const emailProcessing = pmcMetadata?.emailProcessing;
-  const pmid = pmcMetadata?.pmid;
-  const pmcId = pmcMetadata?.pmcid;
+  const pmid = showPmcIdentifiers ? pmcMetadata?.pmid : undefined;
+  const pmcId = showPmcIdentifiers ? pmcMetadata?.pmcid : undefined;
+  const manuscriptId = showPmcIdentifiers
+    ? formatManuscriptId(emailProcessing?.manuscriptId)
+    : undefined;
 
-  // Get manuscript ID from email processing
-  const manuscriptId = emailProcessing?.manuscriptId;
-
-  const hasAdminDetails = workVersionId || manuscriptId;
+  const showIdentifiersBlock = !!packageId || !!(manuscriptId || pmid || pmcId);
 
   return (
     <primitives.Card className="p-4" lift>
@@ -80,13 +91,12 @@ export function PublicationInfoCard({ workVersionId }: PublicationInfoCardProps)
           </div>
         )}
 
-        {/* Admin details section */}
-        {hasAdminDetails && (
+        {showIdentifiersBlock && (
           <div className="pt-2 mt-4 border-t border-stone-300 dark:border-stone-700">
             <div className="space-y-1 text-sm text-stone-500">
-              {workVersionId && (
+              {packageId && (
                 <div>
-                  <span className="font-medium">Package ID:</span> {workVersionId}
+                  <span className="font-medium">Package ID:</span> {packageId}
                 </div>
               )}
               {manuscriptId && (
