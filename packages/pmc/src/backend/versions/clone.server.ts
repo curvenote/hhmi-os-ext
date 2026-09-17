@@ -17,7 +17,11 @@ export function buildClonedPmcSubmissionMetadata(
   if (!manuscriptId) return { pmc: {} };
   return {
     pmc: {
-      emailProcessing: { manuscriptId },
+      emailProcessing: {
+        manuscriptId,
+        // Cloned drafts share the ID but have not been confirmed as this package.
+        manuscriptConfirmed: false,
+      },
     },
   } as SubmissionVersionMetadataWithPMC;
 }
