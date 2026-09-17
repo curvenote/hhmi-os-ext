@@ -58,11 +58,10 @@ export function getWorkCreateOptions(): WorkCreateOption[] {
       icon: PMCIcon,
       metadataKey: 'pmc',
       startPath: '/app/works/pmc',
-      // Every step of the deposit form, so the draft-only work guard does not
-      // bounce `confirm` back to `deposit` (which redirects forward again once
-      // previewed, looping). Status/details (`.../site/pmc/submission/...`) is
-      // deliberately absent so it keeps the work secondary nav.
-      formPathIncludes: ['/site/pmc/deposit', '/site/pmc/confirm'],
+      // All `/site/pmc/...` steps (deposit, confirm, submission) — keeps the
+      // draft-only work guard from bouncing between confirm ↔ deposit, and
+      // hides work secondary nav on the deposit forms.
+      formPathIncludes: '/site/pmc/',
       mode: 'standalone',
       order: 10,
     },
