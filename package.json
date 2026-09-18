@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "changeset": "changeset",
-    "version": "changeset version",
+    "version": "bunx @changesets/cli@2 version",
     "publish": "bun run clean && bun run build -- --force && changeset publish && git push --follow-tags",
     "publish:ci": "bun run build && changeset publish && git push --follow-tags",
     "build": "turbo run build",

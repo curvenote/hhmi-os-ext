@@ -1,5 +1,11 @@
 # @hhmi/pmc
 
+## 1.1.1
+
+### Patch Changes
+
+- 1dfc0fe: Show Manuscript ID / PMID / PMCID on depositor PMC pages, keep formPathIncludes as `/site/pmc/` so deposit/confirm hide work secondary nav (and avoid the confirm↔deposit redirect loop), prefix displayed manuscript IDs with NIHMS, and allow confirm auto-send_to_pmc without site:submissions:update (runs as the depositor).
+
 ## 1.1.0
 
 ### Minor Changes
