@@ -6,6 +6,7 @@ import { fetchRecordsByManuscriptIds } from '../airtable-config.server.js';
 import { formatDate } from '@curvenote/common';
 import { uuidv7 } from 'uuidv7';
 import { PMC_STATE_NAMES } from '../../workflows.js';
+import { hasManuscriptHandoffOccurred } from '../email/manuscript-routing.server.js';
 import { plural } from 'myst-common';
 // PMC metadata types are used for documentation but not directly in the code
 // since we're using Prisma.JsonValue for database compatibility
@@ -71,7 +72,12 @@ const PMC_STATE_ORDER = [
 
 /**
  * When the submission's current status is in this list, the Airtable sync will not update
- * the submission status (status update is skipped). Metadata and activity updates still apply.
+ * the submission status (status update is skipped).
+ *
+ * Terminal / special statuses stay frozen after handoff. Pre-handoff statuses (DRAFT through
+ * DEPOSIT_REJECTED_BY_PMC, plus FAILED/CANCELLED) are gated separately via
+ * {@link hasManuscriptHandoffOccurred} so a cloned manuscript ID cannot pull the prior NIHMS
+ * record's status onto a not-yet-confirmed latest version.
  */
 export const PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC: readonly string[] = [
   PMC_STATE_NAMES.NO_ACTION_NEEDED,
@@ -82,13 +88,30 @@ export const PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC: readonly string[] = [
 
 /**
  * Returns whether the submission status should be updated during sync.
- * When current status is in PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC, we do not overwrite it.
+ * Skips when status is unchanged, frozen, or the latest version has not yet reached
+ * manuscript-ID handoff (`DEPOSIT_CONFIRMED_BY_PMC`+).
  */
-export function shouldUpdateStatusOnSync(currentStatus: string, resolvedStatus: string): boolean {
+export function shouldUpdateStatusOnSync(
+  currentStatus: string,
+  resolvedStatus: string,
+  manuscriptConfirmed?: boolean | null,
+): boolean {
   return (
     resolvedStatus !== currentStatus &&
+    hasManuscriptHandoffOccurred(currentStatus, manuscriptConfirmed) &&
     !PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC.includes(currentStatus)
   );
+}
+
+/**
+ * Airtable date-field milestones belong to the live NIHMS record. Until the latest SV reaches
+ * handoff, those milestones may still describe a prior version — do not attach them.
+ */
+export function shouldApplyAirtableActivitiesOnSync(
+  currentStatus: string,
+  manuscriptConfirmed?: boolean | null,
+): boolean {
+  return hasManuscriptHandoffOccurred(currentStatus, manuscriptConfirmed);
 }
 
 // Placeholder mapping for milestoneType to PMC_STATE_NAME
@@ -111,7 +134,8 @@ const PMC_STATUS_LOOKUP: Record<string, string> = {
     PMC_STATE_NAMES.REVIEWER_REJECTED_INITIAL,
   "NIHMS Revision of PMC Documents Following Reviewer's Rejection":
     PMC_STATE_NAMES.REVIEWER_REJECTED_INITIAL,
-  "Submitter's Files(s) Requested": PMC_STATE_NAMES.REMOVED_FROM_PROCESSING,
+  "Submitter's Files(s) Requested": PMC_STATE_NAMES.SUBMITTERS_FILES_REQUESTED,
+  "Submitter's File(s) Requested": PMC_STATE_NAMES.SUBMITTERS_FILES_REQUESTED,
   'NIHMS Submission Review and File Preparation': PMC_STATE_NAMES.REVIEWER_APPROVED_INITIAL,
   "Reviewer's Final Approval Requested": PMC_STATE_NAMES.NIHMS_CONVERSION_COMPLETE,
   'NIHMS Conversion to PMC Documents': PMC_STATE_NAMES.REVIEWER_APPROVED_FINAL,
@@ -122,7 +146,6 @@ const PMC_STATUS_LOOKUP: Record<string, string> = {
   // 'Pending Final Citation Data': '',
   // 'NLM Verification of Journal Information': '',
   // "Reviewer's Approval of the Submission Statement Requested": '',
-  // "Submitter's File(s) Requested": '',
   // "Submitter's Action Requested Prior to File Upload": '',
 };
 
@@ -266,6 +289,20 @@ export function extractManuscriptId(submissionVersion: SubmissionVersion): strin
 }
 
 /**
+ * Whether NIHMS bulk-confirmed this package (false when ID was only cloned).
+ */
+export function extractManuscriptConfirmed(
+  submissionVersion: SubmissionVersion,
+): boolean | undefined {
+  const metadata = submissionVersion.metadata;
+  if (!metadata || typeof metadata !== 'object' || metadata === null) {
+    return undefined;
+  }
+  const value = (metadata as Record<string, any>).pmc?.emailProcessing?.manuscriptConfirmed;
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+/**
  * Finds any PMC Airtable update job older than 5 minutes with status RUNNING and marks them as FAILED
  */
 export async function invalidateOldRunningJobs(): Promise<void> {
@@ -406,8 +443,16 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
           continue;
         }
 
-        // First, get activity entries from the Airtable date fields
-        const activities = activitiesFromAirtableDateFields(airtableRecord);
+        // First, get activity entries from the Airtable date fields (only after handoff —
+        // pre-handoff milestones still describe the prior live NIHMS package).
+        const manuscriptConfirmed = extractManuscriptConfirmed(latestVersion);
+        const applyAirtableActivities = shouldApplyAirtableActivitiesOnSync(
+          latestVersion.status,
+          manuscriptConfirmed,
+        );
+        const activities = applyAirtableActivities
+          ? activitiesFromAirtableDateFields(airtableRecord)
+          : [];
 
         // Next, handle the PMID and PMCID fields
         const metadataUpdates = metadataFromAirtableIdFields(
@@ -416,9 +461,18 @@ export async function pmcWorkflowSyncHandler(ctx: Context, data: CreateJob) {
           activities,
         );
 
-        // Finally, resolve the current submission status
-        const status = resolveSubmissionStatus(latestVersion, airtableRecord, activities);
-        const shouldUpdateStatus = shouldUpdateStatusOnSync(latestVersion.status, status);
+        // Finally, resolve the current submission status. When pre-handoff, pass a disposable
+        // bucket so resolveSubmissionStatus cannot append status activities onto the write list.
+        const status = resolveSubmissionStatus(
+          latestVersion,
+          airtableRecord,
+          applyAirtableActivities ? activities : [],
+        );
+        const shouldUpdateStatus = shouldUpdateStatusOnSync(
+          latestVersion.status,
+          status,
+          manuscriptConfirmed,
+        );
 
         // get all activites from the database for this submission version
         const existingActivities = await prisma.activity.findMany({
