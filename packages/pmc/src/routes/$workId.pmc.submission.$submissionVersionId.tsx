@@ -17,6 +17,7 @@ import {
 } from '@curvenote/scms-core';
 import { validatePMCMetadata } from '../common/validate.js';
 import type { PMCWorkVersionMetadata } from '../common/validate.js';
+import type { PMCCombinedMetadataSection } from '../common/metadata.schema.js';
 import { PreviewMetadataSection } from '../components/PreviewMetadataSection.js';
 import { FilesSection } from '../components/FilesSection.js';
 import type { TramStop } from '../components/StatusTramline.js';
@@ -40,7 +41,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { z } from 'zod';
 import { zfd } from 'zod-form-data';
 import { clonePMCVersion } from '../backend/versions/clone.server.js';
-import { signFilesInMetadata } from '../backend/metadata/utils.server.js';
 import { dbGetSubmissionVersion, dbGetSubmissionVersions } from '../backend/db.server.js';
 import { PublicationInfoCard } from '../components/PublicationInfoCard.js';
 import { EmailProcessingAlert } from '../components/EmailProcessingAlert.js';
@@ -50,7 +50,7 @@ interface LoaderData {
   user: UserWithRolesDBO;
   work: WorkDTO;
   thisSubmissionVersionId: string;
-  metadata: PMCWorkVersionMetadata;
+  metadata: PMCCombinedMetadataSection;
   validation: { success?: boolean } & { error?: GeneralError };
   currentWorkflow: Workflow;
   tramline: TramStop[];
@@ -89,6 +89,12 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Res
   if (!thisSubmissionVersion) {
     return redirect(`/app/works/${ctx.work.id}`);
   }
+  if (thisSubmissionVersion.work_version.work_id !== ctx.work.id) {
+    console.warn(
+      `Submission version ${thisSubmissionVersionId} does not belong to work ${ctx.work.id}`,
+    );
+    return redirect(`/app/works/${ctx.work.id}`);
+  }
 
   const thisWorkVersionsMetadata = (thisSubmissionVersion.work_version.metadata ||
     {}) as PMCWorkVersionMetadata;
@@ -105,7 +111,6 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Res
     }
   }
 
-  const thisWorkVersionCdn = thisSubmissionVersion.work_version.cdn;
   const thisWorkVersionCdnKey = thisSubmissionVersion.work_version.cdn_key;
   const validation = await validatePMCMetadata(thisWorkVersionsMetadata as PMCWorkVersionMetadata);
 
@@ -135,8 +140,15 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Res
   );
 
   const submissionVersionsRaw = await dbGetSubmissionVersions(ctx);
-  // Map to include metadata, manuscript file name, and file slot counts
+  // Map to include combined WV+SV metadata (incl. manuscriptId/pmid/pmcid), signed files
   const submissionVersions = await mapToDepositSubmissionDetails(submissionVersionsRaw, ctx);
+  const thisSubmissionDetails = submissionVersions.find((sv) => sv.id === thisSubmissionVersionId);
+  if (!thisSubmissionDetails) {
+    // Only reachable if the version belongs to a non-PMC submission; the work version
+    // metadata alone would render unsigned file URLs, so bail out instead.
+    return redirect(`/app/works/${ctx.work.id}`);
+  }
+  const displayMetadata: PMCCombinedMetadataSection = thisSubmissionDetails.metadata;
 
   // Check if we should show the Create New Version button
   // only when the latest version has a request for a new version
@@ -154,16 +166,10 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Res
     submissionVersions[0].id !== thisSubmissionVersion.id &&
     submissionVersions[0].status === PMC_STATE_NAMES.DRAFT;
 
-  const thisWorkVersionMetadataWithSignedUrls = await signFilesInMetadata(
-    thisWorkVersionsMetadata,
-    thisWorkVersionCdn ?? '',
-    ctx,
-  );
-
   return {
     work: ctx.workDTO,
     thisSubmissionVersionId,
-    metadata: thisWorkVersionMetadataWithSignedUrls,
+    metadata: displayMetadata,
     cdnKey: thisWorkVersionCdnKey,
     user: ctx.user,
     validation,
@@ -397,7 +403,7 @@ export default function PMCDepositUserFacingDetails({ loaderData }: { loaderData
             </div>
             <div className="space-y-6">
               <h2>Publication Information</h2>
-              <PublicationInfoCard />
+              <PublicationInfoCard showPmcIdentifiers />
             </div>
 
             <PreviewMetadataSection pmc={metadata.pmc} />
