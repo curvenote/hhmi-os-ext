@@ -7,10 +7,7 @@ export type CoveredArticleComplianceInput = Pick<
 
 /** Short status label shown on list badges, modal headlines, and help-request email. */
 export type ComplianceListStatusLabel =
-  | 'Compliant'
-  | 'Requested Action Completed'
-  | 'Action Requested'
-  | 'No Action Needed';
+  'Compliant' | 'Requested Action Completed' | 'Action Requested' | 'No Action Needed';
 
 export type ComplianceListStatus = {
   label: ComplianceListStatusLabel;

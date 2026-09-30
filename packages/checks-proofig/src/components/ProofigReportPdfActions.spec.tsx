@@ -2,7 +2,9 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import React, { act } from 'react';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { createRoot, hydrateRoot, type Root } from 'react-dom/client';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { renderToString } from 'react-dom/server';
 import { KnownState, MINIMAL_PROOFIG_SERVICE_DATA, type ProofigDataSchema } from '../schema.js';
 import { PROOFIG_PDF_GENERATING_STALE_MS } from '../proofigReportFiles.js';

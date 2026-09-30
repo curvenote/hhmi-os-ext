@@ -17,8 +17,7 @@ function lastJobMessage(messages: string[] | null | undefined): string | undefin
 }
 
 export type ApplyDocumentPreparationResult =
-  | { ok: true; updated: boolean }
-  | { ok: false; message: string };
+  { ok: true; updated: boolean } | { ok: false; message: string };
 
 /**
  * Sync check run `documentPreparation` stage from the linked CONVERTER_TASK job row.

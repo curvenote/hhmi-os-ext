@@ -66,9 +66,7 @@ export const RelayNotifyEnvelopeSchema = z.object({
 export type RelayNotifyEnvelopeParsed = z.infer<typeof RelayNotifyEnvelopeSchema>;
 
 export type ParsedNotifyWebhookResult =
-  | { ok: true; webhook: WebhookBody }
-  | { ok: true; noop: true }
-  | { ok: false; issues: ZodIssue[] };
+  { ok: true; webhook: WebhookBody } | { ok: true; noop: true } | { ok: false; issues: ZodIssue[] };
 
 function mapRelayEnvelopeToWebhookBody(env: RelayNotifyEnvelopeParsed): WebhookBody | 'noop' {
   const payload = env.payload;

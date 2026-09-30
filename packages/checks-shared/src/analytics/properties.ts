@@ -1,13 +1,7 @@
 export type ChecksKind = 'checks-text-integrity' | 'proofig';
 
 export type ChecksAnalyticsTrigger =
-  | 'upload'
-  | 'checks_page'
-  | 'latest_version'
-  | 'retry'
-  | 'admin'
-  | 'cron'
-  | 'integrity_page';
+  'upload' | 'checks_page' | 'latest_version' | 'retry' | 'admin' | 'cron' | 'integrity_page';
 
 export type ChecksSourceFormat = 'pdf' | 'docx' | 'pdf_and_docx';
 

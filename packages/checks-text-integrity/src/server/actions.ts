@@ -432,8 +432,7 @@ async function recordSimilarityPdfStartAccepted(
 }
 
 type StartSimilarityPdfUnderClaimResult =
-  | { ok: true; started: boolean }
-  | { ok: false; message: string; status: number };
+  { ok: true; started: boolean } | { ok: false; message: string; status: number };
 
 /**
  * Claim reportGeneration→processing then POST relay pdf/start once.

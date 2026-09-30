@@ -50,8 +50,7 @@ function logEulaRelayError(message: string, details: Record<string, unknown>) {
 
 function getTextIntegrityExtensionConfig(ctx: TextIntegrityEulaContext): Record<string, unknown> {
   const app = ctx.$config?.app as
-    | { extensions?: Record<string, Record<string, unknown>> }
-    | undefined;
+    { extensions?: Record<string, Record<string, unknown>> } | undefined;
   return (app?.extensions?.['checks-text-integrity'] as Record<string, unknown>) ?? {};
 }
 

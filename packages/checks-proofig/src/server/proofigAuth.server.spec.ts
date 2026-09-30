@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { describe, expect, it } from 'vitest';
 import {
   PROOFIG_TOKEN_CACHE_LIFETIME_FRACTION,
