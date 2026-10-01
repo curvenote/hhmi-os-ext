@@ -19,8 +19,10 @@ vi.mock('uuidv7', () => ({
   uuidv7: () => 'test-uuid-123',
 }));
 
-// Mock formatDate to return predictable dates
-vi.mock('@curvenote/common', () => ({
+// Mock formatDate to return predictable dates. Keep the rest of the module: scms-core shares
+// this @curvenote/common instance and imports other exports from it (e.g. CONVERSION_TYPES).
+vi.mock('@curvenote/common', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@curvenote/common')>()),
   formatDate: () => '2024-01-01T00:00:00.000Z',
 }));
 

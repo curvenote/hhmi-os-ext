@@ -62,7 +62,7 @@
     "url": "https://github.com/curvenote/journals/issues"
   },
   "dependencies": {
-    "@curvenote/common": "^0.4.2",
+    "@curvenote/common": "^0.10.0",
     "@curvenote/scms-core": "*",
     "@curvenote/scms-server": "*",
     "@curvenote/scms-db": "*",
