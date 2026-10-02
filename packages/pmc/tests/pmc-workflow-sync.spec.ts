@@ -6,6 +6,7 @@ import {
   activitiesFromAirtableDateFields,
   extractManuscriptId,
   shouldUpdateStatusOnSync,
+  shouldApplyAirtableActivitiesOnSync,
   PMC_STATUSES_THAT_DO_NOT_CHANGE_ON_SYNC,
   type SubmissionVersion,
   type AirtableRecord,
@@ -236,11 +237,52 @@ describe('PMC Airtable Functions', () => {
       expect(shouldUpdateStatusOnSync(currentStatus, resolvedStatus)).toBe(false);
     });
 
-    it('should update status when current status is DRAFT and Airtable resolves to a different status', () => {
-      const currentStatus = PMC_STATE_NAMES.DRAFT;
-      const resolvedStatus = PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC;
+    it('does not update status on sync when current status is DRAFT', () => {
+      expect(
+        shouldUpdateStatusOnSync(PMC_STATE_NAMES.DRAFT, PMC_STATE_NAMES.REVIEWER_APPROVED_INITIAL),
+      ).toBe(false);
+    });
 
-      expect(shouldUpdateStatusOnSync(currentStatus, resolvedStatus)).toBe(true);
+    it('does not update status on sync when current status is PENDING', () => {
+      expect(
+        shouldUpdateStatusOnSync(PMC_STATE_NAMES.PENDING, PMC_STATE_NAMES.AVAILABLE_ON_PMC),
+      ).toBe(false);
+    });
+
+    it('does not update status on sync when current status is DEPOSITED (pre-handoff)', () => {
+      expect(
+        shouldUpdateStatusOnSync(
+          PMC_STATE_NAMES.DEPOSITED,
+          PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC,
+        ),
+      ).toBe(false);
+    });
+
+    it('does not update status on sync when current status is DEPOSIT_FAILED (pre-handoff)', () => {
+      expect(
+        shouldUpdateStatusOnSync(
+          PMC_STATE_NAMES.DEPOSIT_FAILED,
+          PMC_STATE_NAMES.REVIEWER_APPROVED_INITIAL,
+        ),
+      ).toBe(false);
+    });
+
+    it('does not update status on sync when current status is DEPOSIT_REJECTED_BY_PMC (pre-handoff)', () => {
+      expect(
+        shouldUpdateStatusOnSync(
+          PMC_STATE_NAMES.DEPOSIT_REJECTED_BY_PMC,
+          PMC_STATE_NAMES.AVAILABLE_ON_PMC,
+        ),
+      ).toBe(false);
+    });
+
+    it('still updates after handoff when not frozen', () => {
+      expect(
+        shouldUpdateStatusOnSync(
+          PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC,
+          PMC_STATE_NAMES.REVIEWER_APPROVED_INITIAL,
+        ),
+      ).toBe(true);
     });
 
     it('should not update status when current and resolved status are the same', () => {
@@ -257,6 +299,28 @@ describe('PMC Airtable Functions', () => {
       expect(shouldUpdateStatusOnSync(PMC_STATE_NAMES.CANCELLED, PMC_STATE_NAMES.CANCELLED)).toBe(
         false,
       );
+    });
+  });
+
+  describe('shouldApplyAirtableActivitiesOnSync', () => {
+    it('skips milestone activities while latest is pre-handoff', () => {
+      expect(shouldApplyAirtableActivitiesOnSync(PMC_STATE_NAMES.DRAFT)).toBe(false);
+      expect(shouldApplyAirtableActivitiesOnSync(PMC_STATE_NAMES.PENDING)).toBe(false);
+      expect(shouldApplyAirtableActivitiesOnSync(PMC_STATE_NAMES.DEPOSITED)).toBe(false);
+      expect(shouldApplyAirtableActivitiesOnSync(PMC_STATE_NAMES.DEPOSIT_FAILED)).toBe(false);
+      expect(shouldApplyAirtableActivitiesOnSync(PMC_STATE_NAMES.DEPOSIT_REJECTED_BY_PMC)).toBe(
+        false,
+      );
+    });
+
+    it('applies milestone activities after handoff', () => {
+      expect(shouldApplyAirtableActivitiesOnSync(PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC)).toBe(
+        true,
+      );
+      expect(shouldApplyAirtableActivitiesOnSync(PMC_STATE_NAMES.REVIEWER_APPROVED_INITIAL)).toBe(
+        true,
+      );
+      expect(shouldApplyAirtableActivitiesOnSync(PMC_STATE_NAMES.REQUEST_NEW_VERSION)).toBe(true);
     });
   });
 

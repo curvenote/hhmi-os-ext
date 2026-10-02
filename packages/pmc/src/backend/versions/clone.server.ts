@@ -7,6 +7,26 @@ import { PMC_STATE_NAMES } from '../../workflows.js';
 import type { SubmissionVersionMetadataWithPMC } from '../../common/metadata.schema.js';
 
 /**
+ * Build submission-version metadata for a newly cloned PMC draft.
+ * Propagates the NIHMS manuscript ID so redeposits can reuse it in bulk XML.
+ */
+export function buildClonedPmcSubmissionMetadata(
+  source: SubmissionVersionMetadataWithPMC | null | undefined,
+): SubmissionVersionMetadataWithPMC {
+  const manuscriptId = source?.pmc?.emailProcessing?.manuscriptId ?? source?.pmc?.manuscriptId;
+  if (!manuscriptId) return { pmc: {} };
+  return {
+    pmc: {
+      emailProcessing: {
+        manuscriptId,
+        // Cloned drafts share the ID but have not been confirmed as this package.
+        manuscriptConfirmed: false,
+      },
+    },
+  } as SubmissionVersionMetadataWithPMC;
+}
+
+/**
  * Gets a submission version from the database with related submission and work version data.
  */
 async function dbGetSubmissionVersion(submissionVersionId: string) {
@@ -34,7 +54,9 @@ async function createSubmissionVersionForClonedWork(
   userId: string,
 ): Promise<SubmissionVersion> {
   const prisma = await getPrismaClient();
-  const newSVMetadata: SubmissionVersionMetadataWithPMC = { pmc: {} };
+  const newSVMetadata = buildClonedPmcSubmissionMetadata(
+    referenceSubmissionVersion.metadata as SubmissionVersionMetadataWithPMC | null,
+  );
   const timestamp = new Date().toISOString();
 
   return prisma.$transaction(async (tx) => {

@@ -1,5 +1,14 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+const { mockResolveSubmissionVersionForManuscriptId } = vi.hoisted(() => ({
+  mockResolveSubmissionVersionForManuscriptId: vi.fn(),
+}));
+
+vi.mock('../src/backend/email/manuscript-routing.server.js', () => ({
+  resolveSubmissionVersionForManuscriptId: mockResolveSubmissionVersionForManuscriptId,
+}));
+
 import {
   catchAllHandler,
   catchAllConfig,
@@ -356,24 +365,30 @@ describe('Catch-All Handler', () => {
     it('should process emails with manuscript ID and find matching submissions', async () => {
       const { getPrismaClient } = await import('@curvenote/scms-server');
 
-      // Mock Prisma client to return matching submissions
+      mockResolveSubmissionVersionForManuscriptId.mockResolvedValue({
+        id: 'sub-version-1',
+        work_version_id: 'wv-1',
+        submitted_by_id: 'user-1',
+        status: 'DEPOSIT_CONFIRMED_BY_PMC',
+        date_created: '2026-01-01',
+        work_version: { work_id: 'work-1' },
+      });
+
       const mockPrisma = {
         submissionVersion: {
-          findMany: vi.fn().mockResolvedValue([
-            {
-              id: 'sub-version-1',
-              submission_id: 'sub-1',
-              metadata: {
-                pmc: {
-                  emailProcessing: {
-                    manuscriptId: 'NIHMS2109555',
-                    packageId: 'pkg-123',
-                  },
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'sub-version-1',
+            submission_id: 'sub-1',
+            work_version_id: 'wv-1',
+            metadata: {
+              pmc: {
+                emailProcessing: {
+                  manuscriptId: 'NIHMS2109555',
+                  packageId: 'pkg-123',
                 },
               },
-              submission: { id: 'sub-1' },
             },
-          ]),
+          }),
         },
       };
       vi.mocked(getPrismaClient).mockResolvedValue(mockPrisma as any);
@@ -389,10 +404,9 @@ describe('Catch-All Handler', () => {
 
       expect(result.messageId).toBe('msg-nihms-123');
       expect(result.status).toBe('IGNORED');
-      expect(result.processedDeposits).toBe(0); // No matching submissions found due to mock structure
+      expect(result.processedDeposits).toBe(0);
       expect(result.errors).toHaveLength(0);
-
-      // The mock structure doesn't match what the handler expects, so no submissions are processed
+      expect(mockResolveSubmissionVersionForManuscriptId).toHaveBeenCalledWith('2109555');
       expect(updateSubmissionVersionMetadata).not.toHaveBeenCalled();
     });
 

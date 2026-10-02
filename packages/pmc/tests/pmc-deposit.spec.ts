@@ -1,4 +1,4 @@
-import { getJournalInfo } from '../src/backend/jobs/pmc-deposit.js';
+import { getJournalInfo, resolveManuscriptIdForDeposit } from '../src/backend/jobs/pmc-deposit.js';
 import type { JournalInfo } from '../src/backend/jobs/types.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { describe, it, expect, vi } from 'vitest';
@@ -73,5 +73,41 @@ describe('getJournalInfo', () => {
     expect(() => getJournalInfo(journalsWithNoIssn, pmc)).toThrow(
       'No ISSN found for journal No ISSN Journal',
     );
+  });
+});
+
+describe('resolveManuscriptIdForDeposit', () => {
+  it('returns manuscriptId from emailProcessing metadata', () => {
+    expect(
+      resolveManuscriptIdForDeposit({
+        pmc: { emailProcessing: { manuscriptId: 'NIHMS999' } },
+      } as any),
+    ).toBe('NIHMS999');
+  });
+
+  it('returns undefined when manuscriptId is absent', () => {
+    expect(resolveManuscriptIdForDeposit({ pmc: {} } as any)).toBeUndefined();
+    expect(resolveManuscriptIdForDeposit(null)).toBeUndefined();
+    expect(resolveManuscriptIdForDeposit(undefined)).toBeUndefined();
+  });
+});
+
+describe('buildAAMDepositManifest manuscriptId spread', () => {
+  it('sets manuscriptId on the manifest object when provided in context', () => {
+    const context = { manuscriptId: 'NIHMS999' as string | undefined };
+    const manifest = {
+      taskId: 'task',
+      ...(context.manuscriptId ? { manuscriptId: context.manuscriptId } : {}),
+    };
+    expect(manifest.manuscriptId).toBe('NIHMS999');
+  });
+
+  it('omits manuscriptId when none provided', () => {
+    const context = { manuscriptId: undefined as string | undefined };
+    const manifest = {
+      taskId: 'task',
+      ...(context.manuscriptId ? { manuscriptId: context.manuscriptId } : {}),
+    };
+    expect(manifest.manuscriptId).toBeUndefined();
   });
 });
