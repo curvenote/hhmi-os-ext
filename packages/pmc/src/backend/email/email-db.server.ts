@@ -137,8 +137,7 @@ export async function updateSubmissionVersionMetadata(
       const hasWarnings = updatedMessages.some((msg) => msg.type === 'warning');
       const overallStatus = hasErrors ? 'error' : hasWarnings ? 'warning' : 'ok';
 
-      const manuscriptId =
-        emailResult.manuscriptId ?? existingEmailProcessing?.manuscriptId;
+      const manuscriptId = emailResult.manuscriptId ?? existingEmailProcessing?.manuscriptId;
       const confirmedByThisUpdate = targetStatus === 'DEPOSIT_CONFIRMED_BY_PMC';
       const manuscriptConfirmed =
         confirmedByThisUpdate || existingEmailProcessing?.manuscriptConfirmed === true
