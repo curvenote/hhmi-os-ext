@@ -34,6 +34,11 @@ export function registerNavigation() {
                 label: 'Funding Id Sync',
                 url: `${baseUrl}/funding`,
               },
+              {
+                name: 'nihms',
+                label: 'NIHMS Records',
+                url: `${baseUrl}/nihms`,
+              },
             ],
           },
         ] satisfies MenuContents,
