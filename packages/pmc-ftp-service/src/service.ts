@@ -27,7 +27,6 @@ import {
   removeFolder,
   withPubSubHandler,
   type HandlerContext,
-  type SCMSClient,
 } from '@curvenote/scms-tasks';
 import { preparePMCManifestText } from 'pmc-node-utils';
 import {
@@ -42,7 +41,7 @@ import {
  *
  * @returns Express application instance
  */
-export function createService() {
+export function createService(): express.Express {
   const app = express();
   app.use(express.json());
 
@@ -261,7 +260,7 @@ export function createService() {
         if (!successState) {
           throw new Error('successState attribute is required to report submission status');
         }
-        await client.submissions.putStatus(successState, userId);
+        await client.submissions.putStatus(successState, userId, res);
         await client.jobs.completed(res, 'FTP upload completed successfully', {
           taskId: id,
           tarFileName,
@@ -270,8 +269,8 @@ export function createService() {
         });
       },
       {
-        onFailure: async (client: SCMSClient, failureState: string, userId: string) => {
-          await client.submissions.putStatus(failureState, userId);
+        onFailure: async (client, failureState, userId, res) => {
+          await client.submissions.putStatus(failureState, userId, res);
         },
       },
     ),
