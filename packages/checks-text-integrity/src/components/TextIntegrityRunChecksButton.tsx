@@ -21,7 +21,7 @@ export function TextIntegrityRunChecksButton({
     useTextIntegrityEulaEnable(workVersionId);
   const holdingBusy = useHoldingBusy({
     fetcher: executeFetcher,
-    onSettledError: (message) => ui.toastError(message),
+    onSettledError: (errorMessage) => ui.toastError(errorMessage),
   });
   const isBusy = busy || executeFetcher.state !== 'idle' || holdingBusy;
 

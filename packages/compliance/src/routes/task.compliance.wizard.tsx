@@ -47,8 +47,7 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData | Res
   // (may be hosted on any origin/CDN). If misconfigured, log and skip the card
   // rather than crashing the wizard.
   const complianceExtensionConfig = ctx.$config.app.extensions?.['hhmi-compliance'] as
-    | { noticeToJournalsPdfUrl?: string }
-    | undefined;
+    { noticeToJournalsPdfUrl?: string } | undefined;
   const noticeToJournalsPdfUrl = complianceExtensionConfig?.noticeToJournalsPdfUrl;
   if (!noticeToJournalsPdfUrl) {
     console.error(

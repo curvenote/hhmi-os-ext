@@ -16,16 +16,7 @@ export function ArticleLinks({
 }: {
   item: NormalizedArticleRecord;
   size?:
-    | 'tiny'
-    | 'xs'
-    | 'sm'
-    | 'default'
-    | 'lg'
-    | 'icon'
-    | 'icon-sm'
-    | 'icon-xs'
-    | null
-    | undefined;
+    'tiny' | 'xs' | 'sm' | 'default' | 'lg' | 'icon' | 'icon-sm' | 'icon-xs' | null | undefined;
   className?: string;
   orcid?: string;
   viewContext: ViewContext;

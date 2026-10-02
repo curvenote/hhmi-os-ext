@@ -39,7 +39,7 @@ export function ImageIntegrityChecksSection({
   const holdingBusy = useHoldingBusy({
     fetcher,
     releaseWhen: checkedAvailableOrInProgress,
-    onSettledError: (message) => ui.toastError(message),
+    onSettledError: (errorMessage) => ui.toastError(errorMessage),
   });
   const isBusy = fetcher.state !== 'idle' || holdingBusy;
   const stages = metadata?.stages ? { ...ALL_PENDING_STAGES, ...metadata.stages } : null;

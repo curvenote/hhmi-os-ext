@@ -218,8 +218,7 @@ async function resolveTextIntegrityRelaySession(
 
   const extBase =
     (ctx.$config?.app?.extensions?.['checks-text-integrity'] as
-      | Record<string, unknown>
-      | undefined) ?? {};
+      Record<string, unknown> | undefined) ?? {};
   const prisma = await getPrismaClient();
   const merged = await getTextIntegrityConfigWithOverrides(extBase, prisma);
   const serviceNameRaw = (formData.get('serviceName') ?? '').toString().trim();

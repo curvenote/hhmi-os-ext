@@ -47,8 +47,7 @@ async function getExtensionConfiguration(
   ctx: Context,
 ): Promise<Record<string, unknown> | undefined> {
   const base = ctx.$config?.app?.extensions?.['checks-text-integrity'] as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
 
   const prisma = await getPrismaClient();
   return getTextIntegrityConfigWithOverrides(base ?? {}, prisma);

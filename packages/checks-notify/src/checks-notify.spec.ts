@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { describe, expect, it } from 'vitest';
 import { colorForSeverity } from './colors.server.js';
 import { shouldNotifyErrorTransition } from './error-transition.server.js';

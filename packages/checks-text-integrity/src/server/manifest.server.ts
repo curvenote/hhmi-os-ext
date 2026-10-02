@@ -28,8 +28,7 @@ export function readManifestLogo(manifest: unknown): string | undefined {
 
 async function loadMergedExtensionConfig(ctx: Context): Promise<Record<string, unknown>> {
   const base = ctx.$config?.app?.extensions?.['checks-text-integrity'] as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   const prisma = await getPrismaClient();
   return getTextIntegrityConfigWithOverrides(base ?? {}, prisma);
 }

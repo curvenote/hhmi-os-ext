@@ -6,18 +6,11 @@ export const PROOFIG_REPORT_FILENAME = 'proofig-report.pdf';
 
 /** UI / enqueue readiness for the persisted Proofig report PDF. */
 export type ProofigPdfReadiness =
-  | 'not-final'
-  | 'no-url'
-  | 'pending'
-  | 'failed'
-  | 'stored-current'
-  | 'stored-stale';
+  'not-final' | 'no-url' | 'pending' | 'failed' | 'stored-current' | 'stored-stale';
 
 /** State of the latest PDF generation attempt, independent of artifact availability. */
 export type ProofigPdfAttemptState =
-  | { status: 'idle' }
-  | { status: 'generating' }
-  | { status: 'failed'; error: string };
+  { status: 'idle' } | { status: 'generating' } | { status: 'failed'; error: string };
 
 /** Strip query strings and truncate noisy worker/job error text for UI display. */
 export function summarizeProofigPdfError(message: string): string {

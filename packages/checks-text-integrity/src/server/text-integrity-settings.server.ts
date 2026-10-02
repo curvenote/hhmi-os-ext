@@ -238,8 +238,7 @@ function readSmallMatchesViewSetting(
 }
 
 export type ApplySettingPatchResult =
-  | { ok: true; settings: TextIntegrityServiceSettings }
-  | { ok: false; message: string };
+  { ok: true; settings: TextIntegrityServiceSettings } | { ok: false; message: string };
 
 /**
  * Validates and applies one admin setting patch, returning a fresh settings object.

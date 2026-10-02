@@ -54,8 +54,7 @@ async function getExtensionConfiguration(
   ctx: Context,
 ): Promise<Record<string, unknown> | undefined> {
   const base = ctx.$config?.app?.extensions?.['checks-proofig'] as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
 
   const prisma = await getPrismaClient();
   return getProofigConfigWithOverrides(base ?? {}, prisma);
