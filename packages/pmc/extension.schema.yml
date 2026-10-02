@@ -50,6 +50,23 @@ properties:
       password:
         type: string
         secret: true
+  nihmsApi:
+    type: object
+    description: NIHMS Funder Manuscript List API, used by the admin NIHMS Records page
+    required:
+      - username
+      - password
+    properties:
+      username:
+        type: string
+        description: NIHMS API account username (issued by NIHMS for the funding authority)
+      password:
+        type: string
+        secret: true
+      baseUrl:
+        type: string
+        description: NIHMS API base URL (no trailing slash)
+        default: https://www.nihms.nih.gov
   airtable:
     type: object
     required:

@@ -103,7 +103,7 @@ const PMC_DATE_FIELD_LOOKUP: Record<string, string> = {
   // 'pmc-publish-date': '',
 };
 
-const PMC_STATUS_LOOKUP: Record<string, string> = {
+export const PMC_STATUS_LOOKUP: Record<string, string> = {
   "Reviewer's Initial Approval Requested": PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC,
   "Submitter's Initial Approval or Designation of Reviewer Requested":
     PMC_STATE_NAMES.DEPOSIT_CONFIRMED_BY_PMC,
